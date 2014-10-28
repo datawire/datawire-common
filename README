@@ -7,13 +7,13 @@ Control Flow
 ============
 
 
-                   [global replication]    [regional replication]
+                       [global replication]    [regional replication]
 
-Client ----> DNS -------> Redirector ----------> Analyzers ----> Sender
-              |               |                      |
-              |               |                      |
-        map to vhost    global schema            local schema
-       us-west.aws.*   cust <-> analyzer map     git repo
+    Client ----> DNS -------> Redirector ----------> Analyzers ----> Sender
+                  |               |                      |
+                  |               |                      |
+            map to vhost    global schema            local schema
+           us-west.aws.*   cust <-> analyzer map     git repo
 
 ## Partioning
 
