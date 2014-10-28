@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+import random, sys, os
+from common import *
+
+class Redirector(Handshaker):
+
+    def __init__(self, trace=None):
+        self.trace = trace
+        self.hosts = [(u"localhost", 5673), (u"localhost", 5674)]
+        self.count = 0
+
+    def log(self, msg):
+        sys.stderr.write("%s\n" % msg)
+        sys.stderr.flush()
+
+    def choose(self):
+        choice = self.hosts[self.count % len(self.hosts)]
+        self.count += 1
+        return choice
+
+    def on_connection_remote_open(self, event):
+        conn = event.context
+        host, port = self.choose()
+        self.log("Redirecting to %s:%s" % (host, port))
+        conn.condition = Condition("amqp:connection:redirect", None,
+                                   {symbol("network-host"): host,
+                                    symbol("port"): port})
+        conn.close()
+
+
+switches = [a for a in sys.argv[1:] if a.startswith("-")]
+args = [a for a in sys.argv[1:] if not a.startswith("-")]
+
+trace = "-t" in switches
+
+host = args.pop(0) if args and not args[0].isdigit() else "localhost"
+port = int(args.pop(0)) if args else 5672
+
+coll = Collector()
+drv = Driver(coll, Redirector(trace))
+acc = Acceptor(drv, host, port)
+drv.run()

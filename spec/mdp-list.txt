@@ -1,0 +1,30 @@
+Minimally Desirable Product
+---------------------------
+
+Ordered by how focused we are on machine vs people
+
+- Accept high volume real time data streams
+  - High scale persistence (store billions of records)
+  - High scale machine interfaces
+
+- Tools to write better analytics
+  - Replay past message streams
+  - Splunk-style correlation search
+
+- Real time analytics on message streams ("AMQP applications")
+
+- Out of the box machine integrations with specific services
+
+- Enable end users to subscribe to a specific topic
+
+- End user alerts
+  - Auto chat room
+  - Escalation policy
+  - On call scheduling
+
+- Really good end user search on messages (conversation search)
+
+- Great UX on browser, mobile devices
+  - Conversation view
+  - Topic search / subscribe
+  - Interactive chat

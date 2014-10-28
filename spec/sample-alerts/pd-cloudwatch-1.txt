@@ -1,0 +1,97 @@
+Delivered-To: richard@thelis.org
+Received: by 10.42.113.74 with SMTP id b10csp42561icq;
+        Fri, 25 Jul 2014 12:01:19 -0700 (PDT)
+X-Received: by 10.221.55.70 with SMTP id vx6mr23427678vcb.23.1406314879368;
+        Fri, 25 Jul 2014 12:01:19 -0700 (PDT)
+Return-Path: <boundary+bncBC7KRNHYTEEBB7WSZKPAKGQEGPM7QVY@nickhartyconstruction.com>
+Received: from mail-vc0-f198.google.com (mail-vc0-f198.google.com [209.85.220.198])
+        by mx.google.com with ESMTPS id ai1si8157645vdd.1.2014.07.25.12.01.19
+        for <richard@thelis.org>
+        (version=TLSv1 cipher=ECDHE-RSA-RC4-SHA bits=128/128);
+        Fri, 25 Jul 2014 12:01:19 -0700 (PDT)
+Received-SPF: none (google.com: boundary+bncBC7KRNHYTEEBB7WSZKPAKGQEGPM7QVY@nickhartyconstruction.com does not designate permitted sender hosts) client-ip=192.254.122.33;
+Authentication-Results: mx.google.com;
+       spf=neutral (google.com: boundary+bncBC7KRNHYTEEBB7WSZKPAKGQEGPM7QVY@nickhartyconstruction.com does not designate permitted sender hosts) smtp.mail=boundary+bncBC7KRNHYTEEBB7WSZKPAKGQEGPM7QVY@nickhartyconstruction.com
+Received: by mail-vc0-f198.google.com with SMTP id hu12sf13852413vcb.1
+        for <richard@thelis.org>; Fri, 25 Jul 2014 12:01:19 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20130820;
+        h=x-gm-message-state:from:to:subject:mime-version:auto-submitted
+         :message-id:date:x-original-sender:x-original-authentication-results
+         :precedence:mailing-list:list-id:list-help:content-type
+         :content-transfer-encoding;
+        bh=XYU8LRTVPrgwlX0VzuRy22AT4z1EgbGElIH5yMfcD4s=;
+        b=f3JP7ds/SRPaLquhnABUxUo1kK/B3DPkaLcEAaJIEusx3O8E2i9aMJfE8RaUOmJbGT
+         xqhQVRYHDfs7cq7l0+z6jawILBfY/BaCLrHb7mX120lEKmyEFNuBwpJtyVtx8TIdZAtS
+         O3BSuWk6BXRtC0vaGrXRFMVht8lfKqu5tKje9H2p1ePaRbe6UKvR2qfbKTCEYpqArYCU
+         EWNEE1IBeERlYLZoSBpDPClQflkNRBjwLU0r6+W2pexrzhfhpexIGQBm7PimjxU1tFJx
+         RCNoeR701Pl80F6bqAbNOKWD0fxc8caqTNnIXzYtbO+Gexc+noRnTZxNuSjZ47mUAVM9
+         DMOA==
+X-Gm-Message-State: ALoCoQk1mIcIvpcGj9QGTsN0sLA4ExYlSZ5rvHvmAaW/1+Sl9BSum3u/YMbcaHGdErwPuhxzKH3t
+X-Received: by 10.52.184.104 with SMTP id et8mr7518672vdc.4.1406314879061;
+        Fri, 25 Jul 2014 12:01:19 -0700 (PDT)
+X-BeenThere: boundary@nickhartyconstruction.com
+Received: by 10.50.66.243 with SMTP id i19ls561947igt.3.gmail; Fri, 25 Jul
+ 2014 12:01:18 -0700 (PDT)
+X-Received: by 10.67.14.193 with SMTP id fi1mr2007600pad.17.1406314878799;
+        Fri, 25 Jul 2014 12:01:18 -0700 (PDT)
+Received: from o2.smtp.pagerduty.com (o2.smtp.pagerduty.com. [192.254.122.33])
+        by mx.google.com with SMTP id bw4si10052239pbd.160.2014.07.25.12.01.18
+        for <boundary@nickhartyconstruction.com>
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Fri, 25 Jul 2014 12:01:18 -0700 (PDT)
+Received-SPF: pass (google.com: domain of bounces+11703-3241-boundary=nickhartyconstruction.com@smtp.pagerduty.com designates 192.254.122.33 as permitted sender) client-ip=192.254.122.33;
+Received: by filter-266.sjc1.sendgrid.net with SMTP id filter-266.20304.53D2A97C10
+        2014-07-25 19:01:18.12732807 +0000 UTC
+Received: from prod-hg-app04.pd-internal.com (ec2-54-185-24-213.us-west-2.compute.amazonaws.com [54.185.24.213])
+	  by ismtpd-026.sjc1.sendgrid.net (SG) with ESMTP id 1476ee6142c.cac4.3798cd
+	  for <boundary@nickhartyconstruction.com>; Fri, 25 Jul 2014 19:01:18 +0000 (GMT)
+From: PagerDuty ALERT  <no-reply@pagerduty.com>
+To: <boundary@nickhartyconstruction.com>
+Subject: [PagerDuty ALERT] You have 1 TRIGGERED Incident (09b8a)
+MIME-Version: 1.0
+X-Pagerduty-Id: 0ec61070-142e-11e4-b532-22000af70fe9
+Auto-Submitted: auto-generated
+Message-ID: <1476ee6142c.cac4.3798cd@ismtpd-026.sjc1.sendgrid.net>
+Date: Fri, 25 Jul 2014 19:01:18 +0000 (UTC)
+X-SG-EID: DCoSHsEscrX0qoC1IgOJUxhtRYh1igjs0kh8OWSdPGJ1T8pOU1Har26wG7jiNK35Y3g+7llOGa0kcn7VaBHLXB1z98be6s00glGOMhNUFiFRrOLkVYZoaXJRC7AuG/eJi8LRMGbgBHXEbx8igva4zXB8g5bKUuVLDfGNLmHq0TwiC5hCBsYdZYIaN3LeBx0D
+X-SG-ID: tFFTUtdtvL1fzKtsZhXM68uVpiKcEYtiF3nEj0KGCYix9v5edbSDH6zo351fOs6wtD4hapgDVk2mvYpj21Gbkad/qG4sooWbVWglLVEv2vufC9qFdKulPHWZ1M13uc82
+X-Original-Sender: no-reply@pagerduty.com
+X-Original-Authentication-Results: mx.google.com;       spf=pass (google.com:
+ domain of bounces+11703-3241-boundary=nickhartyconstruction.com@smtp.pagerduty.com
+ designates 192.254.122.33 as permitted sender) smtp.mail=bounces+11703-3241-boundary=nickhartyconstruction.com@smtp.pagerduty.com;
+       dkim=pass header.i=@smtp.pagerduty.com
+Precedence: list
+Mailing-list: list boundary@nickhartyconstruction.com; contact boundary+owners@nickhartyconstruction.com
+List-ID: <boundary.nickhartyconstruction.com>
+X-Google-Group-Id: 987405130289
+List-Help: <http://support.google.com/a/nickhartyconstruction.com/bin/topic.py&topic=25838>,
+ <mailto:boundary+help@nickhartyconstruction.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+Hello John Smith,
+You are assigned 1 triggered incident in PagerDuty:
+Please visit the following URL to manage this incident.
+https://nick-harty-construction.pagerduty.com/dashboard
+
+1) Incident #3
+   Opened on: Jul 25 at 3:01pm EDT
+   Service: Cloudwatch
+   Description: Average NetworkOut LessThanOrEqualToThreshold 25000.0 for InstanceId i-ce0d6cc3
+   Link: https://nick-harty-construction.pagerduty.com/i/3
+   Escalation Policy: Default
+   Details:
+       AlarmName: Network Out
+       AlarmDescription: NetworkOut25K
+       AWSAccountId: 609213308736
+       NewStateValue: ALARM
+       NewStateReason: Threshold Crossed: 1 datapoint (28.0) was less than or equal to the threshold (25000.0).
+       StateChangeTime: 2014-07-25T19:01:00.293+0000
+       Region: US-West-2
+       OldStateValue: INSUFFICIENT_DATA
+       Trigger: {"MetricName"=>"NetworkOut", "Namespace"=>"AWS/EC2", "Statistic"=>"AVERAGE", "Unit"=>nil, "Dimensions"=>[{"name"=>"InstanceId",...
+
+
+You can disable these messages by adjusting your notification methods:
+https://nick-harty-construction.pagerduty.com/users/PQ6GDG0

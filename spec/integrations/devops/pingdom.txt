@@ -1,0 +1,11 @@
+Pingdom
+-------
+
+Pingdom supports sending alerts via:
+ - Email
+ - SMS
+ - Twitter
+ - URL / Webhook
+
+
+

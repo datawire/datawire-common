@@ -1,0 +1,115 @@
+                                                                                                                                                                                                                                                               
+Delivered-To: richard@thelis.org
+Received: by 10.42.113.74 with SMTP id b10csp42625icq;
+        Fri, 25 Jul 2014 12:02:17 -0700 (PDT)
+X-Received: by 10.50.137.71 with SMTP id qg7mr8328375igb.24.1406314937084;
+        Fri, 25 Jul 2014 12:02:17 -0700 (PDT)
+Return-Path: <boundary+bncBC7KRNHYTEEBBOGTZKPAKGQEBIFBVAY@nickhartyconstruction.com>
+Received: from mail-ie0-f200.google.com (mail-ie0-f200.google.com [209.85.223.200])
+        by mx.google.com with ESMTPS id db2si23475656icc.88.2014.07.25.12.02.16
+        for <richard@thelis.org>
+        (version=TLSv1 cipher=ECDHE-RSA-RC4-SHA bits=128/128);
+        Fri, 25 Jul 2014 12:02:16 -0700 (PDT)
+Received-SPF: none (google.com: boundary+bncBC7KRNHYTEEBBOGTZKPAKGQEBIFBVAY@nickhartyconstruction.com does not designate permitted sender hosts) client-ip=192.254.122.33;
+Authentication-Results: mx.google.com;
+       spf=neutral (google.com: boundary+bncBC7KRNHYTEEBBOGTZKPAKGQEBIFBVAY@nickhartyconstruction.com does not designate permitted sender hosts) smtp.mail=boundary+bncBC7KRNHYTEEBBOGTZKPAKGQEBIFBVAY@nickhartyconstruction.com
+Received: by mail-ie0-f200.google.com with SMTP id at20sf29614359iec.7
+        for <richard@thelis.org>; Fri, 25 Jul 2014 12:02:16 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20130820;
+        h=x-gm-message-state:from:to:subject:mime-version:auto-submitted
+         :message-id:date:x-original-sender:x-original-authentication-results
+         :precedence:mailing-list:list-id:list-help:content-type
+         :content-transfer-encoding;
+        bh=bIStN0SNr6CfGlBkH/jDNScLsnHEQMsSb8gWxXQ8hoc=;
+        b=dOolLDvzWpXG0/+af56E6aVQWQ3+QGHkDuc7Bl/2NtOZ14GZ2y9xHE6Le+6/ifwdZD
+         deCKFA3CX74dsC53GuyC8b+zGsZiLmly/sysSLva5i2mgD93wpa5I8CiX60okEo8L4Ro
+         tqfKz5FzCjzrprZeKVPJE6RjNkxdz9Ly60cChOoaEGRlM2SnpIjRZwHHSoTgEA/O8WNo
+         nYTG3Lz7gUamaxbW9S3UZ1gXdjtp7VofwBeBkzeTV7lnv0DUdyzZlK0YA6pbggr/Vm3F
+         I/eODYPbpSBTAG7Jg6GPewTB0qHZv3E6U0prUZSbsJmeQPfmC7qo7LrIgOmo49KaASX0
+         AtRg==
+X-Gm-Message-State: ALoCoQl9VTNBar8/5wByH5tDZgiD261e1KY7ERpPNVfErrhXhe5nMGDBGPcr9TV9n2Es9uVHAVZD
+X-Received: by 10.42.39.140 with SMTP id h12mr9954713ice.9.1406314936908;
+        Fri, 25 Jul 2014 12:02:16 -0700 (PDT)
+X-BeenThere: boundary@nickhartyconstruction.com
+Received: by 10.51.16.229 with SMTP id fz5ls602806igd.1.gmail; Fri, 25 Jul
+ 2014 12:02:16 -0700 (PDT)
+X-Received: by 10.66.163.65 with SMTP id yg1mr20936069pab.33.1406314936606;
+        Fri, 25 Jul 2014 12:02:16 -0700 (PDT)
+Received: from o2.smtp.pagerduty.com (o2.smtp.pagerduty.com. [192.254.122.33])
+        by mx.google.com with SMTP id bz2si10082132pab.151.2014.07.25.12.02.16
+        for <boundary@nickhartyconstruction.com>
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Fri, 25 Jul 2014 12:02:16 -0700 (PDT)
+Received-SPF: pass (google.com: domain of bounces+11703-3241-boundary=nickhartyconstruction.com@smtp.pagerduty.com designates 192.254.122.33 as permitted sender) client-ip=192.254.122.33;
+Received: by filter-276.sjc1.sendgrid.net with SMTP id filter-276.28740.53D2A9B72A
+        2014-07-25 19:02:16.055791376 +0000 UTC
+Received: from prod-hg-app03.pd-internal.com (li329-88.members.linode.com [96.126.96.88])
+	  by ismtpd-018.sjc1.sendgrid.net (SG) with ESMTP id 1476ee6f6d9.c83.4c2190
+	  for <boundary@nickhartyconstruction.com>; Fri, 25 Jul 2014 19:02:16 +0000 (GMT)
+From: PagerDuty ALERT  <no-reply@pagerduty.com>
+To: <boundary@nickhartyconstruction.com>
+Subject: [PagerDuty ALERT] You have 2 TRIGGERED Incidents (9ee26)
+MIME-Version: 1.0
+X-Pagerduty-Id: 3181aa70-142e-11e4-b5cd-f23c91735f76
+Auto-Submitted: auto-generated
+Message-ID: <1476ee6f6d9.c83.4c2190@ismtpd-018.sjc1.sendgrid.net>
+Date: Fri, 25 Jul 2014 19:02:16 +0000 (UTC)
+X-SG-EID: DCoSHsEscrX0qoC1IgOJUxhtRYh1igjs0kh8OWSdPGJ1T8pOU1Har26wG7jiNK35pJNOpvZSjM8tmixV6j2R8iWoPcTx0zkAZB2XcDzbL+zTyJ7T8xNw7gEOjkBOdN7p7lfeVfah8bN0dcYmh5J9yhZcBYyYV65F2/lopbtprkYvtPkAL0pE3i90wVj+10e2
+X-SG-ID: tFFTUtdtvL1fzKtsZhXM68uVpiKcEYtiF3nEj0KGCYix9v5edbSDH6zo351fOs6wN358YBlwEZC/H00nT6OvR3A3rkvAww2vAl96teMw0Hk7RHKn9/Vk3saGC9+HqF0b
+X-Original-Sender: no-reply@pagerduty.com
+X-Original-Authentication-Results: mx.google.com;       spf=pass (google.com:
+ domain of bounces+11703-3241-boundary=nickhartyconstruction.com@smtp.pagerduty.com
+ designates 192.254.122.33 as permitted sender) smtp.mail=bounces+11703-3241-boundary=nickhartyconstruction.com@smtp.pagerduty.com;
+       dkim=pass header.i=@smtp.pagerduty.com
+Precedence: list
+Mailing-list: list boundary@nickhartyconstruction.com; contact boundary+owners@nickhartyconstruction.com
+List-ID: <boundary.nickhartyconstruction.com>
+X-Google-Group-Id: 987405130289
+List-Help: <http://support.google.com/a/nickhartyconstruction.com/bin/topic.py&topic=25838>,
+ <mailto:boundary+help@nickhartyconstruction.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+Hello John Smith,
+You are assigned 2 triggered incidents in PagerDuty:
+Please visit the following URL to manage these incidents.
+https://nick-harty-construction.pagerduty.com/dashboard
+
+1) Incident #3
+   Opened on: Jul 25 at 3:01pm EDT
+   Service: Cloudwatch
+   Description: Average NetworkOut LessThanOrEqualToThreshold 25000.0 for InstanceId i-ce0d6cc3
+   Link: https://nick-harty-construction.pagerduty.com/i/3
+   Escalation Policy: Default
+   Details:
+       AlarmName: Network Out
+       AlarmDescription: NetworkOut25K
+       AWSAccountId: 609213308736
+       NewStateValue: ALARM
+       NewStateReason: Threshold Crossed: 1 datapoint (28.0) was less than or equal to the threshold (25000.0).
+       StateChangeTime: 2014-07-25T19:01:00.293+0000
+       Region: US-West-2
+       OldStateValue: INSUFFICIENT_DATA
+       Trigger: {"MetricName"=>"NetworkOut", "Namespace"=>"AWS/EC2", "Statistic"=>"AVERAGE", "Unit"=>nil, "Dimensions"=>[{"name"=>"InstanceId",...
+
+2) Incident #4
+   Opened on: Jul 25 at 3:01pm EDT
+   Service: Cloudwatch
+   Description: Average CPUUtilization LessThanOrEqualToThreshold 0.5 for InstanceId i-ce0d6cc3
+   Link: https://nick-harty-construction.pagerduty.com/i/4
+   Escalation Policy: Default
+   Details:
+       AlarmName: CPU
+       AlarmDescription: CPUUtilization
+       AWSAccountId: 609213308736
+       NewStateValue: ALARM
+       NewStateReason: Threshold Crossed: 1 datapoint (0.034) was less than or equal to the threshold (0.5).
+       StateChangeTime: 2014-07-25T19:01:32.960+0000
+       Region: US-West-2
+       OldStateValue: INSUFFICIENT_DATA
+       Trigger: {"MetricName"=>"CPUUtilization", "Namespace"=>"AWS/EC2", "Statistic"=>"AVERAGE", "Unit"=>nil, "Dimensions"=>[{"name"=>"InstanceId", "valu...
+
+
+You can disable these messages by adjusting your notification methods:
+https://nick-harty-construction.pagerduty.com/users/PQ6GDG0

@@ -1,0 +1,9 @@
+#!/bin/bash
+DIR=$(dirname $(readlink -f $0))
+cd $DIR
+if [ -e server.pid ]; then
+    kill $(cat server.pid)
+    rm server.pid
+else
+   echo "no pid file"
+fi

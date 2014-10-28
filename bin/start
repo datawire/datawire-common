@@ -1,0 +1,10 @@
+#!/bin/bash
+DIR=$(dirname $(readlink -f $0))
+cd $DIR
+source /home/ec2-user/proton/build/config.sh
+if [ -e server.pid ]; then
+    echo "server already running PID=$(cat server.pid)"
+else
+    /home/ec2-user/kinetic/server -t 0.0.0.0 > server.log 2>&1 &
+    echo $! > server.pid
+fi

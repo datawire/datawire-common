@@ -1,0 +1,173 @@
+#!/usr/bin/env python
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+import random, sys, os
+from common import *
+
+class Metric:
+
+    def __init__(self, name):
+        self.name = name
+        # we keep these in separate parallel arrays for easier computation
+        self.timestamps = []
+        self.values = []
+
+    def add(self, timestamp, value):
+        self.timestamps.append(timestamp)
+        self.values.append(value)
+        # XXX: we could be fancier about how we compress data here
+        if self.count > 1000:
+            self.shrink()
+
+    def shrink(self):
+        self.timestamps.pop(0)
+        self.values.pop(0)
+
+    @property
+    def count(self):
+        return len(self.timestamps)
+
+    @property
+    def sum(self):
+        return sum(self.values)
+
+    @property
+    def avg(self):
+        return self.sum/self.count
+
+    @property
+    def min(self):
+        return min(self.values)
+
+    @property
+    def max(self):
+        return max(self.values)
+
+    @property
+    def min_time(self):
+        return min(self.timestamps)
+
+    @property
+    def max_time(self):
+        return max(self.timestamps)
+
+class Store:
+
+    def __init__(self):
+        self.metrics = {} # map from name to sequence of buckets
+        self.message = Message()
+
+    def add(self, name, timestamp, value):
+        if name in self.metrics:
+            metric = self.metrics[name]
+        else:
+            metric = Metric(name)
+            self.metrics[name] = metric
+        metric.add(timestamp, value)
+
+    def put(self, address, message):
+        for sample in message.body:
+            name, timestamp, value = sample
+            self.add(name, timestamp, value)
+
+    def get(self, address):
+        body = []
+        for metric in self.metrics.values():
+            body.append((metric.name, metric.avg, metric.min_time, metric.max_time))
+        self.message.clear()
+        self.message.body = body
+        return self.message
+
+class Analyzer(MessageDecoder):
+
+    def __init__(self, trace=None):
+        self.trace = trace
+        self.store = Store()
+        self.router = Router()
+        self.handlers = [FlowController(1024), Handshaker(), self.router, self]
+        self.message = Message()
+        self.tag = 0
+
+    def log(self, msg):
+        sys.stderr.write("%s\n" % msg)
+        sys.stderr.flush()
+
+    def next_tag(self):
+        result = "tag%s" % self.tag
+        self.tag += 1
+        return result
+
+    def on_link_remote_open(self, event):
+        link = event.context
+        if link.is_sender:
+            link.next_msg = None
+
+    def on_link_final(self, event):
+        link = event.context
+        if link.is_sender:
+            del link.next_msg
+
+    def on_link_flow(self, event):
+        link = event.context
+        if link.is_sender and link.credit:
+            self.on_credit(link)
+
+    def send(self, snd):
+        if not hasattr(snd, "next_msg"): return
+        address = snd.source.address or snd.target.address
+        msg = self.store.get(address)
+        if msg:
+            dlv = snd.delivery(self.next_tag())
+            snd.send(msg.encode())
+            dlv.settle()
+            if self.trace:
+                self.log("Sent: %r" % msg)
+        snd.next_msg = None
+
+    def on_credit(self, snd):
+        if snd.next_msg is None:
+            snd.next_msg = drv.now + 1
+            drv.schedule(lambda: self.send(snd), 5)
+
+    def on_message(self, rcv, msg):
+        if self.trace: self.log("Rcvd: %r" % msg)
+        self.store.put(rcv.target.address or rcv.source.address, msg)
+
+switches = [a for a in sys.argv[1:] if a.startswith("-")]
+args = [a for a in sys.argv[1:] if not a.startswith("-")]
+
+trace = "-t" in switches
+
+durable = "-d" in switches
+if durable:
+    if args:
+        database = args.pop(0)
+    else:
+        print >> sys.stderr, "-d requries database"
+        sys.exit(1)
+else:
+    database = None
+
+host = args.pop(0) if args and not args[0].isdigit() else "localhost"
+port = int(args.pop(0)) if args else 5672
+
+coll = Collector()
+drv = Driver(coll, Analyzer(trace))
+acc = Acceptor(drv, host, port)
+drv.run()

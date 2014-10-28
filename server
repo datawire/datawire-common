@@ -1,0 +1,219 @@
+#!/usr/bin/env python
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+import random, sys, sqlite3, os, uuid
+from common import *
+
+class Queue:
+
+    def __init__(self):
+        self.head = None
+        self.tail = None
+
+    def add(self, message):
+        if self.tail:
+            self.tail.next = message
+            self.tail = message
+        else:
+            self.head = message
+            self.tail = message
+
+    def _advance(self):
+        if self.head:
+            self.head = self.head.next
+            if self.head is None:
+                self.tail = None
+
+    def get(self):
+        msg = self.head
+        self._advance()
+        return msg
+
+    def __nonzero__(self):
+        return bool(self.head)
+
+class Cursor:
+
+    def __init__(self, store, address):
+        self.store = store
+        self.address = address
+
+    def get(self):
+        return self.store.get(self.address)
+
+class Message:
+
+    def __init__(self, id, address, body):
+        self.id = id
+        self.address = address
+        self.body = body
+        self.next = None
+
+    def __repr__(self):
+        return "Message(%r, %r)" % (self.address, self.body)
+
+class MessageStore:
+
+    def __init__(self, database, trace=False):
+        self.trace = trace
+        self.uuid = uuid.uuid1()
+        self.sequence_id = 0
+        self.messages = {}
+        if database:
+            if os.path.exists(database):
+                self.db = sqlite3.Connection(database)
+                for address, id, body in self.db.execute("select address, id, body from messages order by sort_key;"):
+                    msg = self._add(id, address, body.encode())
+                    if self.trace:
+                        self.log("Load: %s" % msg)
+            else:
+                self.db = sqlite3.Connection(database)
+                self.db.execute("create table messages (id primary key, address text, sort_key, body text);")
+        else:
+            self.db = None
+        self._dirty = 0
+
+    def dirty(self):
+        self._dirty += 1
+        if self._dirty > 10000:
+            self.flush()
+
+    def _add(self, id, address, body):
+        msg = Message(id, address, body)
+        queue = self.messages.get(address)
+        if queue is None:
+            queue = Queue()
+            self.messages[address] = queue
+        queue.add(msg)
+        return msg
+
+    def add(self, address, body):
+        sort_key = self.sequence_id
+        self.sequence_id += 1
+        id = "%s:%s" % (self.uuid, sort_key)
+        msg = self._add(id, address, body)
+        if self.db:
+            self.db.execute("insert into messages (id, address, sort_key, body) values (?, ?, ?, ?);",
+                            (id, address, sort_key, body))
+        self.dirty()
+        return msg
+
+    def flush(self):
+        if self._dirty > 0:
+            if self.db:
+                self.db.commit()
+            self._dirty = 0
+
+    def get(self, address):
+        queue = self.messages.get(address)
+        if queue is not None:
+            msg = queue.get()
+            if self.db:
+                self.db.execute("delete from messages where id = ?;", (msg.id,))
+            self.dirty()
+            if not queue: del self.messages[address]
+            return msg
+
+    def cursor(self, address):
+        return Cursor(self, address)
+
+class Server(Handler):
+
+    def __init__(self, database, router, trace=None):
+        self.router = router
+        self.trace = trace
+        self.tag = 0
+        self.messages = MessageStore(database, trace)
+
+    def log(self, msg):
+        sys.stderr.write("%s\n" % msg)
+        sys.stderr.flush()
+
+    def next_tag(self):
+        result = "tag%s" % self.tag
+        self.tag += 1
+        return result
+
+    def on_link_remote_open(self, event):
+        link = event.context
+        if link.is_sender:
+            address = link.source.address or link.target.address
+            link.cursor = self.messages.cursor(address)
+
+    def send(self, snd):
+        while snd.credit and snd.queued < 1024:
+            msg = snd.cursor.get()
+            if msg:
+                dlv = snd.delivery(self.next_tag())
+                snd.send(msg.body)
+                dlv.settle()
+                if self.trace:
+                    self.log("Sent: %r" % msg)
+            else:
+                snd.drained()
+                break
+
+    def on_link_flow(self, event):
+        link = event.context
+        if link.is_sender:
+            self.send(link)
+
+    def updated(self, address):
+        links = self.router.outgoing(address)
+        snd = links.choose()
+        if snd: self.send(snd)
+
+    def on_delivery(self, event):
+        dlv = event.context
+        if dlv.link.is_receiver and not dlv.partial:
+            address = dlv.link.target.address
+            body = dlv.link.recv(dlv.pending)
+            msg = self.messages.add(address, body)
+            dlv.update(Delivery.ACCEPTED)
+            dlv.settle()
+            if self.trace:
+                self.log("Rcvd: %r" % msg)
+            self.updated(address)
+
+    def on_quiesced(self, drv):
+        self.messages.flush()
+
+switches = [a for a in sys.argv[1:] if a.startswith("-")]
+args = [a for a in sys.argv[1:] if not a.startswith("-")]
+
+trace = "-t" in switches
+
+durable = "-d" in switches
+if durable:
+    if args:
+        database = args.pop(0)
+    else:
+        print >> sys.stderr, "-d requries database"
+        sys.exit(1)
+else:
+    database = None
+
+host = args.pop(0) if args and not args[0].isdigit() else "localhost"
+port = int(args.pop(0)) if args else 5672
+
+coll = Collector()
+router = Router()
+drv = Driver(coll, FlowController(1024), Handshaker(), router, Server(database, router, trace))
+acc = Acceptor(drv, host, port)
+drv.run()
