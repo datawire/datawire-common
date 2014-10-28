@@ -1,0 +1,63 @@
+Server
+======
+
+Engine for receiving, routing, and analyzing AMQP messages for Kinetic.
+
+Control Flow
+============
+
+
+                   [global replication]    [regional replication]
+
+Client ----> DNS -------> Redirector ----------> Analyzers ----> Sender
+              |               |                      |
+              |               |                      |
+        map to vhost    global schema            local schema
+       us-west.aws.*   cust <-> analyzer map     git repo
+
+## Partioning
+
+Message flow is partitioned in the following hierarchy:
+
+- to region/hosting provider (via DNS vhost, based on customer)
+- to analyzer, based on topology and data type
+
+## Redirector / Analyzer Handshake
+
+When an analyzer is instantiated, it initiates a handshake with the
+redirector. The handshake protocol:
+
+- notifies the redirector that the analyzer is available, and is
+  subsequently used by the redirector for liveness detection
+- notifies the redirector of the data sources that it will subscribe
+  to, based on the topology information available to the analyzer
+
+Data Architecture
+=================
+
+The message header contains, among other things:
+
+- origin
+- data type (statsd, collectd, etc.)
+
+The local schema contains, among other things:
+
+- user auth info
+- topology info
+- info about data sources
+
+Availability
+============
+
+We minimize moving parts to maximize availability.
+
+- Replicate git repo to all filesystems
+- Auth TBD
+
+TODO
+====
+
+- Create a language to define message topologies
+- API key authentication mechanism / general auth mechanism
+- Evaluate deploying to both DO and AWS
+  - Dogfood and implement alerting
