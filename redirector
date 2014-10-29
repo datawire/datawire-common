@@ -6,7 +6,7 @@ class Redirector(Handshaker):
 
     def __init__(self, trace=None):
         self.trace = trace
-        self.hosts = [(u"localhost", 5673), (u"localhost", 5674)]
+        self.hosts = []
         self.count = 0
 
     def log(self, msg):
@@ -18,14 +18,36 @@ class Redirector(Handshaker):
         self.count += 1
         return choice
 
+    def on_connection_init(self, event):
+        conn = event.context
+        conn.finalizer = None
+
     def on_connection_remote_open(self, event):
         conn = event.context
-        host, port = self.choose()
-        self.log("Redirecting to %s:%s" % (host, port))
-        conn.condition = Condition("amqp:connection:redirect", None,
-                                   {symbol("network-host"): host,
-                                    symbol("port"): port})
-        conn.close()
+
+        props = conn.remote_properties
+        if props and "compute-node" in props:
+            self.hosts.append(conn)
+            conn.finalizer = self.on_compute_node_final
+            self.log("Adding compute node %s" % conn.remote_properties["compute-node"])
+        else:
+            node = self.choose()
+            host, port = node.remote_properties["compute-node"]
+            self.log("Redirecting to %s:%s" % (host, port))
+            conn.condition = Condition("amqp:connection:redirect", None,
+                                       {symbol("network-host"): host,
+                                        symbol("port"): port})
+            conn.close()
+
+    def on_compute_node_final(self, conn):
+        self.log("Removing compute node %s" % conn.remote_properties["compute-node"])
+        self.hosts.remove(conn)
+
+    def on_transport_closed(self, event):
+        transport = event.context
+        conn = event.context.connection
+        if conn.finalizer:
+            conn.finalizer(conn)
 
 
 switches = [a for a in sys.argv[1:] if a.startswith("-")]
