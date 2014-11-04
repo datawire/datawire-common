@@ -99,10 +99,9 @@ class Analyzer(Handler):
     def __init__(self, trace=None):
         self.trace = trace
         self.store = Store()
-        self.router = Router()
         self.decoder = MessageDecoder()
         self.decoder.on_message = self.on_message
-        self.handlers = [FlowController(1024), Handshaker(), self.router, self.decoder, self]
+        self.handlers = [FlowController(1024), Handshaker(), self.decoder, self]
         self.message = Message()
         self.driver = None
         self.tag = 0
