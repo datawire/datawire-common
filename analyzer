@@ -94,16 +94,33 @@ class Store:
         self.message.body = body
         return self.message
 
+class Tether(Handler):
+
+    def on_start(self, drv):
+        self.driver = drv
+        self.connect()
+
+    def on_transport_closed(self, event):
+        conn = event.context.connection
+        self.conn = None
+        self.driver.schedule(self.connect, 1)
+
+    def connect(self):
+        self.conn = Connection()
+        self.conn.handlers = [self]
+        self.conn.collect(drv.collector)
+        self.conn.hostname = "localhost"
+        self.conn.properties = {symbol("compute-node"): (host, port)}
+        self.conn.open()
+
 class Analyzer(Handler):
 
     def __init__(self, trace=None):
         self.trace = trace
         self.store = Store()
-        self.decoder = MessageDecoder()
-        self.decoder.on_message = self.on_message
+        self.decoder = MessageDecoder(self)
         self.handlers = [FlowController(1024), Handshaker(), self.decoder, self]
-        self.message = Message()
-        self.driver = None
+        self.tether = Tether()
         self.tag = 0
 
     def log(self, msg):
@@ -116,21 +133,7 @@ class Analyzer(Handler):
         return result
 
     def on_start(self, drv):
-        self.driver = drv
-        self.connect()
-
-    def on_transport_closed(self, event):
-        conn = event.context.connection
-        if conn == self.conn:
-            self.conn = None
-            self.driver.schedule(self.connect, 1)
-
-    def connect(self):
-        self.conn = Connection()
-        self.conn.collect(drv.collector)
-        self.conn.hostname = "localhost"
-        self.conn.properties = {symbol("compute-node"): (host, port)}
-        self.conn.open()
+        self.tether.on_start(drv)
 
     def on_link_remote_open(self, event):
         link = event.context

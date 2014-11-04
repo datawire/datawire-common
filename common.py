@@ -305,7 +305,7 @@ class Driver(Handler):
                 count += 1
                 quiesced = False
                 _dispatch(ev, self)
-                for h in self.handlers:
+                for h in self.get_handlers(ev.context):
                     _dispatch(ev, h)
                 self.collector.pop()
             elif quiesced:
@@ -316,6 +316,22 @@ class Driver(Handler):
                 quiesced = True
 
         return count
+
+    getters = {
+        Transport: lambda x: x.connection,
+        Delivery: lambda x: x.link,
+        Link: lambda x: x.session,
+        Session: lambda x: x.connection,
+    }
+
+    def get_handlers(self, context):
+        if hasattr(context, "handlers"):
+            return context.handlers
+        elif context.__class__ in self.getters:
+            parent = self.getters[context.__class__](context)
+            return self.get_handlers(parent)
+        else:
+            return self.handlers
 
     def on_connection_local_open(self, event):
         conn = event.context
@@ -539,7 +555,14 @@ class Pool(Handler):
 
 class MessageDecoder(Handler):
 
+    def __init__(self, delegate):
+        self.__delegate = delegate
+
     def on_start(self, drv):
+        try:
+            self.__delegate
+        except AttributeError:
+            self.__delegate = self
         self.__message = Message()
 
     def on_delivery(self, event):
@@ -548,7 +571,7 @@ class MessageDecoder(Handler):
             encoded = dlv.link.recv(dlv.pending)
             self.__message.decode(encoded)
             try:
-                dispatch(self, "on_message", dlv.link, self.__message)
+                dispatch(self.__delegate, "on_message", dlv.link, self.__message)
                 dlv.update(Delivery.ACCEPTED)
             except:
                 dlv.update(Delivery.REJECTED)

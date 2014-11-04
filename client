@@ -39,8 +39,7 @@ class Client(Handler):
         self.incoming = None
         self.outgoing = None
         self.scratch = Message()
-        self.decoder = MessageDecoder()
-        self.decoder.on_message = self.on_message
+        self.decoder = MessageDecoder(self)
         self.handlers = [FlowController(1024), self.decoder, self]
 
     def notify(self, msg):
