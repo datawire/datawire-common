@@ -654,3 +654,32 @@ class SendQueue(Handler):
         conn = event.context.connection
         self.conn = None
         self.driver.schedule(self.connect, 1)
+
+# XXX: terrible name for this
+class RecvQueue(Handler):
+
+    def __init__(self, address, delegate):
+        self.address = Address(address)
+        self.delegate = delegate
+        self.decoder = MessageDecoder(self.delegate)
+        self.handlers = [FlowController(1024), self.decoder, self]
+
+    def on_start(self, drv):
+        self.driver = drv
+        self.decoder.on_start(drv)
+        self.connect()
+
+    def connect(self):
+        self.conn = self.driver.connection(self)
+        self.conn.hostname = self.address.host
+        ssn = self.conn.session()
+        rcv = ssn.receiver(str(self.address))
+        rcv.source.address = str(self.address)
+        ssn.open()
+        rcv.open()
+        self.conn.open()
+
+    def on_transport_closed(self, event):
+        conn = event.context.connection
+        self.conn = None
+        self.driver.schedule(self.connect, 1)
