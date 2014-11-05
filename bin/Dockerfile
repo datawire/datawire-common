@@ -1,27 +1,39 @@
-# Kinetic Server
+# Analyzer
 FROM centos:latest
 MAINTAINER Richard Li <richard@thelis.org>
 
 WORKDIR /tmp
 
-# Get to a coherent image
-RUN yum -y install tar git
+# Update server
+# RUN yum -y update
+
+RUN yum -y install svn git
 
 # required dependencies
-RUN yum -y install gcc cmake libuuid-devel
+RUN yum -y install gcc cmake libuuid-devel make
 
 # dependencies needed for ssl support
 RUN yum -y install openssl-devel
 
 # dependencies needed for bindings
-RUN yum -y install swig python-devel ruby-devel php-devel perl-devel
+RUN yum -y install swig python-devel
 
 # dependencies needed for java (note that any non-ancient jvm will
 # work, 1.8.0 is just what is current for fedora 20)
-RUN yum -y install java-1.8.0-openjdk-devel
-
-# dependencies needed for python docs
-RUN yum -y install epydoc
+RUN yum -y install java-1.7.0-openjdk-devel
 
 # Proton
-RUN git clone git://git.apache.org/qpid-proton.git
+RUN svn co http://svn.apache.org/repos/asf/qpid/proton/trunk/
+RUN cd trunk && mkdir build
+WORKDIR /tmp/trunk/build
+RUN cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DSYSINSTALL_BINDINGS=ON -DBUILD_PHP=OFF -DBUILD_JAVA=OFF -DBUILD_RUBY=OFF -DBUILD_PERL=OFF
+RUN make install
+
+# Kinetic
+RUN mkdir /opt/kinetic/
+WORKDIR /opt/kinetic/
+RUN git clone https://kineticbot:M6P-AqJ-UEe-bB9@bitbucket.org/gokinetic/server.git
+
+# Set up script that is run when a container is created
+ADD run-analyzer.sh /opt/kinetic/run-analyzer.sh
+CMD ["/opt/kinetic/run-analyzer.sh"]
