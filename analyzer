@@ -113,13 +113,15 @@ class Tether(Handler):
 
 class Analyzer(Handler):
 
-    def __init__(self, trace=None):
+    def __init__(self, host, port, trace=None):
+        self.host = host
+        self.port = port
         self.trace = trace
         self.store = Store()
         self.decoder = MessageDecoder(self)
         self.handlers = [FlowController(1024), Handshaker(), self.decoder, self]
         self.tether = Tether()
-        self.sendq = SendQueue("//localhost:5678/alerts")
+        #self.sendq = SendQueue("//localhost:5678/alerts")
         self.tag = 0
 
     def log(self, msg):
@@ -132,8 +134,9 @@ class Analyzer(Handler):
         return result
 
     def on_start(self, drv):
+        drv.acceptor(self.host, self.port)
         self.tether.on_start(drv)
-        self.sendq.on_start(drv)
+        #self.sendq.on_start(drv)
 
     def on_link_remote_open(self, event):
         link = event.context
@@ -151,7 +154,6 @@ class Analyzer(Handler):
             self.on_credit(link)
 
     def send(self, snd):
-        print snd
         if not hasattr(snd, "next_msg"): return
         address = snd.source.address or snd.target.address
         msg = self.store.get(address)
@@ -170,7 +172,7 @@ class Analyzer(Handler):
 
     def alert(self, msg):
         self.log("alerting %s" % msg)
-        self.sendq.put(msg)
+        #self.sendq.put(msg)
 
     def on_message(self, rcv, msg):
         if self.trace: self.log("Rcvd: %r" % msg)
@@ -181,20 +183,8 @@ args = [a for a in sys.argv[1:] if not a.startswith("-")]
 
 trace = "-t" in switches
 
-durable = "-d" in switches
-if durable:
-    if args:
-        database = args.pop(0)
-    else:
-        print >> sys.stderr, "-d requries database"
-        sys.exit(1)
-else:
-    database = None
-
 host = args.pop(0) if args and not args[0].isdigit() else "localhost"
 port = int(args.pop(0)) if args else 5672
 
-coll = Collector()
-drv = Driver(coll, Analyzer(trace))
-acc = Acceptor(drv, host, port)
+drv = Driver(Analyzer(host, port, trace))
 drv.run()

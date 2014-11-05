@@ -217,8 +217,8 @@ def _expand(handlers):
 
 class Driver(Handler):
 
-    def __init__(self, collector, *handlers):
-        self.collector = collector
+    def __init__(self, *handlers):
+        self.collector = Collector()
         self.handlers = _expand(handlers)
         self.interrupter = Interrupter()
         self.timer = Timer(self.collector)
@@ -371,6 +371,9 @@ class Driver(Handler):
             conn.handlers = _expand(handlers)
         conn.collect(self.collector)
         return conn
+
+    def acceptor(self, host, port):
+        return Acceptor(self, host, port)
 
     def add(self, selectable):
         self.selectables.append(selectable)

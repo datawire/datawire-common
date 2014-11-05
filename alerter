@@ -4,7 +4,9 @@ from common import *
 
 class Alerter(Handler):
 
-    def __init__(self, trace=None):
+    def __init__(self, host, port, trace=None):
+        self.host = host
+        self.port = port
         self.trace = trace
         self.statuses = {}
         self.serial = 0
@@ -16,6 +18,9 @@ class Alerter(Handler):
     def log(self, msg):
         sys.stderr.write("%s\n" % msg)
         sys.stderr.flush()
+
+    def on_start(self, drv):
+        drv.acceptor(host, port)
 
     def on_link_remote_open(self, event):
         link = event.context
@@ -66,20 +71,8 @@ args = [a for a in sys.argv[1:] if not a.startswith("-")]
 
 trace = "-t" in switches
 
-durable = "-d" in switches
-if durable:
-    if args:
-        database = args.pop(0)
-    else:
-        print >> sys.stderr, "-d requries database"
-        sys.exit(1)
-else:
-    database = None
-
 host = args.pop(0) if args and not args[0].isdigit() else "localhost"
 port = int(args.pop(0)) if args else 5672
 
-coll = Collector()
-drv = Driver(coll, Alerter(trace))
-acc = Acceptor(drv, host, port)
+drv = Driver(Alerter(host, port, trace))
 drv.run()

@@ -22,11 +22,24 @@ from common import *
 
 class Client(Handler):
 
-    def __init__(self):
-        self.messages = []
+    def __init__(self, address):
+        self.address = Address(address)
         self.sent = 0
         self.scratch = Message()
-        self.handlers = [pool, self]
+
+    def on_start(self, drv):
+        self.driver = drv
+        self.connect(self.address)
+
+    def connect(self, address):
+        self.conn = self.driver.connection()
+        self.conn.hostname = address.host
+        ssn = self.conn.session()
+        snd = ssn.sender(str(address))
+        snd.target.address = str(address)
+        snd.open()
+        ssn.open()
+        self.conn.open()
 
     def on_connection_remote_close(self, event):
         conn = event.context
@@ -34,10 +47,10 @@ class Client(Handler):
             info = conn.remote_condition.info
             host = info["network-host"]
             port = info["port"]
-            address = str("//%s:%s" % (host, port))
-            print "redirecting to %s" % address
-            pool.outgoing(address)
+            address = Address("//%s:%s" % (host, port))
             conn.close()
+            print "redirecting to %s" % address
+            self.connect(address)
 
     def on_link_remote_open(self, event):
         link = event.context
@@ -75,11 +88,5 @@ args = [a for a in sys.argv[1:] if not a.startswith("-")]
 
 address = args.pop(0) if args and args[0].startswith("/") else "//localhost"
 
-coll = Collector()
-pool = Pool(coll)
-pool.outgoing(address)
-
-client = Client()
-
-drv = Driver(coll, client)
+drv = Driver(Client(address))
 drv.run()

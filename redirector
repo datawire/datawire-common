@@ -4,7 +4,9 @@ from common import *
 
 class Redirector(Handshaker):
 
-    def __init__(self, trace=None):
+    def __init__(self, host, port, trace=None):
+        self.host = host
+        self.port = port
         self.trace = trace
         self.hosts = []
         self.count = 0
@@ -12,6 +14,9 @@ class Redirector(Handshaker):
     def log(self, msg):
         sys.stderr.write("%s\n" % msg)
         sys.stderr.flush()
+
+    def on_start(self, drv):
+        drv.acceptor(self.host, self.port)
 
     def choose(self):
         choice = self.hosts[self.count % len(self.hosts)]
@@ -58,7 +63,5 @@ trace = "-t" in switches
 host = args.pop(0) if args and not args[0].isdigit() else "localhost"
 port = int(args.pop(0)) if args else 5672
 
-coll = Collector()
-drv = Driver(coll, Redirector(trace))
-acc = Acceptor(drv, host, port)
+drv = Driver(Redirector(host, port, trace))
 drv.run()

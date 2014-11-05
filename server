@@ -135,15 +135,21 @@ class MessageStore:
 
 class Server(Handler):
 
-    def __init__(self, database, router, trace=None):
-        self.router = router
+    def __init__(self, host, port, database, router, trace=None):
+        self.host = host
+        self.port = port
         self.trace = trace
         self.tag = 0
         self.messages = MessageStore(database, trace)
+        self.router = Router()
+        self.handlers = [FlowController(1024), Handshaker(), self.router, self]
 
     def log(self, msg):
         sys.stderr.write("%s\n" % msg)
         sys.stderr.flush()
+
+    def on_start(self, drv):
+        drv.acceptor(self.host, self.port)
 
     def next_tag(self):
         result = "tag%s" % self.tag
@@ -212,8 +218,5 @@ else:
 host = args.pop(0) if args and not args[0].isdigit() else "localhost"
 port = int(args.pop(0)) if args else 5672
 
-coll = Collector()
-router = Router()
-drv = Driver(coll, FlowController(1024), Handshaker(), router, Server(database, router, trace))
-acc = Acceptor(drv, host, port)
+drv = Driver(Server(host, port, database, trace))
 drv.run()
