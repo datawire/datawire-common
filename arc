@@ -15,21 +15,21 @@ except ImportError:
 
 if notifications is None:
     if sys.platform == "darwin":
-        def notify(msg):
+        def notify(title, msg):
             t = '-title {!r}'.format("arc")
-            s = '-subtitle {!r}'.format("")
+            s = '-subtitle {!r}'.format(title)
             m = '-message {!r}'.format(msg)
             os.system('terminal-notifier {}'.format(' '.join([m, t, s])))
     else:
-        def notify(msg):
+        def notify(pfx, msg):
             pass
 else:
-    def notify(msg):
-        app_name     = "Client"
+    def notify(title, msg):
+        app_name     = "arc"
         replace_id   = 1
         icon         = ""
-        title        = msg
-        text         = ""
+        title        = title
+        text         = msg
         actions_list = ''
         hint         = ''
         time         = 5000   # Use seconds x 1000
@@ -47,6 +47,13 @@ class Client(Handler):
         self.decoder = MessageDecoder(self)
         self.exiting = False
         self.notify = notify
+
+        if self.sendq.address.host == self.recvq.address.host:
+            self.send_name = self.sendq.address.path
+            self.recv_name = self.recvq.address.path
+        else:
+            self.send_name = str(self.sendq.address)
+            self.recv_name = str(self.recvq.address)
 
     def fileno(self):
         return 0
@@ -77,20 +84,37 @@ class Client(Handler):
         else:
             return str(msg)
 
+    def abbreviate(self, address):
+        addr = Address(address)
+        if addr.host == self.recvq.address.host and \
+           addr.host == self.sendq.address.host:
+            return addr.path
+        else:
+            return address
+
     def on_message(self, rcv, msg):
         pretty = self.pp(msg)
-        self.lines.append("<- %s" % pretty)
+        name = self.abbreviate(msg.reply_to or rcv.source.address or "")
+
+        if msg.creation_time:
+            prefix = "%s <- %s" % (time.ctime(msg.creation_time), name)
+        else:
+            prefix = "<- %s" % name
+
+        self.lines.append("%s %s" % (prefix, pretty))
         self.render()
         if self.notify:
-            notify(pretty)
+            notify(name, pretty)
 
     def readable(self):
         c = self.win.getch()
         if c == 10:
-            self.lines.append("-> %s" % self.input)
             msg = Message()
+            msg.creation_time = time.time()
+            msg.reply_to = str(self.recvq.address)
             msg.body = unicode(self.input)
             self.sendq.put(msg)
+            self.lines.append("%s %s -> %s" % (time.ctime(msg.creation_time), self.recv_name, self.input))
             self.input = ""
         elif c in (curses.KEY_BACKSPACE, curses.KEY_DC):
             if self.input:
