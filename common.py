@@ -206,16 +206,20 @@ def _dispatch(ev, handler):
     else:
         ev.dispatch(handler)
 
+def _expand(handlers):
+    result = []
+    for h in handlers:
+        if hasattr(h, "handlers"):
+            result.extend(h.handlers)
+        else:
+            result.append(h)
+    return result
+
 class Driver(Handler):
 
     def __init__(self, collector, *handlers):
         self.collector = collector
-        self.handlers = []
-        for h in handlers:
-            if hasattr(h, "handlers"):
-                self.handlers.extend(h.handlers)
-            else:
-                self.handlers.append(h)
+        self.handlers = _expand(handlers)
         self.interrupter = Interrupter()
         self.timer = Timer(self.collector)
         self.selectables = []
@@ -320,7 +324,8 @@ class Driver(Handler):
     getters = {
         Transport: lambda x: x.connection,
         Delivery: lambda x: x.link,
-        Link: lambda x: x.session,
+        Sender: lambda x: x.session,
+        Receiver: lambda x: x.session,
         Session: lambda x: x.connection,
     }
 
@@ -359,6 +364,13 @@ class Driver(Handler):
 
     def on_timer(self, event):
         event.context()
+
+    def connection(self, *handlers):
+        conn = Connection()
+        if handlers:
+            conn.handlers = _expand(handlers)
+        conn.collect(self.collector)
+        return conn
 
 class Handshaker(Handler):
 
@@ -577,3 +589,65 @@ class MessageDecoder(Handler):
                 dlv.update(Delivery.REJECTED)
                 traceback.print_exc()
             dlv.settle()
+
+class Address:
+
+    def __init__(self, st):
+        self.st = st
+
+    @property
+    def host(self):
+        return self.st[2:].split("/", 1)[0]
+
+    @property
+    def path(self):
+        return self.st[2:].split("/", 1)[1]
+
+    def __repr__(self):
+        return "Address(%r)" % self.st
+
+    def __str__(self):
+        return self.st
+
+class SendQueue(Handler):
+
+    def __init__(self, address):
+        self.address = Address(address)
+        self.messages = []
+        self.sent = 0
+
+    def on_start(self, drv):
+        self.driver = drv
+        self.connect()
+
+    def connect(self):
+        self.conn = self.driver.connection(self)
+        self.conn.hostname = self.address.host
+        ssn = self.conn.session()
+        snd = ssn.sender(str(self.address))
+        snd.target.address = str(self.address)
+        ssn.open()
+        snd.open()
+        self.conn.open()
+        self.link = snd
+
+    def put(self, message):
+        self.messages.append(message.encode())
+        self.pump(self.link)
+
+    def on_link_flow(self, event):
+        link = event.context
+        self.pump(link)
+
+    def pump(self, link):
+        while self.messages and link.credit > 0:
+            dlv = link.delivery(str(self.sent))
+            bytes = self.messages.pop(0)
+            link.send(bytes)
+            dlv.settle()
+            self.sent += 1
+
+    def on_transport_closed(self, event):
+        conn = event.context.connection
+        self.conn = None
+        self.driver.schedule(self.connect, 1)
