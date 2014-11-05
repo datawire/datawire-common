@@ -14,8 +14,15 @@ except ImportError:
     notifications = None
 
 if notifications is None:
-    def notify(msg):
-        pass
+    if sys.platform == "darwin":
+        def notify(msg):
+            t = '-title {!r}'.format("arc")
+            s = '-subtitle {!r}'.format("")
+            m = '-message {!r}'.format(msg)
+            os.system('terminal-notifier {}'.format(' '.join([m, t, s])))
+    else:
+        def notify(msg):
+            pass
 else:
     def notify(msg):
         app_name     = "Client"
