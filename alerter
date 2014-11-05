@@ -20,7 +20,7 @@ class Alerter(Handler):
     def on_link_remote_open(self, event):
         link = event.context
         if link.is_sender:
-            link.serial = 0
+            link.serial = self.serial
             self.outgoing.append(link)
 
     def on_link_remote_close(self, event):
