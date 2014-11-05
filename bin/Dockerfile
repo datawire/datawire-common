@@ -34,6 +34,5 @@ RUN mkdir /opt/kinetic/
 WORKDIR /opt/kinetic/
 RUN git clone https://kineticbot:M6P-AqJ-UEe-bB9@bitbucket.org/gokinetic/server.git
 
-# Set up script that is run when a container is created
-ADD run-analyzer.sh /opt/kinetic/run-analyzer.sh
-CMD ["/opt/kinetic/run-analyzer.sh"]
+# Start analyzer
+ENTRYPOINT ["/opt/kinetic/server/analyzer"]
