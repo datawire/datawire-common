@@ -306,6 +306,7 @@ class Driver(Handler):
         while True:
             ev = self.collector.peek()
             if ev:
+                print ev
                 count += 1
                 quiesced = False
                 _dispatch(ev, self)
@@ -607,7 +608,11 @@ class Address:
 
     @property
     def path(self):
-        return self.st[2:].split("/", 1)[1]
+        parts = self.st[2:].split("/", 1)
+        if len(parts) == 2:
+            return parts[1]
+        else:
+            return ""
 
     def __repr__(self):
         return "Address(%r)" % self.st
