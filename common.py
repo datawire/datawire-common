@@ -105,7 +105,7 @@ class Acceptor:
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.socket.bind((host, port))
         self.socket.listen(5)
-        self.driver.selectables.append(self)
+        self.driver.add(self)
 
     def closed(self):
         return False
@@ -133,7 +133,7 @@ class Acceptor:
             sasl.server()
             sasl.done(SASL.OK)
             sel = Selectable(transport, sock)
-            self.driver.selectables.append(sel)
+            self.driver.add(sel)
 
     def tick(self, now):
         return None
@@ -360,7 +360,7 @@ class Driver(Handler):
             port = 5672
         sock.connect_ex((host, port))
         selectable = Selectable(transport, sock)
-        self.selectables.append(selectable)
+        self.add(selectable)
 
     def on_timer(self, event):
         event.context()
@@ -371,6 +371,9 @@ class Driver(Handler):
             conn.handlers = _expand(handlers)
         conn.collect(self.collector)
         return conn
+
+    def add(self, selectable):
+        self.selectables.append(selectable)
 
 class Handshaker(Handler):
 
