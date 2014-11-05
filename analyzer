@@ -106,9 +106,7 @@ class Tether(Handler):
         self.driver.schedule(self.connect, 1)
 
     def connect(self):
-        self.conn = Connection()
-        self.conn.handlers = [self]
-        self.conn.collect(drv.collector)
+        self.conn = self.driver.connection(self)
         self.conn.hostname = "localhost"
         self.conn.properties = {symbol("compute-node"): (host, port)}
         self.conn.open()
@@ -121,6 +119,7 @@ class Analyzer(Handler):
         self.decoder = MessageDecoder(self)
         self.handlers = [FlowController(1024), Handshaker(), self.decoder, self]
         self.tether = Tether()
+        self.sendq = SendQueue("//localhost:5678/alerts")
         self.tag = 0
 
     def log(self, msg):
@@ -134,6 +133,7 @@ class Analyzer(Handler):
 
     def on_start(self, drv):
         self.tether.on_start(drv)
+        self.sendq.on_start(drv)
 
     def on_link_remote_open(self, event):
         link = event.context
@@ -151,6 +151,7 @@ class Analyzer(Handler):
             self.on_credit(link)
 
     def send(self, snd):
+        print snd
         if not hasattr(snd, "next_msg"): return
         address = snd.source.address or snd.target.address
         msg = self.store.get(address)
@@ -166,6 +167,10 @@ class Analyzer(Handler):
         if snd.next_msg is None:
             snd.next_msg = drv.now + 1
             drv.schedule(lambda: self.send(snd), 5)
+
+    def alert(self, msg):
+        self.log("alerting %s" % msg)
+        self.sendq.put(msg)
 
     def on_message(self, rcv, msg):
         if self.trace: self.log("Rcvd: %r" % msg)
