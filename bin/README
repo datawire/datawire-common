@@ -1,0 +1,28 @@
+Set up analyzer
+===============
+
+1. Build a Docker image of the analyzer.
+
+   docker build -t analyzer .
+
+2. Start the analyzer container.
+
+   docker run analyzer:latest -d -p 127.0.0.1:4999:5672 localhost 5671
+
+3. Notice that the localhost argument is swallowed up by the docker
+   command line.
+
+
+TODO
+
+- set up haproxy with SSL
+
+
+
+
+Testing
+=======
+
+./arc //localhost:5672
+./generator //localhost:5672
+./analyzer
