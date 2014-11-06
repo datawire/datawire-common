@@ -306,7 +306,6 @@ class Driver(Handler):
         while True:
             ev = self.collector.peek()
             if ev:
-                print ev
                 count += 1
                 quiesced = False
                 _dispatch(ev, self)
