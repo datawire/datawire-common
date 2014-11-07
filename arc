@@ -158,8 +158,7 @@ def main(win):
     recv_address = args.pop(0) if args and args[0].startswith("/") else send_address
 
     win.nodelay(1)
-    coll = Collector()
-    drv = Driver(coll, Client(win, send_address, recv_address, notify=("-n" in switches)))
+    drv = Driver(Client(win, send_address, recv_address, notify=("-n" in switches)))
     drv.run()
 
 curses.wrapper(main)
