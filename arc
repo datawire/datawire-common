@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import curses, time, sys
+import curses, textwrap, time, sys
 from curses import ascii
 from common import *
 
@@ -39,7 +39,7 @@ class Client(Handler):
 
     def __init__(self, win, send_address, recv_address, notify=False):
         self.offset = 0
-        self.lines = []
+        self.log = []
         self.input = ""
         self.win = win
         self.sendq = SendQueue(send_address)
@@ -92,16 +92,24 @@ class Client(Handler):
         else:
             return address
 
+    def wrap(self, prefix, text):
+        return textwrap.wrap(text, self.win.getmaxyx()[1] - 1,
+                             initial_indent=prefix,
+                             subsequent_indent=" "*len(prefix),
+                             drop_whitespace=False,
+                             replace_whitespace=False)
+
     def on_message(self, rcv, msg):
-        pretty = self.pp(msg)
         name = self.abbreviate(msg.reply_to or rcv.source.address or "")
 
         if msg.creation_time:
-            prefix = "%s <- %s" % (time.ctime(msg.creation_time), name)
+            prefix = "%s <- %s " % (time.ctime(msg.creation_time), name)
         else:
-            prefix = "<- %s" % name
+            prefix = "<- %s " % name
 
-        self.lines.append("%s %s" % (prefix, pretty))
+        pretty = self.pp(msg)
+        self.log.extend(self.wrap(prefix, pretty))
+
         self.render()
         if self.notify:
             notify(name, pretty)
@@ -114,7 +122,8 @@ class Client(Handler):
             msg.reply_to = str(self.recvq.address)
             msg.body = unicode(self.input)
             self.sendq.put(msg)
-            self.lines.append("%s %s -> %s" % (time.ctime(msg.creation_time), self.recv_name, self.input))
+            prefix = "%s %s -> " % (time.ctime(msg.creation_time), self.recv_name)
+            self.log.extend(self.wrap(prefix, self.input))
             self.input = ""
         elif c in (curses.KEY_BACKSPACE, curses.KEY_DC):
             if self.input:
@@ -138,16 +147,19 @@ class Client(Handler):
     def render(self):
         self.win.clear()
         h, w = self.win.getmaxyx()
+        bottom = self.wrap("", self.input)
+        if not bottom:
+            bottom.append("")
         if self.offset:
-            lines = self.lines[-(h-2)-self.offset:-self.offset]
+            log = self.log[-(h-len(bottom)-1)-self.offset:-self.offset]
         else:
-            lines = self.lines[-(h-2):]
-        y = h - len(lines) - 2
+            log = self.log[-(h-len(bottom)-1):]
+
+        lines = log + ["="*w] + bottom
+        y = h - len(lines)
         for l in lines:
             self.win.addstr(y, 0, l)
             y += 1
-        self.win.hline(y, 0, "=", w)
-        self.win.addstr(y + 1, 0, self.input)
         self.win.refresh()
 
 def main(win):
