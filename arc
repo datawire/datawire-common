@@ -138,6 +138,8 @@ class Client(Handler):
             self.sendq.conn.close()
             self.recvq.conn.close()
             self.driver.exit()
+        elif c == curses.KEY_RESIZE:
+            pass
         elif ascii.isprint(c):
             self.input = "%s%c" % (self.input, c)
         else:

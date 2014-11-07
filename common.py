@@ -16,10 +16,9 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-import os, random, time, traceback
+import errno, os, random, select, time, traceback
 from proton import *
 from socket import *
-from select import select
 from threading import Thread
 from heapq import heappush, heappop, nsmallest
 
@@ -292,7 +291,13 @@ class Driver(Handler):
 
             if self._exit and not self.selectables: return
 
-            readable, writable, _ = select(reading, writing, [], self._timeout)
+            try:
+                readable, writable, _ = select.select(reading, writing, [], self._timeout)
+            except select.error, (err, errtext):
+                if err == errno.EINTR:
+                    continue
+                else:
+                    raise
 
             for s in readable:
                 s.readable()
