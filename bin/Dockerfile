@@ -23,9 +23,9 @@ RUN yum -y install java-1.7.0-openjdk-devel
 WORKDIR /tmp
 
 # Proton
-RUN svn co http://svn.apache.org/repos/asf/qpid/proton/trunk/
-RUN cd trunk && mkdir build
-WORKDIR /tmp/trunk/build
+RUN git clone https://git-wip-us.apache.org/repos/asf/qpid-proton.git
+RUN cd qpid-proton && mkdir build
+WORKDIR /tmp/qpid-proton/build
 RUN cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DSYSINSTALL_BINDINGS=ON -DBUILD_PHP=OFF -DBUILD_JAVA=OFF -DBUILD_RUBY=OFF -DBUILD_PERL=OFF
 RUN make install
 
