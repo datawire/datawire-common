@@ -135,7 +135,7 @@ class MessageStore:
 
 class Server(Handler):
 
-    def __init__(self, host, port, database, router, trace=None):
+    def __init__(self, host, port, database, trace=None):
         self.host = host
         self.port = port
         self.trace = trace
