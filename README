@@ -9,11 +9,23 @@ Control Flow
 
                        [global replication]    [regional replication]
 
-    Client ----> DNS -------> Redirector ----------> Analyzers ----> Sender
+    Client ----> DNS -------> Redirector ----------> Analyzers ----> Alert
                   |               |                      |
                   |               |                      |
             map to vhost    global schema            local schema
            us-west.aws.*   cust <-> analyzer map     git repo
+
+## Network
+
+- routing
+  - analyzer --> redirector
+  - client --> analyzer (internet)
+  - client --> redirector (internet)
+
+- VPC DMZ contains
+  - analyzers
+  - redirector
+  - only allows AMQP traffic on 
 
 ## Partioning
 
@@ -32,6 +44,24 @@ redirector. The handshake protocol:
 - notifies the redirector of the data sources that it will subscribe
   to, based on the topology information available to the analyzer
 
+System architecture
+===================
+
+- Deploy
+  - get code
+  - build image (or docker container?)
+  - create AMI
+  - push AMI to amazon
+
+- Redirector instantiates new analyzer VMs
+
+- Analyzer node
+  - Skynet: deploys new docker containers and sets up HAProxy config
+  - Docker containers running analyzer/custom code
+  - HAProxy to proxy from localport to outside world
+  - Advanced: packet filtering & monitoring on the stuff 
+
+
 Data Architecture
 =================
 
@@ -45,6 +75,19 @@ The local schema contains, among other things:
 - user auth info
 - topology info
 - info about data sources
+
+User Config
+===========
+
+- they need to generate a client-side config
+  - AMQP address
+  - secret key
+  - profile
+- alert configuration
+  - who to send alerts to
+  - specify data sources to apply alerts to
+- (optional) analytics
+- (optional) topology file
 
 Availability
 ============
@@ -61,3 +104,44 @@ TODO
 - API key authentication mechanism / general auth mechanism
 - Evaluate deploying to both DO and AWS
   - Dogfood and implement alerting
+- Define a schema for topology
+- Implement alert node (rhs)
+  - Processes alert info from analyzer/aggregator
+  - Sends out AMQP alerts with context, etc. to AMQP<->SMTP bridge, etc.
+  - Alert needs to organize based on topology
+  - Status Board
+- Need Watchdog (richardl)
+- Client certs for authentication (richardl)
+- Pull out average function from analyzer code (rhs)
+- Redirector supports profiles
+
+Demo Scenario
+=============
+
+1. User registers on website.
+
+2. User logs into website, and gets wizard that gives step-by-step
+directions on setup.
+
+2a. User sets up statsd to communicate with Kinetic. Includes client
+cert, profile, etc.
+
+2b. In website, user sees that the connection is live.
+
+2c. In website, user selects the "cluster analytic". The specific
+analytic is going to take the average value from the statsd feed and
+alert if the value of any one of the feeds exceeds the average by more
+than 1 stddev.
+  - metric is a timer on a specific webpage
+
+2d. In website, user configures the analytic & alert:
+  - the recipients (email addresses)
+  - the deviation amount (e.g., 1 std deviation)
+  - the profile and/or data sources to apply the cluster analytics to
+
+2e. In website, user clicks "activate" or something like that.
+
+3a. The alert goes live, and when an anomalous event is detected:
+  - email is sent to the user
+  - history of alerts is shown on the website
+  - TBD: how do we guarantee a test event?
