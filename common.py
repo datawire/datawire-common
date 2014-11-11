@@ -648,7 +648,8 @@ class SendQueue(Handler):
 
     def put(self, message):
         self.messages.append(message.encode())
-        self.pump(self.link)
+        if self.link:
+            self.pump(self.link)
 
     def on_link_flow(self, event):
         link = event.context
@@ -665,6 +666,7 @@ class SendQueue(Handler):
     def on_transport_closed(self, event):
         conn = event.context.connection
         self.conn = None
+        self.link = None
         self.driver.schedule(self.connect, 1)
 
 # XXX: terrible name for this

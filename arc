@@ -55,10 +55,16 @@ class Client(Handler):
             self.send_name = str(self.sendq.address)
             self.recv_name = str(self.recvq.address)
 
+        self.prev_maxyx = None
+
     def fileno(self):
         return 0
 
     def reading(self):
+        maxyx = self.win.getmaxyx()
+        if maxyx != self.prev_maxyx:
+            self.render()
+            self.pref_maxyx = maxyx
         return True
 
     def writing(self):
@@ -92,8 +98,16 @@ class Client(Handler):
         else:
             return address
 
-    def wrap(self, prefix, text):
-        return textwrap.wrap(text, self.win.getmaxyx()[1] - 1,
+    def wrap(self, prefix, text, width):
+        if prefix:
+            # The textwrap.wrap implementation has an infinite loop in it
+            # when you pass it a width less than the length of the prefix.
+            # For that reason we establish a minimum width that is 16
+            # characters greater than the prefix, also it looks kind of
+            # stupid to wrap down to a column of less than 16 characters
+            minwidth = len(prefix) + 16
+            width = max(minwidth, width)
+        return textwrap.wrap(text, width,
                              initial_indent=prefix,
                              subsequent_indent=" "*len(prefix),
                              drop_whitespace=False,
@@ -108,7 +122,7 @@ class Client(Handler):
             prefix = "<- %s " % name
 
         pretty = self.pp(msg)
-        self.log.extend(self.wrap(prefix, pretty))
+        self.log.append((prefix, pretty))
 
         self.render()
         if self.notify:
@@ -123,7 +137,7 @@ class Client(Handler):
             msg.body = unicode(self.input)
             self.sendq.put(msg)
             prefix = "%s %s -> " % (time.ctime(msg.creation_time), self.recv_name)
-            self.log.extend(self.wrap(prefix, self.input))
+            self.log.append((prefix, self.input))
             self.input = ""
         elif c in (curses.KEY_BACKSPACE, curses.KEY_DC):
             if self.input:
@@ -148,19 +162,44 @@ class Client(Handler):
 
     def render(self):
         self.win.clear()
-        h, w = self.win.getmaxyx()
-        bottom = self.wrap("", self.input)
-        if not bottom:
-            bottom.append("")
-        if self.offset:
-            log = self.log[-(h-len(bottom)-1)-self.offset:-self.offset]
-        else:
-            log = self.log[-(h-len(bottom)-1):]
+        height, width = self.win.getmaxyx()
 
-        lines = log + ["="*w] + bottom
-        y = h - len(lines)
+        lines = []
+
+        idx = len(self.log)
+        offset = self.offset
+        while idx > 0:
+            idx -= 1
+            prefix, text = self.log[idx]
+            wrapped = self.wrap(prefix, text, width)
+            if not wrapped:
+                wrapped = [prefix]
+            while wrapped and offset > 0:
+                wrapped.pop()
+                offset -= 1
+
+            wrapped.reverse()
+            lines.extend(wrapped)
+            if len(lines) >= height - 2:
+                break
+
+        lines.reverse()
+
+        lines.append("="*width)
+
+        input = self.wrap("", self.input, width)
+        lines.extend(input)
+
+        if len(lines[-1]) >= width:
+            lines.append("")
+
+        if len(lines) > height:
+            lines = lines[len(lines) - height:]
+        elif len(lines) < height:
+            lines = [""]*(height - len(lines)) + lines
+        y = 0
         for l in lines:
-            self.win.addstr(y, 0, l)
+            self.win.addstr(y, 0, l[:width])
             y += 1
         self.win.refresh()
 
