@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import curses, textwrap, time, sys
+import argparse, curses, textwrap, time, sys
 from curses import ascii
 from common import *
 
@@ -203,15 +203,16 @@ class Client(Handler):
             y += 1
         self.win.refresh()
 
+parser = argparse.ArgumentParser(description="interactive AMQP client")
+parser.add_argument("-n", "--notify", action="store_true", help="enable notifications")
+parser.add_argument("send_address", default="//localhost", nargs='?', help="send address")
+parser.add_argument("recv_address", nargs='?', help="recv address")
+
+args = parser.parse_args()
+
 def main(win):
-    switches = [a for a in sys.argv[1:] if a.startswith("-")]
-    args = [a for a in sys.argv[1:] if not a.startswith("-")]
-
-    send_address = args.pop(0) if args and args[0].startswith("/") else "//localhost"
-    recv_address = args.pop(0) if args and args[0].startswith("/") else send_address
-
     win.nodelay(1)
-    drv = Driver(Client(win, send_address, recv_address, notify=("-n" in switches)))
+    drv = Driver(Client(win, args.send_address, args.recv_address or args.send_address, args.notify))
     drv.run()
 
 curses.wrapper(main)
