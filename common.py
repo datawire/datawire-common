@@ -103,7 +103,7 @@ class Acceptor:
         self.socket.setblocking(0)
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.socket.bind((host, port))
-        self.socket.listen(5)
+        self.socket.listen(1024)
         self.driver.add(self)
 
     def closed(self):

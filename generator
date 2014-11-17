@@ -17,29 +17,46 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-import os, sys, time, psutil
+import argparse, os, sys, time, psutil
 from common import *
 
 class Client(Handler):
 
-    def __init__(self, address):
+    def __init__(self, address, count, rate, batch):
         self.address = Address(address)
         self.sent = 0
+        self.throttled = 0
         self.scratch = Message()
+        self.count = count
+        self.rate = rate
+        self.batch = batch
+        self.connections = {}
 
     def on_start(self, drv):
         self.driver = drv
-        self.connect(self.address)
+        self.sample()
+        self.generate()
+        self.check_connections()
+        self.driver.schedule(self.report, 1)
+
+    def check_connections(self):
+        count = len(self.connections)
+        if count < self.count:
+            for i in range(min(100, self.count - count)):
+                conn, snd = self.connect(self.address)
+                self.connections[conn] = snd
+        self.driver.schedule(self.check_connections, 1)
 
     def connect(self, address):
-        self.conn = self.driver.connection()
-        self.conn.hostname = address.host
-        ssn = self.conn.session()
+        conn = self.driver.connection()
+        conn.hostname = address.host
+        ssn = conn.session()
         snd = ssn.sender(str(address))
         snd.target.address = str(address)
         snd.open()
         ssn.open()
-        self.conn.open()
+        conn.open()
+        return conn, snd
 
     def on_connection_remote_close(self, event):
         conn = event.context
@@ -50,43 +67,75 @@ class Client(Handler):
             address = Address("//%s:%s" % (host, port))
             conn.close()
             print "redirecting to %s" % address
-            self.connect(address)
+            del self.connections[conn]
+            conn, snd = self.connect(address)
+            self.connections[conn] = snd
 
-    def on_link_remote_open(self, event):
+    def on_transport_error(self, event):
+        print event.context.condition
+
+    def on_transport_closed(self, event):
+        del self.connections[event.context.connection]
+
+    def on_link_init(self, event):
         link = event.context
         if link.is_sender:
-            link.next_msg = None
+            link.last_msg = None
+            link.flowed = False
 
     def on_link_flow(self, event):
         link = event.context
-        if link.is_sender and link.credit:
-            self.on_credit(link)
+        if link.is_sender:
+            link.flowed = True
+            self.send(link)
 
     def on_link_final(self, event):
         link = event.context
         if link.is_sender:
-            del link.next_msg
-
-    def on_credit(self, snd):
-        if snd.next_msg is None:
-            snd.next_msg = drv.now + 1
-            drv.schedule(lambda: self.send(snd), 0.25)
+            del link.last_msg
 
     def send(self, link):
-        if not hasattr(link, "next_msg"): return
-        dlv = link.delivery("generate-%s" % self.sent)
-        self.scratch.clear()
-        self.scratch.body = [(u"cpu", time.time(), psutil.cpu_percent(None))]
-        link.send(self.scratch.encode())
-        dlv.settle()
-        print "Sent:", self.scratch
-        self.sent += 1
-        link.next_msg = None
+        if not hasattr(link, "last_msg"): return
+        if link.last_msg and (self.driver.now - link.last_msg < 1.0/self.rate):
+            return
+        remaining = self.batch
+        while remaining and link.credit:
+            dlv = link.delivery("generate-%s" % self.sent)
+            self.scratch.clear()
+            self.scratch.body = [self.cpu]
+            link.send(self.scratch.encode())
+            dlv.settle()
+            #print "Sent:", self.scratch
+            self.sent += 1
+            remaining -= 1
 
-switches = [a for a in sys.argv[1:] if a.startswith("-")]
-args = [a for a in sys.argv[1:] if not a.startswith("-")]
+        if remaining > 0:
+            if link.flowed:
+                self.throttled += remaining
+        else:
+            link.last_msg = self.driver.now
 
-address = args.pop(0) if args and args[0].startswith("/") else "//localhost"
+    def generate(self):
+        for snd in self.connections.values():
+            self.send(snd)
+        self.driver.schedule(self.generate, 1.0/self.rate)
 
-drv = Driver(Client(address))
+    def sample(self):
+        self.cpu = (u"cpu", time.time(), psutil.cpu_percent(None))
+        self.driver.schedule(self.sample, 0.25)
+
+    def report(self):
+        print "Connections:", len(self.connections), "Sent:", self.sent, \
+            "Throttled: ", self.throttled
+        self.driver.schedule(self.report, 1)
+
+parser = argparse.ArgumentParser(description="metric generator")
+parser.add_argument('-c', '--count', type=int, default=1, help="connection count")
+parser.add_argument('-r', '--rate', type=float, default=4, help="metric rate")
+parser.add_argument('-b', '--batch', type=int, default=1, help="batch size")
+parser.add_argument('address', nargs='?', default='//localhost', help='target address')
+
+args = parser.parse_args()
+
+drv = Driver(Client(args.address, args.count, args.rate, args.batch))
 drv.run()
