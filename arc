@@ -129,35 +129,38 @@ class Client(Handler):
             notify(name, pretty)
 
     def readable(self):
-        c = self.win.getch()
-        if c == 10:
-            msg = Message()
-            msg.creation_time = time.time()
-            msg.reply_to = str(self.recvq.address)
-            msg.body = unicode(self.input)
-            self.sendq.put(msg)
-            prefix = "%s %s -> " % (time.ctime(msg.creation_time), self.recv_name)
-            self.log.append((prefix, self.input))
-            self.input = ""
-        elif c in (curses.KEY_BACKSPACE, curses.KEY_DC):
-            if self.input:
-                self.input = self.input[:-1]
-        elif c == curses.KEY_UP:
-            self.offset += 1
-        elif c == curses.KEY_DOWN:
-            if self.offset > 0:
-                self.offset -= 1
-        elif c == 4:
-            self.exiting = True
-            self.sendq.conn.close()
-            self.recvq.conn.close()
-            self.driver.exit()
-        elif c == curses.KEY_RESIZE:
-            pass
-        elif ascii.isprint(c):
-            self.input = "%s%c" % (self.input, c)
-        else:
-            self.input = "%s<%s>" % (self.input, c)
+        while True:
+            c = self.win.getch()
+            if c < 0:
+                break
+            elif c == 10:
+                msg = Message()
+                msg.creation_time = time.time()
+                msg.reply_to = str(self.recvq.address)
+                msg.body = unicode(self.input)
+                self.sendq.put(msg)
+                prefix = "%s %s -> " % (time.ctime(msg.creation_time), self.recv_name)
+                self.log.append((prefix, self.input))
+                self.input = ""
+            elif c in (curses.KEY_BACKSPACE, curses.KEY_DC):
+                if self.input:
+                    self.input = self.input[:-1]
+            elif c == curses.KEY_UP:
+                self.offset += 1
+            elif c == curses.KEY_DOWN:
+                if self.offset > 0:
+                    self.offset -= 1
+            elif c == 4:
+                self.exiting = True
+                self.sendq.conn.close()
+                self.recvq.conn.close()
+                self.driver.exit()
+            elif c == curses.KEY_RESIZE:
+                pass
+            elif ascii.isprint(c):
+                self.input = "%s%c" % (self.input, c)
+            else:
+                self.input = "%s<%s>" % (self.input, c)
         self.render()
 
     def render(self):
