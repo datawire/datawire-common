@@ -61,6 +61,65 @@ System architecture
   - HAProxy to proxy from localport to outside world
   - Advanced: packet filtering & monitoring on the stuff 
 
+Security architecture
+=====================
+
+Inspiration:
+
+https://www.usenix.org/conference/lisa13/enterprise-architecture-beyond-perimeter
+
+- All point-to-point communications are encrypted with TLS
+- We use TLS client certificates for authentication
+
+## Analyzer security
+
+Docker isolates all Python code in its own container. Network access
+is limited to localhost. An HAProxy that sits on the actual virtual
+machine handles authentication and SSL, and proxies traffic to the
+appropriate container. This insures that the container never has
+access to the client certificates.
+
+## Machine identity
+
+http://pomcor.com/techreports/M2MSec14.pdf
+
+## Certificate handling
+
+Each machine has its own unique certificate:
+
+- Analyzer VM
+- Redirector
+- Alert
+- ...
+
+When a VM is created, it is issued its own certificate by the Kinetic
+certificate server.  (How do you authenticate the Kinetic cert server?)
+
+When a client is created, it is also issued a certificate. 
+
+Certificates are bound to a machine (via IP?).
+
+Do we use RADIUS+EAP?
+
+1. Client will verify server certificate.
+2. Server needs to:
+   - verify client identity
+   - verify authorization (?)
+
+
+the client certificate will have the CA info
+
+Analyzer:
+- can get identity passed in by haproxy
+
+https://raymii.org/s/tutorials/haproxy_client_side_ssl_certificates.html
+http://blog.haproxy.com/2012/10/03/ssl-client-certificate-management-at-application-level/
+
+Questions:
+ - how do we partition a single data stream (e.g., statsd/AMQP for Duo) across
+   multiple analyzers?
+
+
 
 Data Architecture
 =================
