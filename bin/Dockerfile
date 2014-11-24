@@ -4,7 +4,7 @@ MAINTAINER Richard Li <richard@thelis.org>
 
 # Update server
 RUN yum -y update
-RUN yum -y install svn git
+RUN yum -y install git
 
 # required dependencies
 RUN yum -y install gcc cmake libuuid-devel make 
