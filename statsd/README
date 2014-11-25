@@ -17,6 +17,16 @@ Setting up Statsd
 
 5. Go to http://URL to view the Graphite graphs
 
+6. Log in as root/root to save graphs.
+
+7. Easiest way is to create a dashboard with some graphs.
+   The key is to look at the stats_counts namespace for absolute values of the increments.
+
+8. I have a dumb program statsd_test.py which generates larger numbers
+   of messages so you can see more on the graph.
+
+   There is 10-20 seconds of latency for the graphs to update.
+
 Creating Data
 ============
 
@@ -36,5 +46,9 @@ Creating Data
 
 4. Stats will increment a counter on failed logins and successful logins.
 
+Modifying the Docker container
+==============================
+
+1. docker exec -it <container id> bash
 
 
