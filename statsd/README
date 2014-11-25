@@ -22,10 +22,9 @@ Setting up Statsd
 7. Easiest way is to create a dashboard with some graphs.
    The key is to look at the stats_counts namespace for absolute values of the increments.
 
-8. I have a dumb program statsd_test.py which generates larger numbers
-   of messages so you can see more on the graph.
+8. Need AMQP backend for statsd:
 
-   There is 10-20 seconds of latency for the graphs to update.
+   https://github.com/etsy/statsd/wiki/Backends
 
 Creating Data
 ============
@@ -45,6 +44,19 @@ Creating Data
    python runserver.py
 
 4. Stats will increment a counter on failed logins and successful logins.
+
+5. I have a dumb program statsd_test.py which generates larger numbers
+   of messages so you can see more on the graph.
+
+   There is 10-20 seconds of latency for the graphs to update. Also,
+   statsd does some sort of weird averaging behind the scenes.
+
+   https://github.com/etsy/statsd/issues/32
+
+   The statsd_test.py generates successful and failed logins so you
+   can calculate a ratio dynamically.
+
+
 
 Modifying the Docker container
 ==============================
