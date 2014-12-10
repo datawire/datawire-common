@@ -97,13 +97,14 @@ class Selectable:
 
 class Acceptor:
 
-    def __init__(self, driver, host, port):
+    def __init__(self, driver, host, port, *handlers):
         self.driver = driver
         self.socket = socket()
         self.socket.setblocking(0)
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.socket.bind((host, port))
         self.socket.listen(1024)
+        self.handlers = _expand(handlers)
         self.driver.add(self)
 
     def closed(self):
@@ -120,19 +121,11 @@ class Acceptor:
 
     def readable(self):
         sock, addr = self.socket.accept()
-        sock.setblocking(0)
-        print "Incoming Connection:", addr
         if sock:
-            conn = Connection()
-            conn.collect(self.driver.collector)
-            transport = Transport()
-            transport.bind(conn)
-            sasl = transport.sasl()
-            sasl.mechanisms("ANONYMOUS")
-            sasl.server()
-            sasl.done(SASL.OK)
-            sel = Selectable(transport, sock)
-            self.driver.add(sel)
+            sock.setblocking(0)
+            print "Incoming Connection:", addr
+            for h in self.handlers:
+                dispatch(h, "on_accept", sock)
 
     def tick(self, now):
         return None
@@ -218,7 +211,7 @@ class Driver(Handler):
 
     def __init__(self, *handlers):
         self.collector = Collector()
-        self.handlers = _expand(handlers)
+        self._handlers = _expand(handlers)
         self.interrupter = Interrupter()
         self.timer = Timer(self.collector)
         self.selectables = []
@@ -265,7 +258,7 @@ class Driver(Handler):
 
     def run(self):
         self._init_deadline()
-        for h in self.handlers:
+        for h in self._handlers:
             dispatch(h, "on_start", self)
 
         while True:
@@ -287,7 +280,9 @@ class Driver(Handler):
                 if s.reading(): reading.append(s)
                 if s.writing(): writing.append(s)
                 self._update_deadline(s.tick(self.now))
-                if s.closed(): self.selectables.remove(s)
+                if s.closed():
+                    print "Closing:", s
+                    self.selectables.remove(s)
 
             if self._exit and not self.selectables: return
 
@@ -320,7 +315,7 @@ class Driver(Handler):
             elif quiesced:
                 return count
             else:
-                for h in self.handlers:
+                for h in self._handlers:
                     dispatch(h, "on_quiesced", self)
                 quiesced = True
 
@@ -341,7 +336,7 @@ class Driver(Handler):
             parent = self.getters[context.__class__](context)
             return self.get_handlers(parent)
         else:
-            return self.handlers
+            return self._handlers
 
     def on_connection_local_open(self, event):
         conn = event.context
@@ -377,8 +372,22 @@ class Driver(Handler):
         conn.collect(self.collector)
         return conn
 
-    def acceptor(self, host, port):
-        return Acceptor(self, host, port)
+    def acceptor(self, host, port, *handlers):
+        if not handlers:
+            handlers = [self]
+        return Acceptor(self, host, port, *handlers)
+
+    def on_accept(self, sock):
+        conn = Connection()
+        conn.collect(self.collector)
+        transport = Transport()
+        transport.bind(conn)
+        sasl = transport.sasl()
+        sasl.mechanisms("ANONYMOUS")
+        sasl.server()
+        sasl.done(SASL.OK)
+        sel = Selectable(transport, sock)
+        self.add(sel)
 
     def add(self, selectable):
         self.selectables.append(selectable)
