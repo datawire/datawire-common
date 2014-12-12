@@ -19,6 +19,7 @@
 #
 import random, sys, os
 from common import *
+from service import Tether, Service
 
 class Metric:
 
@@ -94,33 +95,11 @@ class Store:
         self.message.body = body
         return self.message
 
-class Tether(Handler):
+class Analyzer(Service):
 
-    def on_start(self, drv):
-        self.driver = drv
-        self.connect()
-
-    def on_transport_closed(self, event):
-        conn = event.context.connection
-        self.conn = None
-        self.driver.schedule(self.connect, 1)
-
-    def connect(self):
-        self.conn = self.driver.connection(self)
-        self.conn.hostname = "localhost"
-        self.conn.properties = {symbol("compute-node"): (host, port)}
-        self.conn.open()
-
-class Analyzer(Handler):
-
-    def __init__(self, host, port, trace=None):
-        self.host = host
-        self.port = port
-        self.trace = trace
+    def __init__(self, director, host, port, trace=None):
+        Service.__init__(self, director, host, port, trace)
         self.store = Store()
-        self.decoder = MessageDecoder(self)
-        self.handlers = [FlowController(1024), Handshaker(), self.decoder, self]
-        self.tether = Tether()
         #self.sendq = SendQueue("//localhost:5678/alerts")
         self.tag = 0
 
@@ -134,8 +113,7 @@ class Analyzer(Handler):
         return result
 
     def on_start(self, drv):
-        drv.acceptor(self.host, self.port)
-        self.tether.on_start(drv)
+        Service.on_start(self, drv)
         #self.sendq.on_start(drv)
 
     def on_link_remote_open(self, event):
@@ -186,5 +164,5 @@ trace = "-t" in switches
 host = args.pop(0) if args and not args[0].isdigit() else "localhost"
 port = int(args.pop(0)) if args else 5672
 
-drv = Driver(Analyzer(host, port, trace))
+drv = Driver(Analyzer("localhost", host, port, trace))
 drv.run()
