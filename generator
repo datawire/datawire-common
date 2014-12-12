@@ -59,7 +59,7 @@ class Client(Handler):
         return conn, snd
 
     def on_connection_remote_close(self, event):
-        conn = event.context
+        conn = event.connection
         if conn.remote_condition and conn.remote_condition.name == "amqp:connection:redirect":
             info = conn.remote_condition.info
             host = info["network-host"]
@@ -67,15 +67,18 @@ class Client(Handler):
             address = Address("//%s:%s" % (host, port))
             conn.close()
             print "redirecting to %s" % address
-            del self.connections[conn]
-            conn, snd = self.connect(address)
-            self.connections[conn] = snd
+            rconn, snd = self.connect(address)
+            self.connections[rconn] = snd
+
+    def on_transport_closed(self, event):
+        event.connection.free()
+        event.transport.unbind()
+
+    def on_connection_final(self, event):
+        del self.connections[event.connection]
 
     def on_transport_error(self, event):
         print event.context.condition
-
-    def on_transport_closed(self, event):
-        del self.connections[event.context.connection]
 
     def on_link_init(self, event):
         link = event.context
