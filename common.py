@@ -22,13 +22,14 @@ from socket import *
 from threading import Thread
 from heapq import heappush, heappop, nsmallest
 
-class Selectable:
+class Selectable(object):
 
-    def __init__(self, transport, socket):
+    def __init__(self, transport, socket, address):
         self.transport = transport
         self.socket = socket
         self.write_done = False
         self.read_done = False
+        self.address = address
 
     def closed(self):
         if self.write_done and self.read_done:
@@ -95,6 +96,9 @@ class Selectable:
     def tick(self, now):
         return self.transport.tick(now)
 
+    def __repr__(self):
+        return str(self.address)
+
 class Acceptor:
 
     def __init__(self, driver, host, port, *handlers):
@@ -123,9 +127,8 @@ class Acceptor:
         sock, addr = self.socket.accept()
         if sock:
             sock.setblocking(0)
-            print "Incoming Connection:", addr
             for h in self.handlers:
-                dispatch(h, "on_accept", sock)
+                dispatch(h, "on_accept", sock, addr)
 
     def tick(self, now):
         return None
@@ -353,7 +356,7 @@ class Driver(Handler):
         else:
             port = 5672
         sock.connect_ex((host, port))
-        selectable = Selectable(transport, sock)
+        selectable = Selectable(transport, sock, (host, port))
         self.add(selectable)
 
     def on_timer(self, event):
@@ -371,7 +374,7 @@ class Driver(Handler):
             handlers = [self]
         return Acceptor(self, host, port, *handlers)
 
-    def on_accept(self, sock):
+    def on_accept(self, sock, addr):
         conn = Connection()
         conn.collect(self.collector)
         transport = Transport()
@@ -380,7 +383,7 @@ class Driver(Handler):
         sasl.mechanisms("ANONYMOUS")
         sasl.server()
         sasl.done(SASL.OK)
-        sel = Selectable(transport, sock)
+        sel = Selectable(transport, sock, addr)
         self.add(sel)
 
     def add(self, selectable):

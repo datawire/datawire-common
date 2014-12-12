@@ -80,7 +80,7 @@ class Bridge(Handler):
     def on_start(self, drv):
         drv.acceptor(self.host, self.port, self)
 
-    def on_accept(self, sock):
+    def on_accept(self, sock, addr):
         drv.add(GraphiteSelectable(sock, self.sendq))
 
 drv = Driver(Bridge("localhost", 2003))
