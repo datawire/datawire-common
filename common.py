@@ -192,12 +192,6 @@ class Timer:
             else:
                 return deadline
 
-def _dispatch(ev, handler):
-    if ev.clazz == "pn_delivery" and ev.context.released:
-        return
-    else:
-        ev.dispatch(handler)
-
 def _expand(handlers):
     result = []
     for h in handlers:
@@ -308,9 +302,9 @@ class Driver(Handler):
             if ev:
                 count += 1
                 quiesced = False
-                _dispatch(ev, self)
+                ev.dispatch(self)
                 for h in self.get_handlers(ev.context):
-                    _dispatch(ev, h)
+                    ev.dispatch(h)
                 self.collector.pop()
             elif quiesced:
                 return count
