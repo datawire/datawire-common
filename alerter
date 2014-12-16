@@ -2,69 +2,33 @@
 import random, sys, os
 from common import *
 
-class Alerter(Handler):
+from service import Updater
+
+class Alerter(Updater):
 
     def __init__(self, host, port, trace=None):
+        Updater.__init__(self, self)
         self.host = host
         self.port = port
         self.trace = trace
         self.statuses = {}
-        self.serial = 0
         self.decoder = MessageDecoder(self)
-        self.handlers = [FlowController(1024), Handshaker(), self.decoder, self]
-        self.message = Message()
-        self.outgoing = []
-
-    def log(self, msg):
-        sys.stderr.write("%s\n" % msg)
-        sys.stderr.flush()
+        self.handlers.append(self.decoder)
 
     def on_start(self, drv):
         drv.acceptor(host, port)
 
-    def on_link_remote_open(self, event):
-        link = event.context
-        if link.is_sender:
-            link.serial = self.serial
-            self.outgoing.append(link)
+    def update(self):
+        return self.statuses
 
-    def on_link_remote_close(self, event):
-        link = event.context
-        if link.is_sender:
-            self.outgoing.remove(link)
-
-    def on_link_final(self, event):
-        link = event.context
-        if link.is_sender:
-            del link.serial
-
-    def on_link_flow(self, event):
-        link = event.context
-        if link.is_sender and link.credit:
-            self.on_credit(link)
-
-    def push(self, snd):
-        if not hasattr(snd, "serial"): return
-        if snd.serial == self.serial: return
-        self.message.clear()
-        self.message.body = self.statuses
-        dlv = snd.delivery("serial-%s" % self.serial)
-        snd.send(self.message.encode())
-        dlv.settle()
-        snd.serial = self.serial
-        if self.trace:
-            self.log("Sent: %r" % self.message)
-        self.message.clear()
-
-    def on_credit(self, snd):
-        self.push(snd)
+    def on_transport_closed(self, event):
+        event.connection.free()
+        event.transport.unbind()
 
     def on_message(self, rcv, msg):
         if self.trace: self.log("Rcvd: %r" % msg)
         self.statuses[rcv.target.address] = (msg.properties, msg.body)
-        self.serial += 1
-        for snd in self.outgoing:
-            self.push(snd)
+        self.updated()
 
 switches = [a for a in sys.argv[1:] if a.startswith("-")]
 args = [a for a in sys.argv[1:] if not a.startswith("-")]

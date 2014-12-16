@@ -102,6 +102,8 @@ class Analyzer(Service):
         self.store = Store()
         #self.sendq = SendQueue("//localhost:5678/alerts")
         self.tag = 0
+        self.config = {}
+        self.reply = Message()
 
     def log(self, msg):
         sys.stderr.write("%s\n" % msg)
@@ -155,6 +157,26 @@ class Analyzer(Service):
     def on_message(self, rcv, msg):
         if self.trace: self.log("Rcvd: %r" % msg)
         self.store.put(rcv.target.address or rcv.source.address, msg)
+
+    def on_update(self, msg):
+        if msg.body: self.config.update(msg.body)
+
+    def on_delete(self, msg):
+        if msg.body:
+            for key in msg.body:
+                self.config.pop(key, None)
+        else:
+            self.config.clear()
+
+    def update(self):
+        return self.config
+
+    def on_read(self, msg):
+        self.reply.clear()
+        self.reply.address = msg.reply_to
+        self.reply.correlation_id = msg.correlation_id
+        self.reply.body = self.config
+        self.route(self.reply)
 
 switches = [a for a in sys.argv[1:] if a.startswith("-")]
 args = [a for a in sys.argv[1:] if not a.startswith("-")]
