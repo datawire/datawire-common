@@ -65,10 +65,10 @@ class Client(Handler):
             host = info["network-host"]
             port = info["port"]
             address = Address("//%s:%s" % (host, port))
-            conn.close()
             print "redirecting to %s" % address
             rconn, snd = self.connect(address)
             self.connections[rconn] = snd
+        conn.close()
 
     def on_transport_closed(self, event):
         event.connection.free()
