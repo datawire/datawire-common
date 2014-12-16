@@ -19,9 +19,12 @@ class Redirector(Handshaker):
         drv.acceptor(self.host, self.port)
 
     def choose(self):
-        choice = self.hosts[self.count % len(self.hosts)]
-        self.count += 1
-        return choice
+        if self.hosts:
+            choice = self.hosts[self.count % len(self.hosts)]
+            self.count += 1
+            return choice
+        else:
+            return None
 
     def on_connection_init(self, event):
         conn = event.context
@@ -37,11 +40,15 @@ class Redirector(Handshaker):
             self.log("Adding compute node %s" % conn.remote_properties["compute-node"])
         else:
             node = self.choose()
-            host, port = node.remote_properties["compute-node"]
-            self.log("Redirecting to %s:%s" % (host, port))
-            conn.condition = Condition("amqp:connection:redirect", None,
-                                       {symbol("network-host"): host,
-                                        symbol("port"): port})
+            if node:
+                host, port = node.remote_properties["compute-node"]
+                self.log("Redirecting to %s:%s" % (host, port))
+                conn.condition = Condition("amqp:connection:redirect", None,
+                                           {symbol("network-host"): host,
+                                            symbol("port"): port})
+            else:
+                self.log("No services")
+                conn.condition = Condition("amqp:connection:forced", "no services")
             conn.close()
 
     def on_compute_node_final(self, conn):
