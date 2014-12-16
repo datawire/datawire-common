@@ -1,3 +1,22 @@
+Usage
+=====
+
+Start the analyzer: ./analyzer -t
+
+Receive messages from the analyzer:
+    ./arc //localhost
+    ./arc //localhost/controller
+
+arc commands:
+
+/update <dict>
+/update <key:value>
+
+/delete <key>
+/delete
+
+/read
+
 Server
 ======
 
@@ -204,3 +223,6 @@ than 1 stddev.
   - email is sent to the user
   - history of alerts is shown on the website
   - TBD: how do we guarantee a test event?
+<
+
+
