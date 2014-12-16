@@ -108,7 +108,7 @@ class Acceptor:
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.socket.bind((host, port))
         self.socket.listen(1024)
-        self.handlers = _expand(handlers)
+        self.handlers = expand(handlers)
         self.driver.add(self)
 
     def closed(self):
@@ -195,20 +195,25 @@ class Timer:
             else:
                 return deadline
 
-def _expand(handlers):
+def expand(handlers):
     result = []
+    visited = set()
+    expandr(handlers, result, visited)
+    return result
+
+def expandr(handlers, result, visited):
+    visited.add(id(handlers))
     for h in handlers:
-        if hasattr(h, "handlers"):
-            result.extend(h.handlers)
+        if hasattr(h, "handlers") and id(h.handlers) not in visited:
+            expandr(h.handlers, result, visited)
         else:
             result.append(h)
-    return result
 
 class Driver(Handler):
 
     def __init__(self, *handlers):
         self.collector = Collector()
-        self._handlers = _expand(handlers)
+        self._handlers = expand(handlers)
         self.interrupter = Interrupter()
         self.timer = Timer(self.collector)
         self.selectables = []
@@ -365,7 +370,7 @@ class Driver(Handler):
     def connection(self, *handlers):
         conn = Connection()
         if handlers:
-            conn.handlers = _expand(handlers)
+            conn.handlers = expand(handlers)
         conn.collect(self.collector)
         return conn
 
