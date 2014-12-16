@@ -44,7 +44,6 @@ class Client(Handler):
         self.win = win
         self.sendq = SendQueue(send_address)
         self.recvq = RecvQueue(recv_address, self)
-        self.decoder = MessageDecoder(self)
         self.exiting = False
         self.notify = notify
 
@@ -79,7 +78,6 @@ class Client(Handler):
     def on_start(self, drv):
         self.driver = drv
         self.driver.add(self)
-        self.decoder.on_start(drv)
         self.sendq.on_start(drv)
         self.recvq.on_start(drv)
         self.render()
@@ -137,7 +135,20 @@ class Client(Handler):
                 msg = Message()
                 msg.creation_time = time.time()
                 msg.reply_to = str(self.recvq.address)
-                msg.body = unicode(self.input)
+                if self.input and self.input[0] == "/":
+                    parts = self.input.split(None, 1)
+                    opcode = parts.pop(0)[1:]
+                    msg.properties = {"opcode": unicode(opcode)}
+                    if parts:
+                        try:
+                            msg.body = eval(parts[0])
+                        except:
+                            self.log.append(("ERROR: ", str(sys.exc_info()[1])))
+                            continue
+                    else:
+                        msg.body = None
+                else:
+                    msg.body = unicode(self.input)
                 self.sendq.put(msg)
                 prefix = "%s %s -> " % (time.ctime(msg.creation_time), self.recv_name)
                 self.log.append((prefix, self.input))
