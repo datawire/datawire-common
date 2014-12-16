@@ -200,6 +200,10 @@ class Server(Handler):
     def on_quiesced(self, drv):
         self.messages.flush()
 
+    def on_transport_closed(self, event):
+        event.connection.free()
+        event.transport.unbind()
+
 switches = [a for a in sys.argv[1:] if a.startswith("-")]
 args = [a for a in sys.argv[1:] if not a.startswith("-")]
 
