@@ -4,7 +4,8 @@ from common import *
 
 class Redirector(Handler, Logger):
 
-    def __init__(self, host, port, trace=None):
+    def __init__(self, address, host, port, trace=None):
+        self.address = address
         self.host = host
         self.port = port
         self.trace = trace
@@ -41,10 +42,8 @@ class Redirector(Handler, Logger):
     def qualify(self, address):
         if address and address[0] == "/":
             return address
-        elif self.port == 5672:
-            return "//%s/%s" % (self.host, address)
         else:
-            return "//%s:%s/%s" % (self.host, self.port, address)
+            return "%s/%s" % (self.address, address)
 
     def on_connection_remote_open(self, event):
         conn = event.connection
@@ -101,8 +100,13 @@ args = [a for a in sys.argv[1:] if not a.startswith("-")]
 
 trace = "-t" in switches
 
+address = args.pop(0) if args and args[0].startswith("/") else None
 host = args.pop(0) if args and not args[0].isdigit() else "localhost"
 port = int(args.pop(0)) if args else 5672
+if address is None:
+    address = "//%s" % host
+    if port != 5672:
+        address += ":%s" % port
 
-drv = Driver(Redirector(host, port, trace))
+drv = Driver(Redirector(address, host, port, trace))
 drv.run()
