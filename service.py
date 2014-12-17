@@ -131,7 +131,7 @@ class Controller(Handler, Logger):
 
 class Service(Handler, Logger):
 
-    def __init__(self, director, service, host, port, trace=None):
+    def __init__(self, director, service, host, port, trace=None, pubhost=None):
         self.host = host
         self.port = port
         self.trace = trace
@@ -140,7 +140,7 @@ class Service(Handler, Logger):
         self.router = Router()
         self.handlers = [Interceptor("*/controller", self.controller), FlowController(1024), Handshaker(),
                          self.decoder, self.router, self]
-        self.tether = Tether(director, service, host, port)
+        self.tether = Tether(director, service, pubhost or host, port)
 
     def update(self):
         return None

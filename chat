@@ -77,8 +77,8 @@ class IncrementalUpdater(Updater):
 
 class Chat(Service):
 
-    def __init__(self, director, host, port, trace=None):
-        Service.__init__(self, director, "chat", host, port, trace)
+    def __init__(self, director, host, pubhost, port, trace=None):
+        Service.__init__(self, director, "chat", host, port, trace, pubhost=pubhost)
         self.store = Store()
         self.updater = IncrementalUpdater(self)
         self.handlers.append(self.updater)
@@ -94,7 +94,8 @@ args = [a for a in sys.argv[1:] if not a.startswith("-")]
 trace = "-t" in switches
 
 host = args.pop(0) if args and not args[0].isdigit() else "localhost"
+pubhost = args.pop(0) if args and not args[0].isdigit() else host
 port = int(args.pop(0)) if args else 5672
 
-drv = Driver(Chat("localhost", host, port, trace))
+drv = Driver(Chat("localhost", host, pubhost, port, trace))
 drv.run()
