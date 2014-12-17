@@ -47,26 +47,23 @@ class Client(Handler):
                 self.connections[conn] = snd
         self.driver.schedule(self.check_connections, 1)
 
-    def connect(self, address):
+    def connect(self, network):
         conn = self.driver.connection()
-        conn.hostname = address.host
+        conn.hostname = network.host
         ssn = conn.session()
-        snd = ssn.sender(str(address))
-        snd.target.address = str(address)
+        snd = ssn.sender(str(self.address))
+        snd.target.address = str(self.address)
         snd.open()
         ssn.open()
         conn.open()
         return conn, snd
 
-    def on_connection_remote_close(self, event):
+    def on_link_remote_close(self, event):
         conn = event.connection
-        if conn.remote_condition and conn.remote_condition.name == "amqp:connection:redirect":
-            info = conn.remote_condition.info
-            host = info["network-host"]
-            port = info["port"]
-            address = Address("//%s:%s" % (host, port))
-            print "redirecting to %s" % address
-            rconn, snd = self.connect(address)
+        network = redirect(event.link)
+        if network:
+            print "redirecting to %s" % network
+            rconn, snd = self.connect(network)
             self.connections[rconn] = snd
         conn.close()
 
@@ -136,7 +133,7 @@ parser = argparse.ArgumentParser(description="metric generator")
 parser.add_argument('-c', '--count', type=int, default=1, help="connection count")
 parser.add_argument('-r', '--rate', type=float, default=4, help="metric rate")
 parser.add_argument('-b', '--batch', type=int, default=1, help="batch size")
-parser.add_argument('address', nargs='?', default='//localhost', help='target address')
+parser.add_argument('address', nargs='?', default='//localhost/analyzer', help='target address')
 
 args = parser.parse_args()
 

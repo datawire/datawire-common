@@ -98,16 +98,12 @@ class Store:
 class Analyzer(Service):
 
     def __init__(self, director, host, port, trace=None):
-        Service.__init__(self, director, host, port, trace)
+        Service.__init__(self, director, "analyzer", host, port, trace)
         self.store = Store()
         #self.sendq = SendQueue("//localhost:5678/alerts")
         self.tag = 0
         self.config = {}
         self.reply = Message()
-
-    def log(self, msg):
-        sys.stderr.write("%s\n" % msg)
-        sys.stderr.flush()
 
     def next_tag(self):
         result = "tag%s" % self.tag
@@ -141,8 +137,7 @@ class Analyzer(Service):
             dlv = snd.delivery(self.next_tag())
             snd.send(msg.encode())
             dlv.settle()
-            if self.trace:
-                self.log("Sent: %r" % msg)
+            self.log("Sent: %r", msg)
         snd.next_msg = None
 
     def on_credit(self, snd):
@@ -151,11 +146,11 @@ class Analyzer(Service):
             drv.schedule(lambda: self.send(snd), 5)
 
     def alert(self, msg):
-        self.log("alerting %s" % msg)
+        self.log("alerting %s", msg)
         #self.sendq.put(msg)
 
     def on_message(self, rcv, msg):
-        if self.trace: self.log("Rcvd: %r" % msg)
+        self.log("Rcvd: %r", msg)
         self.store.put(rcv.target.address or rcv.source.address, msg)
 
     def on_update(self, msg):

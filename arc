@@ -37,7 +37,7 @@ else:
 
 class Client(Handler):
 
-    def __init__(self, win, send_address, recv_address, notify=False):
+    def __init__(self, win, send_address, recv_address, notify=False, echo=False):
         self.offset = 0
         self.log = []
         self.input = ""
@@ -46,6 +46,7 @@ class Client(Handler):
         self.recvq = RecvQueue(recv_address, self)
         self.exiting = False
         self.notify = notify
+        self.echo = echo
 
         if self.sendq.address.host == self.recvq.address.host:
             self.send_name = self.sendq.address.path
@@ -134,7 +135,7 @@ class Client(Handler):
             elif c == 10:
                 msg = Message()
                 msg.creation_time = time.time()
-                msg.reply_to = str(self.recvq.address)
+                msg.reply_to = str(self.recvq.address).split("?", 1)[0]
                 if self.input and self.input[0] == "/":
                     parts = self.input.split(None, 1)
                     opcode = parts.pop(0)[1:]
@@ -150,8 +151,9 @@ class Client(Handler):
                 else:
                     msg.body = unicode(self.input)
                 self.sendq.put(msg)
-                prefix = "%s %s -> " % (time.ctime(msg.creation_time), self.recv_name)
-                self.log.append((prefix, self.input))
+                if self.echo:
+                    prefix = "%s %s -> " % (time.ctime(msg.creation_time), self.recv_name)
+                    self.log.append((prefix, self.input))
                 self.input = ""
             elif c in (curses.KEY_BACKSPACE, curses.KEY_DC):
                 if self.input:
@@ -219,6 +221,7 @@ class Client(Handler):
 
 parser = argparse.ArgumentParser(description="interactive AMQP client")
 parser.add_argument("-n", "--notify", action="store_true", help="enable notifications")
+parser.add_argument("-e", "--echo", action="store_true", help="enable echo")
 parser.add_argument("send_address", default="//localhost", nargs='?', help="send address")
 parser.add_argument("recv_address", nargs='?', help="recv address")
 
@@ -226,7 +229,7 @@ args = parser.parse_args()
 
 def main(win):
     win.nodelay(1)
-    drv = Driver(Client(win, args.send_address, args.recv_address or args.send_address, args.notify))
+    drv = Driver(Client(win, args.send_address, args.recv_address or args.send_address, args.notify, args.echo))
     drv.run()
 
 curses.wrapper(main)

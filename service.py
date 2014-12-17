@@ -4,8 +4,9 @@ from fnmatch import fnmatch
 
 class Tether(Handler):
 
-    def __init__(self, director, host, port):
+    def __init__(self, director, service, host, port):
         self.director = director
+        self.service = service
         self.host = host
         self.port = port
 
@@ -21,29 +22,30 @@ class Tether(Handler):
     def connect(self):
         self.conn = self.driver.connection(self)
         self.conn.hostname = self.director
-        self.conn.properties = {symbol("compute-node"): (self.host, self.port)}
+        self.conn.properties = {symbol("service"): (self.service, self.host, self.port)}
         self.conn.open()
 
-class Updater(Handler):
+class Updater(Handler, Logger):
 
     def __init__(self, delegate):
         self.__delegate = delegate
         self.serial = 0
         self.handlers = [FlowController(1024), Handshaker(), self]
         self.message = Message()
-        self.trace = True
         self.outgoing = []
 
-    def log(self, msg, *args):
-        if self.trace:
-            sys.stderr.write(("%s\n" % msg) % args)
-            sys.stderr.flush()
+    @property
+    def trace(self):
+        return self.__delegate.trace
+
+    def start(self, address):
+        return self.serial
 
     def on_link_remote_open(self, event):
         link = event.context
         if link.is_sender:
             self.log("adding link: %s", link)
-            link.serial = self.serial
+            link.serial = self.start(link.remote_source.address)
             self.outgoing.append(link)
 
     def on_link_final(self, event):
@@ -64,14 +66,19 @@ class Updater(Handler):
             return
         if snd.serial == self.serial: return
         self.log("updating %s to %s" , snd, self.serial)
-        self.message.clear()
-        self.message.body = self.__delegate.update()
-        dlv = snd.delivery("serial-%s" % self.serial)
-        snd.send(self.message.encode())
-        dlv.settle()
+        self.update(snd)
+
+    def update(self, snd):
+        body = self.__delegate.update()
+        if body is not None:
+            self.message.clear()
+            self.message.body = body
+            dlv = snd.delivery("serial-%s" % self.serial)
+            snd.send(self.message.encode())
+            dlv.settle()
+            self.log("Sent: %r", self.message)
+            self.message.clear()
         snd.serial = self.serial
-        self.log("Sent: %r", self.message)
-        self.message.clear()
 
     def updated(self):
         self.serial += 1
@@ -99,7 +106,7 @@ class Interceptor(Handler):
             for h in event.link.handlers:
                 event.dispatch(h)
 
-class Controller(Handler):
+class Controller(Handler, Logger):
 
     def __init__(self, delegate):
         self.delegate = delegate
@@ -107,8 +114,12 @@ class Controller(Handler):
         self.decoder = MessageDecoder(self)
         self.handlers = [self.updater, self.decoder]
 
+    @property
+    def trace(self):
+        return self.delegate.trace
+
     def on_message(self, rcv, msg):
-        print "CONTROL:", msg
+        self.log("CONTROL: %s", msg)
         if msg.properties:
             opcode = msg.properties.get("opcode")
             if opcode:
@@ -116,12 +127,11 @@ class Controller(Handler):
                 self.updater.updated()
 
     def dispatch(self, opcode, msg):
-        print "DISPATCH:", self.delegate
         dispatch(self.delegate, "on_%s" % opcode, msg)
 
-class Service(Handler):
+class Service(Handler, Logger):
 
-    def __init__(self, director, host, port, trace=None):
+    def __init__(self, director, service, host, port, trace=None):
         self.host = host
         self.port = port
         self.trace = trace
@@ -130,7 +140,10 @@ class Service(Handler):
         self.router = Router()
         self.handlers = [Interceptor("*/controller", self.controller), FlowController(1024), Handshaker(),
                          self.decoder, self.router, self]
-        self.tether = Tether(director, host, port)
+        self.tether = Tether(director, service, host, port)
+
+    def update(self):
+        return None
 
     def on_start(self, drv):
         drv.acceptor(self.host, self.port)
@@ -148,4 +161,4 @@ class Service(Handler):
                 link.send(msg.encode())
                 dlv.settle()
         else:
-            print "NO ROUTE:", msg
+            self.log("NO ROUTE: %s", msg)

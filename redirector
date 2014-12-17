@@ -2,65 +2,99 @@
 import random, sys, os
 from common import *
 
-class Redirector(Handshaker):
+class Redirector(Handler, Logger):
 
     def __init__(self, host, port, trace=None):
         self.host = host
         self.port = port
         self.trace = trace
-        self.hosts = []
+        self.services = {}
+        self.handlers = [Handshaker(), self]
         self.count = 0
-
-    def log(self, msg):
-        sys.stderr.write("%s\n" % msg)
-        sys.stderr.flush()
 
     def on_start(self, drv):
         drv.acceptor(self.host, self.port)
 
-    def choose(self):
-        if self.hosts:
-            choice = self.hosts[self.count % len(self.hosts)]
-            self.count += 1
-            return choice
-        else:
-            return None
+    def ancestors(self, address):
+        yield address
+        if address is None: return
+        address = address.split("?", 1)[0]
+        path = address.split("/")
+        while path:
+            addr = "/".join(path)
+            yield addr
+            path.pop()
+
+    def choose(self, address):
+        for addr in self.ancestors(address):
+            hosts = self.services.get(addr, None)
+            if hosts:
+                choice = hosts[self.count % len(hosts)]
+                self.count += 1
+                return choice
+        return None
 
     def on_connection_init(self, event):
-        conn = event.context
+        conn = event.connection
         conn.finalizer = None
 
-    def on_connection_remote_open(self, event):
-        conn = event.context
-
-        props = conn.remote_properties
-        if props and "compute-node" in props:
-            self.hosts.append(conn)
-            conn.finalizer = self.on_compute_node_final
-            self.log("Adding compute node %s" % conn.remote_properties["compute-node"])
+    def qualify(self, address):
+        if address and address[0] == "/":
+            return address
+        elif self.port == 5672:
+            return "//%s/%s" % (self.host, address)
         else:
-            node = self.choose()
-            if node:
-                host, port = node.remote_properties["compute-node"]
-                self.log("Redirecting to %s:%s" % (host, port))
-                conn.condition = Condition("amqp:connection:redirect", None,
-                                           {symbol("network-host"): host,
-                                            symbol("port"): port})
-            else:
-                self.log("No services")
-                conn.condition = Condition("amqp:connection:forced", "no services")
-            conn.close()
+            return "//%s:%s/%s" % (self.host, self.port, address)
 
-    def on_compute_node_final(self, conn):
-        self.log("Removing compute node %s" % conn.remote_properties["compute-node"])
-        self.hosts.remove(conn)
+    def on_connection_remote_open(self, event):
+        conn = event.connection
+        props = conn.remote_properties
+        if props and "service" in props:
+            service = props["service"]
+            address, host, port = service
+            address = self.qualify(address)
+            if address not in self.services:
+                self.services[address] = []
+            self.services[address].append(conn)
+            conn.finalizer = self.on_service_final
+            self.log("Adding service %s", service)
+            self.log("Services: %s", self.services)
+        else:
+            drv.schedule(conn.close, 10)
+
+    def on_link_remote_open(self, event):
+        link = event.link
+        if link.is_sender:
+            address = link.remote_source.address or link.remote_target.address
+        else:
+            address = link.remote_target.address or link.remote_source.address
+
+        node = self.choose(address)
+        if node:
+            _, host, port = node.remote_properties["service"]
+            self.log("Redirecting to %s:%s", host, port)
+            link.condition = Condition("amqp:link:redirect", None,
+                                       {symbol("network-host"): host,
+                                        symbol("port"): port})
+        else:
+            self.log("No service for %s", address)
+            link.condition = Condition("amqp:link:detach-forced", "no service")
+        link.close()
+
+    def on_service_final(self, conn):
+        service = conn.remote_properties["service"]
+        address, host, port = service
+        address = self.qualify(address)
+        self.log("Removing service %s", service)
+        self.services.get(address, []).remove(conn)
+        self.log("Services: %s", self.services)
 
     def on_transport_closed(self, event):
-        transport = event.context
-        conn = event.context.connection
+        conn = event.connection
         if conn.finalizer:
             conn.finalizer(conn)
-
+        conn.free()
+        event.transport.unbind()
 
 switches = [a for a in sys.argv[1:] if a.startswith("-")]
 args = [a for a in sys.argv[1:] if not a.startswith("-")]

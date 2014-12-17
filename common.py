@@ -635,6 +635,15 @@ class Address:
     def __str__(self):
         return self.st
 
+def redirect(link):
+    if link.remote_condition and link.remote_condition.name == "amqp:link:redirect":
+        info = link.remote_condition.info
+        host = info["network-host"]
+        port = info["port"]
+        return Address("//%s:%s" % (host, port))
+    else:
+        return None
+
 class SendQueue(Handler):
 
     def __init__(self, address):
@@ -644,11 +653,13 @@ class SendQueue(Handler):
 
     def on_start(self, drv):
         self.driver = drv
-        self.connect()
+        self.connect(self.address)
 
-    def connect(self):
+    def connect(self, network=None):
+        if network is None:
+            network = self.address
         self.conn = self.driver.connection(self)
-        self.conn.hostname = self.address.host
+        self.conn.hostname = network.host
         ssn = self.conn.session()
         snd = ssn.sender(str(self.address))
         snd.target.address = str(self.address)
@@ -656,6 +667,13 @@ class SendQueue(Handler):
         snd.open()
         self.conn.open()
         self.link = snd
+
+    def on_link_remote_close(self, event):
+        link = event.link
+        network = redirect(event.link)
+        event.connection.close()
+        if network:
+            self.connect(network)
 
     def put(self, message):
         self.messages.append(message.encode())
@@ -676,6 +694,7 @@ class SendQueue(Handler):
 
     def on_transport_closed(self, event):
         conn = event.context.connection
+        if self.conn != conn: return
         self.conn = None
         self.link = None
         self.driver.schedule(self.connect, 1)
@@ -694,9 +713,11 @@ class RecvQueue(Handler):
         self.decoder.on_start(drv)
         self.connect()
 
-    def connect(self):
+    def connect(self, network=None):
+        if network is None:
+            network = self.address
         self.conn = self.driver.connection(self)
-        self.conn.hostname = self.address.host
+        self.conn.hostname = network.host
         ssn = self.conn.session()
         rcv = ssn.receiver(str(self.address))
         rcv.source.address = str(self.address)
@@ -704,7 +725,24 @@ class RecvQueue(Handler):
         rcv.open()
         self.conn.open()
 
+    def on_link_remote_close(self, event):
+        link = event.link
+        network = redirect(event.link)
+        event.connection.close()
+        if network:
+            self.connect(network)
+
     def on_transport_closed(self, event):
         conn = event.context.connection
+        if self.conn != conn: return
         self.conn = None
         self.driver.schedule(self.connect, 1)
+
+import sys
+
+class Logger(object):
+
+    def log(self, msg, *args):
+        if self.trace:
+            sys.stderr.write(("%s\n" % msg) % args)
+            sys.stderr.flush()
