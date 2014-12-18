@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import argparse, curses, textwrap, time, sys
+import argparse, curses, textwrap, time, sys, os
 from curses import ascii
 from common import *
 
@@ -113,7 +113,7 @@ class Client(Handler):
                              replace_whitespace=False)
 
     def on_message(self, rcv, msg):
-        name = self.abbreviate(msg.reply_to or rcv.source.address or "")
+        name = self.abbreviate(msg.user_id or msg.reply_to or rcv.source.address or "")
 
         if msg.creation_time:
             prefix = "%s <- %s " % (time.ctime(msg.creation_time), name)
@@ -124,7 +124,7 @@ class Client(Handler):
         self.log.append((prefix, pretty))
 
         self.render()
-        if self.notify:
+        if self.notify and name != os.environ["USER"]:
             notify(name, pretty)
 
     def readable(self):
@@ -134,6 +134,7 @@ class Client(Handler):
                 break
             elif c == 10:
                 msg = Message()
+                msg.user_id = os.environ["USER"]
                 msg.creation_time = time.time()
                 msg.reply_to = str(self.recvq.address).split("?", 1)[0]
                 if self.input and self.input[0] == "/":
