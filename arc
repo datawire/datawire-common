@@ -119,16 +119,20 @@ class Client(Handler):
     def on_message(self, rcv, msg):
         name = self.abbreviate(msg.user_id or msg.reply_to or rcv.source.address or "")
 
+        notificate = self.notify and name != os.environ["USER"]
         if msg.creation_time:
+            if time.time() - msg.creation_time > 60:
+                notificate = False
             prefix = "%s <- %s " % (self.pretty_time(msg.creation_time), name)
         else:
+            notificate = False
             prefix = "<- %s " % name
 
         pretty = self.pp(msg)
         self.log.append((prefix, pretty))
 
         self.render()
-        if self.notify and name != os.environ["USER"]:
+        if notificate:
             notify(name, pretty)
 
     def readable(self):
