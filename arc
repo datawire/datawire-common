@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse, curses, textwrap, time, sys, os
+from datetime import datetime
 from curses import ascii
 from common import *
 
@@ -112,11 +113,14 @@ class Client(Handler):
                              drop_whitespace=False,
                              replace_whitespace=False)
 
+    def pretty_time(self, t):
+        return datetime.fromtimestamp(t).strftime("%a %I:%M%p")
+
     def on_message(self, rcv, msg):
         name = self.abbreviate(msg.user_id or msg.reply_to or rcv.source.address or "")
 
         if msg.creation_time:
-            prefix = "%s <- %s " % (time.ctime(msg.creation_time), name)
+            prefix = "%s <- %s " % (self.pretty_time(msg.creation_time), name)
         else:
             prefix = "<- %s " % name
 
