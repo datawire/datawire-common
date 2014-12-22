@@ -225,4 +225,29 @@ than 1 stddev.
   - TBD: how do we guarantee a test event?
 <
 
+=== Control Messages ===
 
+The general format for all control messages is as follows. The message
+properties of a control message contain a special entry. The key for
+this entry is "opcode" and the value can any string value depending on
+what capabilities the service exposes.
+
+Currently analyzers expose three operations "update", "delete", and
+"read":
+
+  - The "update" operation expects the message body to be a map and
+    will update the analyzer's configuration object based on the
+    key/value pairs in the map.
+
+  - The "delete" operation expects a list of keys and will delete
+    those keys from the analyzer's config object. A "delete" operation
+    with an empty body will delete all keys from the analyzer's config
+    object.
+
+  - The "read" operation causes a snapshot of the config object to be
+    sent to the address indicated in the reply-to field of the control
+    message.
+
+Note that it is not usually necessary to use the "read" operation
+explicitly since all subscriptions to the controller will be notified
+whenever the configuration is modified.
