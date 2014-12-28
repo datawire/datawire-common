@@ -161,7 +161,7 @@ class Client(Handler):
                     msg.body = unicode(self.input)
                 self.sendq.put(msg)
                 if self.echo:
-                    prefix = "%s %s -> " % (time.ctime(msg.creation_time), self.recv_name)
+                    prefix = "%s %s -> " % (self.pretty_time(msg.creation_time), self.recv_name)
                     self.log.append((prefix, self.input))
                 self.input = ""
             elif c in (curses.KEY_BACKSPACE, curses.KEY_DC):
