@@ -19,7 +19,7 @@
 #
 import sys
 from common import *
-from service import Tether, Service, Updater
+from service import Tether, Service, Updater, get_base_command_line_arg_parser
 
 class Store:
 
@@ -88,14 +88,16 @@ class Chat(Service):
         self.store.add(msg.encode())
         self.updater.updated()
 
-switches = [a for a in sys.argv[1:] if a.startswith("-")]
-args = [a for a in sys.argv[1:] if not a.startswith("-")]
+parser = get_base_command_line_arg_parser()
+parser.add_argument('-b', '--public-host', default=None,
+                    help='public host which is used for applications to'
+                    + ' access microservice')
+args = parser.parse_args()
 
-trace = "-t" in switches
-
-host = args.pop(0) if args and not args[0].isdigit() else "localhost"
-pubhost = args.pop(0) if args and not args[0].isdigit() else host
-port = int(args.pop(0)) if args else 5672
+trace = args.trace
+host = args.host
+pubhost = args.public_host
+port = args.port
 
 drv = Driver(Chat("localhost", host, pubhost, port, trace))
 drv.run()

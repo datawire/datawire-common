@@ -1,4 +1,5 @@
 import sys
+import argparse
 from common import *
 from fnmatch import fnmatch
 
@@ -162,3 +163,14 @@ class Service(Handler, Logger):
                 dlv.settle()
         else:
             self.log("NO ROUTE: %s", msg)
+
+
+def get_base_command_line_arg_parser():
+    parser = argparse.ArgumentParser(description='Run deploy microservice.')
+    parser.add_argument('-u', '--host', default="localhost",
+                        help='host interface on which to run microservice')
+    parser.add_argument('-p', '--port', type=int, default=5672,
+                        help='host port on which to run microservice')
+    parser.add_argument('-t', '--trace', action='store_true', default=False,
+                        help='whether to display trace messages for debugging')
+    return parser

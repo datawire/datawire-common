@@ -2,7 +2,7 @@
 import random, sys, os
 from common import *
 
-from service import Updater
+from service import Updater, get_base_command_line_arg_parser
 
 class Alerter(Updater):
 
@@ -30,13 +30,12 @@ class Alerter(Updater):
         self.statuses[rcv.target.address] = (msg.properties, msg.body)
         self.updated()
 
-switches = [a for a in sys.argv[1:] if a.startswith("-")]
-args = [a for a in sys.argv[1:] if not a.startswith("-")]
+parser = get_base_command_line_arg_parser()
+args = parser.parse_args()
 
-trace = "-t" in switches
-
-host = args.pop(0) if args and not args[0].isdigit() else "localhost"
-port = int(args.pop(0)) if args else 5672
+trace = args.trace
+host = args.host
+port = args.port
 
 drv = Driver(Alerter(host, port, trace))
 drv.run()
