@@ -180,5 +180,5 @@ parser.add_argument('-t', '--trace', action='store_true', default=False,
                     help='whether to display trace messages for debugging')
 
 
-def get_base_command_line_arg_parser():
+def get_base_argparser():
     return parser

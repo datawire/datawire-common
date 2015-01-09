@@ -19,7 +19,7 @@
 #
 import sys, argparse
 from common import *
-from service import Tether, Service, Updater, get_base_command_line_arg_parser
+from service import Tether, Service, Updater, get_base_argparser
 
 class Store:
 
@@ -88,7 +88,7 @@ class Chat(Service):
         self.store.add(msg.encode())
         self.updater.updated()
 
-parser = argparse.ArgumentParser(parents=[get_base_command_line_arg_parser()])
+parser = argparse.ArgumentParser(parents=[get_base_argparser()])
 args = parser.parse_args()
 
 trace = args.trace

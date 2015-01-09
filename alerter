@@ -2,7 +2,7 @@
 import random, sys, os, argparse
 from common import *
 
-from service import Updater, get_base_command_line_arg_parser
+from service import Updater, get_base_argparser
 
 class Alerter(Updater):
 
@@ -30,7 +30,7 @@ class Alerter(Updater):
         self.statuses[rcv.target.address] = (msg.properties, msg.body)
         self.updated()
 
-parser = argparse.ArgumentParser(parents=[get_base_command_line_arg_parser()]))
+parser = argparse.ArgumentParser(parents=[get_base_argparser()]))
 args = parser.parse_args()
 
 trace = args.trace
