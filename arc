@@ -11,7 +11,7 @@ try:
     notifications = dbus.Interface(bus.get_object("org.freedesktop.Notifications",
                                                   "/org/freedesktop/Notifications"),
                                    "org.freedesktop.Notifications")
-except ImportError:
+except (ImportError, dbus.exceptions.DBusException):
     notifications = None
 
 if notifications is None:
