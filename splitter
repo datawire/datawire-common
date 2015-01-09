@@ -55,7 +55,6 @@ class Splitter:
             snd.send(self.messages.get(snd.serial))
             dlv.settle()
             snd.serial += 1
-            
 
     def on_delivery(self, event):
         dlv = event.delivery
@@ -69,10 +68,10 @@ class Splitter:
             for snd in self.subscribers:
                 self.pump(snd)
                 minSerial = min(minSerial, snd.serial)
-            
-            self.messages.garbageCollect(minSerial)
-            
-            dlv.settle()    
 
+            self.messages.garbageCollect(minSerial)
+
+            dlv.settle()
 
 Driver(Splitter()).run()
+
