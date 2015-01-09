@@ -17,9 +17,9 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-import random, sys, os
+import random, sys, os, argparse
 from common import *
-from service import Tether, Service
+from service import Tether, Service, get_base_argparser
 
 class Metric:
 
@@ -173,13 +173,12 @@ class Analyzer(Service):
         self.reply.body = self.config
         self.route(self.reply)
 
-switches = [a for a in sys.argv[1:] if a.startswith("-")]
-args = [a for a in sys.argv[1:] if not a.startswith("-")]
+parser = argparse.ArgumentParser(parents=[get_base_argparser()])
+args = parser.parse_args()
 
-trace = "-t" in switches
-
-host = args.pop(0) if args and not args[0].isdigit() else "localhost"
-port = int(args.pop(0)) if args else 5672
+trace = args.trace
+host = args.host
+port = args.port
 
 drv = Driver(Analyzer("localhost", host, port, trace))
 drv.run()

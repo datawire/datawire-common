@@ -17,8 +17,9 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-import random, sys, sqlite3, os, uuid
+import random, sys, sqlite3, os, uuid, argparse
 from common import *
+from service import get_base_argparser
 
 class Queue:
 
@@ -204,23 +205,15 @@ class Server(Handler):
         event.connection.free()
         event.transport.unbind()
 
-switches = [a for a in sys.argv[1:] if a.startswith("-")]
-args = [a for a in sys.argv[1:] if not a.startswith("-")]
+parser = argparse.ArgumentParser(parents=[get_base_argparser()])
+parser.add_argument('-d', '--database', default=None,
+                    help='database')
+args = parser.parse_args()
 
-trace = "-t" in switches
-
-durable = "-d" in switches
-if durable:
-    if args:
-        database = args.pop(0)
-    else:
-        print >> sys.stderr, "-d requries database"
-        sys.exit(1)
-else:
-    database = None
-
-host = args.pop(0) if args and not args[0].isdigit() else "localhost"
-port = int(args.pop(0)) if args else 5672
+trace = args.trace
+host = args.host
+port = args.port
+database = args.database
 
 drv = Driver(Server(host, port, database, trace))
 drv.run()
