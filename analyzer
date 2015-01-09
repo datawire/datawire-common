@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-import random, sys, os
+import random, sys, os, argparse
 from common import *
 from service import Tether, Service, get_base_command_line_arg_parser
 
@@ -173,7 +173,7 @@ class Analyzer(Service):
         self.reply.body = self.config
         self.route(self.reply)
 
-parser = get_base_command_line_arg_parser()
+parser = argparse.ArgumentParser(parents=[get_base_command_line_arg_parser()])
 args = parser.parse_args()
 
 trace = args.trace

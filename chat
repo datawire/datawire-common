@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-import sys
+import sys, argparse
 from common import *
 from service import Tether, Service, Updater, get_base_command_line_arg_parser
 
@@ -88,10 +88,7 @@ class Chat(Service):
         self.store.add(msg.encode())
         self.updater.updated()
 
-parser = get_base_command_line_arg_parser()
-parser.add_argument('-b', '--public-host', default=None,
-                    help='public host which is used for applications to'
-                    + ' access microservice')
+parser = argparse.ArgumentParser(parents=[get_base_command_line_arg_parser()])
 args = parser.parse_args()
 
 trace = args.trace
