@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+
+from common import *
+
+class Store:
+
+## I want to be able to figure out the bottleneck queue, and delete extra messages accordingly
+
+    def __init__(self):
+        self.serial = 0
+        self.messages = []
+
+    def add(self, obj):
+        self.messages.append(obj)
+
+    def max(self):
+        return self.serial + len(self.messages)
+
+    def min(self):
+        return self.serial
+
+    def get(self, serial):
+        return self.messages[serial - self.serial]
+
+    def garbageCollect(self, serial):
+        ## Old data will no longer be accessed, delete old data and recalculate serial
+        if self.serial < serial:
+            delta = serial - self.serial
+            del self.messages[:delta]
+            self.serial += delta
+
+
+class Splitter:
+
+    def __init__(self):
+        self.messages = Store()
+        self.subscribers = []
+        self.handlers = [Handshaker(), FlowController(1024), self]
+
+    def on_start(self, drv):
+        drv.acceptor("localhost", 5672)
+
+    def on_link_remote_open(self, event):
+        if event.link.is_sender:
+            event.link.serial = self.messages.max()
+            self.subscribers.append(event.link)
+
+    def on_link_flow(self, event):
+        if event.sender:
+            self.pump(event.sender)
+
+    def pump(self, snd):
+        while snd.serial < self.messages.max() and snd.queued < 1024:
+            dlv = snd.delivery("")
+            snd.send(self.messages.get(snd.serial))
+            dlv.settle()
+            snd.serial += 1
+            
+
+    def on_delivery(self, event):
+        dlv = event.delivery
+        link = event.link
+        if link.is_receiver and not dlv.partial:
+            self.messages.add(link.recv(dlv.pending))
+
+            ## Find out minimal serial of the subscribers and garbage collect
+            minSerial = self.messages.max()
+
+            for snd in self.subscribers:
+                self.pump(snd)
+                minSerial = min(minSerial, snd.serial)
+            
+            self.messages.garbageCollect(minSerial)
+            
+            dlv.settle()    
+
+
+Driver(Splitter()).run()
