@@ -10,8 +10,10 @@ try:
     bus = dbus.SessionBus()
     notifications = dbus.Interface(bus.get_object("org.freedesktop.Notifications",
                                                   "/org/freedesktop/Notifications"),
-                                   "org.freedesktop.Notifications")
-except (ImportError, dbus.exceptions.DBusException):
+                                                  "org.freedesktop.Notifications")
+except ImportError:
+    notifications = None
+except dbus.exceptions.DBusException:
     notifications = None
 
 if notifications is None:
