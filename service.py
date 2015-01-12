@@ -132,7 +132,7 @@ class Controller(Handler, Logger):
 
 class Service(Handler, Logger):
 
-    def __init__(self, director, service, host, port, trace=None, pubhost=None):
+    def __init__(self, director, service, host, port, trace=None, pubhost=None, pubport=None):
         self.host = host
         self.port = port
         self.trace = trace
@@ -141,7 +141,7 @@ class Service(Handler, Logger):
         self.router = Router()
         self.handlers = [Interceptor("*/controller", self.controller), FlowController(1024), Handshaker(),
                          self.decoder, self.router, self]
-        self.tether = Tether(director, service, pubhost or host, port)
+        self.tether = Tether(director, service, pubhost or host, pubport or port)
 
     def update(self):
         return None
@@ -170,6 +170,8 @@ parser.add_argument('-u', '--host', default="localhost",
                     help='host interface on which to run microservice')
 parser.add_argument('-p', '--port', type=int, default=5672,
                     help='host port on which to run microservice')
+parser.add_argument('-r', '--redirector', default="localhost",
+                    help='host of redirector (will only look on port 5672)')
 parser.add_argument('--public-host', default=None,
                     help='public host which is used for applications to'
                     + ' access microservice')
