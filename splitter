@@ -2,74 +2,98 @@
 
 from common import *
 
+class Entry:
+
+    def __init__(self, message):
+        self.message = message
+        self.consumed = False
+
 class Store:
 
 ## I want to be able to figure out the bottleneck queue, and delete extra messages accordingly
 
     def __init__(self):
         self.serial = 0
-        self.messages = []
+        self.entries = []
 
-    def add(self, obj):
-        self.messages.append(obj)
+    def add(self, msg):
+        self.entries.append(Entry(msg))
 
     def max(self):
-        return self.serial + len(self.messages)
+        return self.serial + len(self.entries)
 
     def min(self):
         return self.serial
 
     def get(self, serial):
-        return self.messages[serial - self.serial]
+        return self.entries[serial - self.serial]
 
-    def garbageCollect(self, serial):
+    def gc(self, serial):
         ## Old data will no longer be accessed, delete old data and recalculate serial
         if self.serial < serial:
             delta = serial - self.serial
-            del self.messages[:delta]
+            del self.entries[:delta]
             self.serial += delta
 
 
 class Splitter:
 
     def __init__(self):
-        self.messages = Store()
+        self.store = Store()
+        self.consumers = []
         self.subscribers = []
         self.handlers = [Handshaker(), FlowController(1024), self]
 
     def on_start(self, drv):
         drv.acceptor("localhost", 5672)
 
+    def is_consumer(self, snd):
+        return snd.source.address and snd.source.address.endswith("?consumer")
+
     def on_link_remote_open(self, event):
         if event.link.is_sender:
-            event.link.serial = self.messages.max()
-            self.subscribers.append(event.link)
+            event.link.serial = self.store.max()
+            if self.is_consumer(event.link):
+                self.consumers.append(event.link)
+            else:
+                self.subscribers.append(event.link)
 
     def on_link_flow(self, event):
         if event.sender:
             self.pump(event.sender)
 
     def pump(self, snd):
-        while snd.serial < self.messages.max() and snd.queued < 1024:
-            dlv = snd.delivery("")
-            snd.send(self.messages.get(snd.serial))
-            dlv.settle()
+        while snd.serial < self.store.max() and snd.credit > 0 and snd.queued < 1024:
+            entry = self.store.get(snd.serial)
+            consumer = self.is_consumer(snd)
+            if not entry.consumed or not consumer:
+                dlv = snd.delivery("")
+                snd.send(entry.message)
+                dlv.settle()
+                if consumer:
+                    entry.consumed = True
             snd.serial += 1
 
     def on_delivery(self, event):
         dlv = event.delivery
         link = event.link
         if link.is_receiver and not dlv.partial:
-            self.messages.add(link.recv(dlv.pending))
+            self.store.add(link.recv(dlv.pending))
 
             ## Find out minimal serial of the subscribers and garbage collect
-            minSerial = self.messages.max()
+            minSerial = self.store.max()
 
             for snd in self.subscribers:
                 self.pump(snd)
                 minSerial = min(minSerial, snd.serial)
+            for snd in self.consumers:
+                self.pump(snd)
+                minSerial = min(minSerial, snd.serial)
 
-            self.messages.garbageCollect(minSerial)
+            if self.consumers:
+                self.consumers.append(self.consumers.pop(0))
+
+            self.store.gc(minSerial)
 
             dlv.settle()
 
