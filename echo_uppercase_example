@@ -17,9 +17,12 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-import sys, argparse
+import sys
+import os
+import time
 from common import *
-from service import Tether, Service, Updater, get_base_argparser
+from proton import Message
+from service import Tether, Service, Updater
 
 class Store:
 
@@ -48,9 +51,9 @@ class Store:
 
 class IncrementalUpdater(Updater):
 
-    def __init__(self, chat):
-        Updater.__init__(self, chat)
-        self.store = chat.store
+    def __init__(self, echo_uppercase):
+        Updater.__init__(self, echo_uppercase)
+        self.store = echo_uppercase.store
 
     def start(self, address):
         parts = address.split("?", 1)
@@ -75,28 +78,45 @@ class IncrementalUpdater(Updater):
             snd.serial = serial
             self.log("Sent: %r", msg)
 
-class Chat(Service):
+class EchoUppercase(Service):
 
-    def __init__(self, director, host, pubhost, pubport, port, trace=None):
-        Service.__init__(self, director, "chat", host, port, trace, pubhost=pubhost, pubport=pubport)
+    def __init__(self, director, host, pubhost, port, trace=None):
+        Service.__init__(self, director, "echouppercase", host, port, trace, pubhost=pubhost)
         self.store = Store()
         self.updater = IncrementalUpdater(self)
         self.handlers.append(self.updater)
 
+    broadcast_enabled = True
     def on_message(self, rcv, msg):
-        self.log("Rcvd: %r", msg)
-        self.store.add(msg.encode())
-        self.updater.updated()
+        req_msg = msg
 
-parser = argparse.ArgumentParser(parents=[get_base_argparser()])
-args = parser.parse_args()
+        self.log("Rcvd: %r", req_msg)
 
-trace = args.trace
-host = args.host
-pubhost = args.public_host
-port = args.port
-pubport = args.public_port
-redirector = args.redirector
+        res_msg = Message()
+        res_msg.user_id=u'server'
+        res_msg.creation_time = time.time()
+        # Convert body to upper case:
+        res_msg.body = unicode(req_msg.body.upper())
 
-drv = Driver(Chat(redirector, host, pubhost, pubport, port, trace))
+        if (self.broadcast_enabled):
+            # Place in the store of broadcast messages:
+            self.store.add(res_msg.encode())
+            # Update those subscribed:
+            self.updater.updated()
+        else:
+            # Set the address to which the message will be sent
+            res_msg.address = req_msg.reply_to
+            # Send the message to that address
+            self.route(res_msg)
+
+switches = [a for a in sys.argv[1:] if a.startswith("-")]
+args = [a for a in sys.argv[1:] if not a.startswith("-")]
+
+trace = "-t" in switches
+
+host = args.pop(0) if args and not args[0].isdigit() else "localhost"
+pubhost = args.pop(0) if args and not args[0].isdigit() else host
+port = int(args.pop(0)) if args else 5672
+
+drv = Driver(EchoUppercase("localhost", host, pubhost, port, trace))
 drv.run()

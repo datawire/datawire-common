@@ -5,11 +5,15 @@ from service import get_base_argparser
 
 class Redirector(Handler, Logger):
 
-    def __init__(self, address, host, port, trace=None):
-        self.address = address
+    def __init__(self, host, port, trace=None, pubhost=None, pubport=None):
         self.host = host
         self.port = port
         self.trace = trace
+        self.pubhost = pubhost or host
+        self.pubport = pubport or port
+        self.address = "//%s:%s" % (self.pubhost, self.pubport)
+        if self.pubport == 5672:
+            self.address = "//%s" % (pubhost or host)
         self.services = {}
         self.handlers = [Handshaker(), self]
         self.count = 0
@@ -97,19 +101,13 @@ class Redirector(Handler, Logger):
         event.transport.unbind()
 
 parser = argparse.ArgumentParser(parents=[get_base_argparser()])
-parser.add_argument('-a', '--address', default=None,
-                    help='address at which the redirector is hosted')
 args = parser.parse_args()
 
 trace = args.trace
 host = args.host
-port = args.port
-address = args.address
+port = int(args.port)
+pubhost = args.public_host if args.public_host else host
+pubport = int(args.public_port) if args.public_port else port
 
-if address is None:
-    address = "//%s" % host
-    if port != 5672:
-        address += ":%s" % port
-
-drv = Driver(Redirector(address, host, port, trace))
+drv = Driver(Redirector(host, port, trace, pubhost=pubhost, pubport=pubport))
 drv.run()
