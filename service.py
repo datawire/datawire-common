@@ -144,9 +144,10 @@ class Service(Handler, Logger):
         self.decoder = MessageDecoder(self)
         self.controller = Controller(self)
         self.router = Router()
+        self.send_queue_pool = SendQueuePool()
         self.handlers = [Interceptor("*/controller", self.controller), FlowController(1024), Handshaker(),
                          self.decoder, self.router, self]
-        self.tether = Tether(director, service, pubhost or host, pubport or port)
+        self.tether = Tether(director, service, pubhost or host, pubport or port, delegate=self)
 
     def update(self):
         return None
@@ -154,20 +155,19 @@ class Service(Handler, Logger):
     def on_start(self, drv):
         drv.acceptor(self.host, self.port)
         self.tether.on_start(drv)
+        self.send_queue_pool.on_start(drv)
 
     def on_transport_closed(self, event):
         event.connection.free()
         event.transport.unbind()
 
+    def _route_link(self, msg, link):
+        dlv = link.delivery("")
+        link.send(msg.encode())
+        dlv.settle()
+
     def route(self, msg):
-        row = self.router.outgoing(msg.address)
-        if row:
-            for link in row:
-                dlv = link.delivery("")
-                link.send(msg.encode())
-                dlv.settle()
-        else:
-            self.log("NO ROUTE: %s", msg)
+        self.send_queue_pool.to(msg.address).put(msg)
 
 parser = argparse.ArgumentParser(description='Run deploy microservice.',
                                  add_help=False)

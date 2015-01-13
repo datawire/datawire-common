@@ -536,8 +536,8 @@ class Router(Handler):
 
 class Pool(Handler):
 
-    def __init__(self, collector, router=None):
-        self.collector = collector
+    def __init__(self, driver, router=None):
+        self.driver = driver
         self._connections = {}
         if router:
             self.outgoing_resolver = lambda address: router.outgoing(address).choose()
@@ -552,8 +552,7 @@ class Pool(Handler):
             host = remote[2:].split("/", 1)[0]
             conn = self._connections.get(host)
             if conn is None:
-                conn = Connection()
-                conn.collect(self.collector)
+                conn = self.driver.connection()
                 conn.hostname = host
                 conn.open()
                 self._connections[host] = conn
@@ -570,18 +569,18 @@ class Pool(Handler):
         del self._connections[conn.hostname]
 
     def outgoing(self, target, source=None):
-        return self.resolve(target, source, self.outgoing_resolver, self.new_outgoing)
+        return self.resolve(target, source, self.outgoing_resolver, self._new_outgoing)
 
     def incoming(self, source, target=None):
-        return self.resolve(source, target, self.incoming_resolver, self.new_incoming)
+        return self.resolve(source, target, self.incoming_resolver, self._new_incoming)
 
-    def new_outgoing(self, ssn, remote, local):
+    def _new_outgoing(self, ssn, remote, local):
         snd = ssn.sender("%s-%s" % (local, remote))
         snd.source.address = local
         snd.target.address = remote
         return snd
 
-    def new_incoming(self, ssn, remote, local):
+    def _new_incoming(self, ssn, remote, local):
         rcv = ssn.receiver("%s-%s" % (remote, local))
         rcv.source.address = remote
         rcv.target.address = local
@@ -675,6 +674,21 @@ def redirect(link):
         return Address("//%s:%s" % (host, port))
     else:
         return None
+
+class SendQueuePool:
+
+    def __init__(self):
+        self.pool = {}
+
+    def on_start(self, drv):
+        self.drv = drv
+
+    def to(self, addr):
+        if addr in self.pool:
+            return self.pool[addr]
+        self.pool[addr] = SendQueue(addr)
+        self.pool[addr].on_start(self.drv)
+        return self.pool[addr]
 
 class SendQueue(Handler):
 
