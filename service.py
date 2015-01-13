@@ -5,11 +5,12 @@ from fnmatch import fnmatch
 
 class Tether(Handler):
 
-    def __init__(self, director, service, host, port):
+    def __init__(self, director, service, host, port, delegate=None):
         self.director = director
         self.service = service
         self.host = host
         self.port = port
+        self.delegate = delegate
 
     def on_start(self, drv):
         self.driver = drv
@@ -19,6 +20,10 @@ class Tether(Handler):
         conn = event.context.connection
         self.conn = None
         self.driver.schedule(self.connect, 1)
+
+    def on_connection_remote_open(self, event):
+        if self.delegate:
+            dispatch(self.delegate, "on_tether_connect", event)
 
     def connect(self):
         self.conn = self.driver.connection(self)
