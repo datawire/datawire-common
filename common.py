@@ -497,7 +497,8 @@ class Router(Handler):
 
     def address(self, link):
         if link.is_sender:
-            return link.source.address or link.target.address
+            # TODO:  Check to make sure priority swap was safe
+            return link.target.address or link.source.address
         else:
             return link.target.address
 

@@ -167,7 +167,15 @@ class Service(Handler, Logger):
         dlv.settle()
 
     def route(self, msg):
-        self.send_queue_pool.to(msg.address).put(msg)
+        row = self.router.outgoing(msg.address)
+        if row:
+            for link in row:
+                dlv = link.delivery("")
+                link.send(msg.encode())
+                dlv.settle()
+        else:
+            print "NO ROUTE"
+            # self.send_queue_pool.to(msg.address).put(msg)
 
 parser = argparse.ArgumentParser(description='Run deploy microservice.',
                                  add_help=False)
