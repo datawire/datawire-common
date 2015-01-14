@@ -174,8 +174,8 @@ class Service(Handler, Logger):
                 link.send(msg.encode())
                 dlv.settle()
         else:
-            print "NO ROUTE"
-            # self.send_queue_pool.to(msg.address).put(msg)
+            # No existing route:  try to create one:
+            self.send_queue_pool.to(msg.address).put(msg)
 
 parser = argparse.ArgumentParser(description='Run deploy microservice.',
                                  add_help=False)
