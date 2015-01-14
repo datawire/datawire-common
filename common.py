@@ -615,25 +615,57 @@ class MessageDecoder(Handler):
 class Address:
 
     def __init__(self, st):
-        self.st = st
+        if st and "::" in st:
+            self.local, self.remote = st.split("::", 1)
+        else:
+            self.local = None
+            self.remote = st
 
     @property
     def host(self):
-        return self.st[2:].split("/", 1)[0]
+        if self.remote is None: return None
+        if self.remote.startswith("//"):
+            return self.remote[2:].split("/", 1)[0]
+        else:
+            return None
 
     @property
     def path(self):
-        parts = self.st[2:].split("/", 1)
+        if self.remote is None: return None
+        parts = self.remote[2:].split("/", 1)
         if len(parts) == 2:
             return parts[1]
         else:
             return ""
 
+    def configure(self, obj):
+        if isinstance(obj, Connection):
+            conn = obj
+            link = None
+        else:
+            link = obj
+            conn = link.session.connection
+
+        if not conn.hostname and self.host:
+            conn.hostname = self.host
+
+        if link.is_sender:
+            local = link.source
+            remote = link.target
+        else:
+            local = link.target
+            remote = link.source
+
+        if self.local:
+            local.address = self.local
+        if self.remote:
+            remote.address = self.remote
+
     def __repr__(self):
         return "Address(%r)" % self.st
 
     def __str__(self):
-        return self.st
+        return self.remote
 
 def redirect(link):
     if link.remote_condition and link.remote_condition.name == "amqp:link:redirect":
@@ -662,7 +694,7 @@ class SendQueue(Handler):
         self.conn.hostname = network.host
         ssn = self.conn.session()
         snd = ssn.sender(str(self.address))
-        snd.target.address = str(self.address)
+        self.address.configure(snd)
         ssn.open()
         snd.open()
         self.conn.open()
@@ -720,7 +752,7 @@ class RecvQueue(Handler):
         self.conn.hostname = network.host
         ssn = self.conn.session()
         rcv = ssn.receiver(str(self.address))
-        rcv.source.address = str(self.address)
+        self.address.configure(rcv)
         ssn.open()
         rcv.open()
         self.conn.open()
