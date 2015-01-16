@@ -161,10 +161,17 @@ class Service(Handler, Logger):
         event.connection.free()
         event.transport.unbind()
 
-    def _route_link(self, msg, link):
-        dlv = link.delivery("")
-        link.send(msg.encode())
-        dlv.settle()
+    def _redirect_rcv_snd(self, link, host="127.0.0.1", port="5672"):
+        if link.is_sender:
+            address = link.remote_source.address or link.remote_target.address
+            row = self.router.incoming(address)
+        else:
+            address = link.remote_source.address or link.remote_target.address
+            row = self.router.outgoing(address)
+        if row is not None:
+            for link2 in row:
+                redirect_link(link2, host, port)
+        redirect_link(link, host, port)
 
     def route(self, msg):
         row = self.router.outgoing(msg.address)

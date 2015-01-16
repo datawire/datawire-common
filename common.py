@@ -785,6 +785,12 @@ class RecvQueue(Handler):
         self.conn = None
         self.driver.schedule(self.connect, 1)
 
+def redirect_link(link, host="127.0.0.1", port="5672"):
+    link.condition = Condition("amqp:link:redirect", None,
+       {symbol("network-host"): host,
+        symbol("port"): port})
+    link.close()
+
 import sys
 
 class Logger(object):
