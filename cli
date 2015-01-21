@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+
+'''
+Command-line client for executing a single command on a request/response
+microservice.  The program exits after receiving and printing the first
+message from the server.
+
+USAGE:  ./cli [ADDRESS] [COMMAND...]
+'''
+
+import time, sys, os, re, binascii
+from datetime import datetime
+from common import *
+
+
+def rand_hex(length=16):
+    return binascii.b2a_hex(os.urandom(length))
+
+
+class Client:
+
+    def __init__(self, address, uid, command):
+        self.input = ""
+        self.sendq = SendQueue(address)
+        self.recvq = RecvQueue(address, self)
+        self.sel = None
+        self.uid = uid
+        self.command = command
+        self.exiting = False
+
+        if self.sendq.address.host == self.recvq.address.host:
+            self.send_name = self.sendq.address.path
+            self.recv_name = self.recvq.address.path
+        else:
+            self.send_name = str(self.sendq.address)
+            self.recv_name = str(self.recvq.address)
+
+    def on_reactor_init(self, event):
+        self.reactor = event.reactor
+        self.sel = event.reactor.selectable()
+        self.sel.fileno(0)
+        self.sel.reading = True
+        event.reactor.update(self.sel)
+        event.dispatch(self.sendq)
+        event.dispatch(self.recvq)
+        self._send_command()
+
+    def _send_command(self):
+        msg = Message()
+        msg.user_id = self.uid
+        msg.creation_time = time.time()
+        msg.reply_to = self.recvq.address.local
+        if self.command and self.command[0] == "/":
+            parts = self.command.split(None, 1)
+            opcode = parts.pop(0)[1:]
+            msg.properties = {"opcode": unicode(opcode)}
+            if parts:
+                try:
+                    msg.body = eval(parts[0])
+                except:
+                    sys.stderr.write(str(sys.exc_info()[1]) + os.linesep)
+                    self._exit()
+                    return
+            else:
+                msg.body = None
+        else:
+            msg.body = unicode(self.command)
+        self.sendq.put(msg)
+
+    def _pretty_time(self, t):
+        return datetime.fromtimestamp(t).strftime("%a %I:%M%p")
+
+    def _message_to_str(self, msg):
+        return "%s at %s:  %s" % (msg.user_id or "",
+                                  self._pretty_time(msg.creation_time),
+                                  msg.body)
+
+    def _exit(self):
+        self.exiting = True
+        self.sel.terminate()
+        self.reactor.update(self.sel)
+        self.sendq.close()
+        self.recvq.close()
+
+    def on_message(self, rcv, msg):
+        if self.exiting:
+            return
+        sys.stdout.write("%s%s" % (self._message_to_str(msg), os.linesep))
+        self._exit()
+
+argv_set = set(sys.argv)
+if '-h' in argv_set or '--help' in argv_set or len(argv_set) < 3:
+    sys.stderr.write("USAGE:  ./cli [ADDRESS] [COMMAND...]" + os.linesep)
+    exit(1)
+
+address = sys.argv[1]
+uid_match = re.compile('^/([A-Za-z0-9_-]+)::').match(address)
+if uid_match is None:
+    uid = rand_hex()
+    address = "/%s::%s" % (uid, sys.argv[1])
+else:
+    uid = uid_match.group(1)
+
+command = " ".join(sys.argv[2:])
+
+Reactor(Client(address=address, uid=uid, command=command)).run()
