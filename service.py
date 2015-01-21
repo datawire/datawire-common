@@ -144,9 +144,10 @@ class Service(Handler, Logger):
         self.decoder = MessageDecoder(self)
         self.controller = Controller(self)
         self.router = Router()
+        self.send_queue_pool = SendQueuePool()
         self.handlers = [Interceptor("*/controller", self.controller), FlowController(1024), Handshaker(),
                          self.decoder, self.router, self]
-        self.tether = Tether(director, service, pubhost or host, pubport or port)
+        self.tether = Tether(director, service, pubhost or host, pubport or port, delegate=self)
 
     def update(self):
         return None
@@ -154,10 +155,23 @@ class Service(Handler, Logger):
     def on_start(self, drv):
         drv.acceptor(self.host, self.port)
         self.tether.on_start(drv)
+        self.send_queue_pool.on_start(drv)
 
     def on_transport_closed(self, event):
         event.connection.free()
         event.transport.unbind()
+
+    def _redirect_rcv_snd(self, link, host="127.0.0.1", port="5672"):
+        if link.is_sender:
+            address = link.remote_source.address or link.remote_target.address
+            row = self.router.incoming(address)
+        else:
+            address = link.remote_source.address or link.remote_target.address
+            row = self.router.outgoing(address)
+        if row is not None:
+            for link2 in row:
+                redirect_link(link2, host, port)
+        redirect_link(link, host, port)
 
     def route(self, msg):
         row = self.router.outgoing(msg.address)
@@ -167,7 +181,8 @@ class Service(Handler, Logger):
                 link.send(msg.encode())
                 dlv.settle()
         else:
-            self.log("NO ROUTE: %s", msg)
+            # No existing route:  try to create one:
+            self.send_queue_pool.to(msg.address).put(msg)
 
 parser = argparse.ArgumentParser(description='Run deploy microservice.',
                                  add_help=False)

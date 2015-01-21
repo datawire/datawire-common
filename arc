@@ -146,7 +146,7 @@ class Client(Handler):
                 msg = Message()
                 msg.user_id = os.environ["USER"]
                 msg.creation_time = time.time()
-                msg.reply_to = str(self.recvq.address).split("?", 1)[0]
+                msg.reply_to = self.recvq.address.local
                 if self.input and self.input[0] == "/":
                     parts = self.input.split(None, 1)
                     opcode = parts.pop(0)[1:]
