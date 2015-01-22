@@ -76,10 +76,18 @@ class Redirector(Handler, Logger):
         node = self.choose(address)
         if node:
             _, host, port = node.remote_properties["service"]
-            self.log("Redirecting to %s:%s", host, port)
-            link.condition = Condition("amqp:link:redirect", None,
-                                       {symbol("network-host"): host,
-                                        symbol("port"): port})
+            if not link.is_sender or self.qualify("dynamic") not in self.services or uid_pattern.match(link.remote_target.address) is None:
+                self.log("Redirecting to %s:%s", host, port)
+                link.condition = Condition("amqp:link:redirect", None,
+                                           {symbol("network-host"): host,
+                                            symbol("port"): port})
+            else:
+                dyn_node = self.choose(self.qualify("dynamic"))
+                _, dyn_host, dyn_port = dyn_node.remote_properties["service"]
+                self.log("Redirecting to dynamic splitter at %s:%s", dyn_host, dyn_port)
+                link.condition = Condition("amqp:link:redirect", None,
+                                           {symbol("network-host"): dyn_host,
+                                            symbol("port"): dyn_port})
         else:
             self.log("No service for %s", address)
             link.condition = Condition("amqp:link:detach-forced", "no service")

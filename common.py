@@ -16,11 +16,13 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-import errno, os, random, select, time, traceback
+import errno, os, random, select, time, traceback, re
 from proton import *
 from socket import *
 from threading import Thread
 from heapq import heappush, heappop, nsmallest
+
+uid_pattern = re.compile('^/[A-Za-z0-9_-]*$')
 
 class Selectable(object):
 

@@ -141,6 +141,7 @@ class Service(Handler, Logger):
         self.host = host
         self.port = port
         self.trace = trace
+        self.director = director
         self.decoder = MessageDecoder(self)
         self.controller = Controller(self)
         self.router = Router()
@@ -181,6 +182,11 @@ class Service(Handler, Logger):
                 link.send(msg.encode())
                 dlv.settle()
         else:
+            if uid_pattern.match(msg.address) is not None:
+                if not self.director:
+                    raise IOError("Could not generate link to dynamic UID due to absence of a redirector.")
+                new_address = "%s:://%s/dynamic" % (msg.address, self.director)
+                msg.address = new_address
             # No existing route:  try to create one:
             self.send_queue_pool.to(msg.address).put(msg)
 
