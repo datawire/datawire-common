@@ -3,7 +3,7 @@ import argparse
 from common import *
 from fnmatch import fnmatch
 
-class Tether(Handler):
+class Tether:
 
     def __init__(self, director, service, host, port, delegate=None):
         self.director = director
@@ -12,31 +12,33 @@ class Tether(Handler):
         self.port = port
         self.delegate = delegate
 
-    def on_start(self, drv):
-        self.driver = drv
-        self.connect()
+    def on_reactor_init(self, event):
+        self.connect(event)
 
     def on_transport_closed(self, event):
         conn = event.context.connection
         self.conn = None
-        self.driver.schedule(self.connect, 1)
+        event.reactor.schedule(1, self)
+
+    def on_timer_task(self, event):
+        self.connect(event)
 
     def on_connection_remote_open(self, event):
         if self.delegate:
             dispatch(self.delegate, "on_tether_connect", event)
 
-    def connect(self):
-        self.conn = self.driver.connection(self)
+    def connect(self, event):
+        self.conn = event.reactor.connection(self)
         self.conn.hostname = self.director
         self.conn.properties = {symbol("service"): (self.service, self.host, self.port)}
         self.conn.open()
 
-class Updater(Handler, Logger):
+class Updater(Logger):
 
     def __init__(self, delegate):
         self.__delegate = delegate
         self.serial = 0
-        self.handlers = [FlowController(1024), Handshaker(), self]
+        self.handlers = [FlowController(1024), Handshaker()]
         self.message = Message()
         self.outgoing = []
 
@@ -91,15 +93,11 @@ class Updater(Handler, Logger):
         for snd in self.outgoing:
             self.push(snd)
 
-class Interceptor(Handler):
+class Interceptor:
 
     def __init__(self, pattern, *delegates):
         self.pattern = pattern
-        self.delegates = expand(delegates)
-
-    def on_start(self, drv):
-        for h in self.delegates:
-            dispatch(h, "on_start", drv)
+        self.delegates = delegates
 
     def on_link_remote_open(self, event):
         if event.link.is_sender:
@@ -112,7 +110,7 @@ class Interceptor(Handler):
             for h in event.link.handlers:
                 event.dispatch(h)
 
-class Controller(Handler, Logger):
+class Controller(Logger):
 
     def __init__(self, delegate):
         self.delegate = delegate
@@ -135,7 +133,7 @@ class Controller(Handler, Logger):
     def dispatch(self, opcode, msg):
         dispatch(self.delegate, "on_%s" % opcode, msg)
 
-class Service(Handler, Logger):
+class Service(Logger):
 
     def __init__(self, director, service, host, port, trace=None, pubhost=None, pubport=None):
         self.host = host
@@ -147,16 +145,16 @@ class Service(Handler, Logger):
         self.router = Router()
         self.send_queue_pool = SendQueuePool()
         self.handlers = [Interceptor("*/controller", self.controller), FlowController(1024), Handshaker(),
-                         self.decoder, self.router, self]
+                         self.decoder, self.router]
         self.tether = Tether(director, service, pubhost or host, pubport or port, delegate=self)
 
     def update(self):
         return None
 
-    def on_start(self, drv):
-        drv.acceptor(self.host, self.port)
-        self.tether.on_start(drv)
-        self.send_queue_pool.on_start(drv)
+    def on_reactor_init(self, event):
+        event.reactor.acceptor(self.host, self.port)
+        event.dispatch(self.tether)
+        event.dispatch(self.send_queue_pool)
 
     def on_transport_closed(self, event):
         event.connection.free()

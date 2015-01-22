@@ -98,5 +98,4 @@ port = args.port
 pubport = args.public_port
 redirector = args.redirector
 
-drv = Driver(Chat(redirector, host, pubhost, pubport, port, trace))
-drv.run()
+Reactor(Chat(redirector, host, pubhost, pubport, port, trace)).run()

@@ -16,449 +16,23 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-import errno, os, random, select, time, traceback, re
+
+import sys, re
 from proton import *
-from socket import *
-from threading import Thread
-from heapq import heappush, heappop, nsmallest
+from proton.reactors import Reactor
+from proton.handlers import CHandshaker as Handshaker, \
+    CFlowController as FlowController
+
+del Driver, Connector, Listener, Handler
 
 uid_pattern = re.compile('^/[A-Za-z0-9_-]*$')
 
-class Selectable(object):
-
-    def __init__(self, transport, socket, address):
-        self.transport = transport
-        self.socket = socket
-        self.write_done = False
-        self.read_done = False
-        self.address = address
-
-    def closed(self):
-        if self.write_done and self.read_done:
-            self.socket.close()
-            return True
-        else:
-            return False
-
-    def fileno(self):
-        return self.socket.fileno()
-
-    def reading(self):
-        if self.read_done: return False
-        c = self.transport.capacity()
-        if c > 0:
-            return True
-        elif c < 0:
-            self.read_done = True
-            return False
-
-    def writing(self):
-        if self.write_done: return False
-        try:
-            p = self.transport.pending()
-            if p > 0:
-                return True
-            elif p < 0:
-                self.write_done = True
-                return False
-        except TransportException, e:
-            self.write_done = True
-            return False
-
-    def readable(self):
-        c = self.transport.capacity()
-        if c > 0:
-            try:
-                data = self.socket.recv(c)
-                if data:
-                    self.transport.push(data)
-                else:
-                    self.transport.close_tail()
-            except error, e:
-                print "read error", e
-                self.transport.close_tail()
-                self.read_done = True
-        elif c < 0:
-            self.read_done = True
-
-    def writable(self):
-        try:
-            p = self.transport.pending()
-            if p > 0:
-                data = self.transport.peek(p)
-                n = self.socket.send(data)
-                self.transport.pop(n)
-            elif p < 0:
-                self.write_done = True
-        except error, e:
-            print "write error", e
-            self.transport.close_head()
-            self.write_done = True
-
-    def tick(self, now):
-        return self.transport.tick(now)
-
-    def __repr__(self):
-        return str(self.address)
-
-class Acceptor:
-
-    def __init__(self, driver, host, port, *handlers):
-        self.driver = driver
-        self.socket = socket()
-        self.socket.setblocking(0)
-        self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.socket.bind((host, port))
-        self.socket.listen(1024)
-        self.handlers = expand(handlers)
-        self.driver.add(self)
-
-    def closed(self):
-        return False
-
-    def fileno(self):
-        return self.socket.fileno()
-
-    def reading(self):
-        return True
-
-    def writing(self):
-        return False
-
-    def readable(self):
-        sock, addr = self.socket.accept()
-        if sock:
-            sock.setblocking(0)
-            for h in self.handlers:
-                dispatch(h, "on_accept", sock, addr)
-
-    def tick(self, now):
-        return None
-
-class Interrupter:
-
-    def __init__(self):
-        self.read, self.write = os.pipe()
-
-    def fileno(self):
-        return self.read
-
-    def readable(self):
-        os.read(self.read, 1024)
-
-    def interrupt(self):
-        os.write(self.write, 'x')
-
-class PQueue:
-
-    def __init__(self):
-        self.entries = []
-
-    def add(self, task, priority):
-        heappush(self.entries, (priority, task))
-
-    def peek(self):
-        if self.entries:
-            return nsmallest(1, self.entries)[0]
-        else:
-            return None
-
-    def pop(self):
-        if self.entries:
-            return heappop(self.entries)
-        else:
-            return None
-
-    def __nonzero__(self):
-        if self.entries:
-            return True
-        else:
-            return False
-
-import proton
-
-TIMER_EVENT = proton.EventType(10000, "on_timer")
-
-class Timer:
-
-    def __init__(self, collector):
-        self.collector = collector
-        self.tasks = PQueue()
-
-    def schedule(self, task, deadline):
-        self.tasks.add(task, deadline)
-
-    def tick(self, now):
-        while self.tasks:
-            deadline, task = self.tasks.peek()
-            if now > deadline:
-                self.tasks.pop()
-                self.collector.put(task, TIMER_EVENT)
-            else:
-                return deadline
-
-def expand(handlers):
-    result = []
-    visited = set()
-    expandr(handlers, result, visited)
-    return result
-
-def expandr(handlers, result, visited):
-    visited.add(id(handlers))
-    for h in handlers:
-        if hasattr(h, "handlers") and id(h.handlers) not in visited:
-            expandr(h.handlers, result, visited)
-        else:
-            result.append(h)
-
-class Driver(Handler):
-
-    def __init__(self, *handlers):
-        self.collector = Collector()
-        self._handlers = expand(handlers)
-        self.interrupter = Interrupter()
-        self.timer = Timer(self.collector)
-        self.selectables = []
-        self.now = None
-        self.deadline = None
-        self._abort = False
-        self._exit = False
-        self._thread = Thread(target=self.run)
-        self._thread.setDaemon(True)
-
-    def schedule(self, task, timeout):
-        self.timer.schedule(task, self.now + timeout)
-
-    def abort(self):
-        self._abort = True
-
-    def exit(self):
-        self._exit = True
-
-    def wakeup(self):
-        self.interrupter.interrupt()
-
-    def start(self):
-        self._thread.start()
-
-    def join(self):
-        self._thread.join()
-
-    def _init_deadline(self):
-        self.now = time.time()
-        self.deadline = None
-
-    def _update_deadline(self, t):
-        if t is None or t < self.now: return
-        if self.deadline is None or t < self.deadline:
-            self.deadline = t
-
-    @property
-    def _timeout(self):
-        if self.deadline is None:
-            return None
-        else:
-            return self.deadline - self.now
-
-    def run(self):
-        self._init_deadline()
-        for h in self._handlers:
-            dispatch(h, "on_start", self)
-
-        while True:
-            self._init_deadline()
-
-            while True:
-                self.process_events()
-                if self._abort: return
-                self._update_deadline(self.timer.tick(self.now))
-                count = self.process_events()
-                if self._abort: return
-                if not count:
-                    break
-
-            reading = [self.interrupter]
-            writing = []
-
-            for s in self.selectables[:]:
-                if s.reading(): reading.append(s)
-                if s.writing(): writing.append(s)
-                self._update_deadline(s.tick(self.now))
-                if s.closed():
-                    print "Closing:", s
-                    self.selectables.remove(s)
-
-            if self._exit and not self.selectables: return
-
-            try:
-                readable, writable, _ = select.select(reading, writing, [], self._timeout)
-            except select.error, (err, errtext):
-                if err == errno.EINTR:
-                    continue
-                else:
-                    raise
-
-            for s in readable:
-                s.readable()
-            for s in writable:
-                s.writable()
-
-    def process_events(self):
-        count = 0
-
-        quiesced = False
-        while True:
-            ev = self.collector.peek()
-            if ev:
-                count += 1
-                quiesced = False
-                ev.dispatch(self)
-                for h in self.get_handlers(ev.context):
-                    ev.dispatch(h)
-                self.collector.pop()
-            elif quiesced:
-                return count
-            else:
-                for h in self._handlers:
-                    dispatch(h, "on_quiesced", self)
-                quiesced = True
-
-        return count
-
-    getters = {
-        Transport: lambda x: x.connection,
-        Delivery: lambda x: x.link,
-        Sender: lambda x: x.session,
-        Receiver: lambda x: x.session,
-        Session: lambda x: x.connection,
-    }
-
-    def get_handlers(self, context):
-        if hasattr(context, "handlers"):
-            return context.handlers
-        elif context.__class__ in self.getters:
-            parent = self.getters[context.__class__](context)
-            return self.get_handlers(parent)
-        else:
-            return self._handlers
-
-    def on_connection_local_open(self, event):
-        conn = event.context
-        if conn.state & Endpoint.REMOTE_UNINIT:
-            self._connect(conn)
-
-    def _connect(self, conn):
-        transport = Transport()
-        transport.idle_timeout = 300
-        sasl = transport.sasl()
-        sasl.mechanisms("ANONYMOUS")
-        sasl.client()
-        transport.bind(conn)
-        sock = socket()
-        sock.setblocking(0)
-        hostport = conn.hostname.split(":", 1)
-        host = hostport[0]
-        if len(hostport) > 1:
-            port = int(hostport[1])
-        else:
-            port = 5672
-        sock.connect_ex((host, port))
-        selectable = Selectable(transport, sock, (host, port))
-        self.add(selectable)
-
-    def on_timer(self, event):
-        event.context()
-
-    def connection(self, *handlers):
-        conn = Connection()
-        if handlers:
-            conn.handlers = expand(handlers)
-        conn.collect(self.collector)
-        return conn
-
-    def acceptor(self, host, port, *handlers):
-        if not handlers:
-            handlers = [self]
-        return Acceptor(self, host, port, *handlers)
-
-    def on_accept(self, sock, addr):
-        conn = Connection()
-        conn.collect(self.collector)
-        transport = Transport()
-        transport.bind(conn)
-        sasl = transport.sasl()
-        sasl.mechanisms("ANONYMOUS")
-        sasl.server()
-        sasl.done(SASL.OK)
-        sel = Selectable(transport, sock, addr)
-        self.add(sel)
-
-    def add(self, selectable):
-        self.selectables.append(selectable)
-
-class Handshaker(Handler):
-
-    def on_connection_remote_open(self, event):
-        conn = event.context
-        if conn.state & Endpoint.LOCAL_UNINIT:
-            conn.open()
-
-    def on_session_remote_open(self, event):
-        ssn = event.context
-        if ssn.state & Endpoint.LOCAL_UNINIT:
-            ssn.open()
-
-    def on_link_remote_open(self, event):
-        link = event.context
-        if link.state & Endpoint.LOCAL_UNINIT:
-            link.source.copy(link.remote_source)
-            link.target.copy(link.remote_target)
-            link.open()
-
-    def on_connection_remote_close(self, event):
-        conn = event.context
-        if not (conn.state & Endpoint.LOCAL_CLOSED):
-            conn.close()
-
-    def on_session_remote_close(self, event):
-        ssn = event.context
-        if not (ssn.state & Endpoint.LOCAL_CLOSED):
-            ssn.close()
-
-    def on_link_remote_close(self, event):
-        link = event.context
-        if not (link.state & Endpoint.LOCAL_CLOSED):
-            link.close()
-
-class FlowController(Handler):
-
-    def __init__(self, window):
-        self.window = window
-
-    def top_up(self, link):
-        delta = self.window - link.credit
-        link.flow(delta)
-
-    def on_link_local_open(self, event):
-        link = event.context
-        if link.is_receiver:
-            self.top_up(link)
-
-    def on_link_remote_open(self, event):
-        link = event.context
-        if link.is_receiver:
-            self.top_up(link)
-
-    def on_link_flow(self, event):
-        link = event.context
-        if link.is_receiver:
-            self.top_up(link)
-
-    def on_delivery(self, event):
-        delivery = event.context
-        if delivery.link.is_receiver:
-            self.top_up(delivery.link)
-
+class Logger(object):
+
+    def log(self, msg, *args):
+        if self.trace:
+            sys.stderr.write(("%s\n" % msg) % args)
+            sys.stderr.flush()
 class Row:
 
     def __init__(self):
@@ -483,7 +57,7 @@ class Row:
         return bool(self.links)
 
 
-class Router(Handler):
+class Router:
 
     EMPTY = Row()
 
@@ -537,7 +111,7 @@ class Router(Handler):
     def on_link_final(self, event):
         self.remove(event.context)
 
-class Pool(Handler):
+class Pool:
 
     def __init__(self, driver, router=None):
         self.driver = driver
@@ -589,12 +163,12 @@ class Pool(Handler):
         rcv.target.address = local
         return rcv
 
-class MessageDecoder(Handler):
+class MessageDecoder:
 
     def __init__(self, delegate):
         self.__delegate = delegate
 
-    def on_start(self, drv):
+    def on_reactor_init(self, event):
         try:
             self.__delegate
         except AttributeError:
@@ -693,21 +267,21 @@ class SendQueuePool:
         self.pool[addr].on_start(self.drv)
         return self.pool[addr]
 
-class SendQueue(Handler):
+class SendQueue:
 
     def __init__(self, address):
         self.address = Address(address)
         self.messages = []
         self.sent = 0
+        self.closed = False
 
-    def on_start(self, drv):
-        self.driver = drv
-        self.connect(self.address)
+    def on_reactor_init(self, event):
+        self.connect(event.reactor)
 
-    def connect(self, network=None):
+    def connect(self, reactor, network=None):
         if network is None:
             network = self.address
-        self.conn = self.driver.connection(self)
+        self.conn = reactor.connection(self)
         self.conn.hostname = network.host
         ssn = self.conn.session()
         snd = ssn.sender(str(self.address))
@@ -722,7 +296,7 @@ class SendQueue(Handler):
         network = redirect(event.link)
         event.connection.close()
         if network:
-            self.connect(network)
+            self.connect(event.reactor, network)
 
     def put(self, message):
         self.messages.append(message.encode())
@@ -742,30 +316,39 @@ class SendQueue(Handler):
             self.sent += 1
 
     def on_transport_closed(self, event):
-        conn = event.context.connection
+        conn = event.connection
         if self.conn != conn: return
         self.conn = None
         self.link = None
-        self.driver.schedule(self.connect, 1)
+        if not self.closed:
+            event.reactor.schedule(1, self)
+
+    def on_timer_task(self, event):
+        self.connect(event.reactor)
+
+    def close(self):
+        self.closed = True
+        if self.conn:
+            self.conn.close()
 
 # XXX: terrible name for this
-class RecvQueue(Handler):
+class RecvQueue:
 
     def __init__(self, address, delegate):
         self.address = Address(address)
         self.delegate = delegate
         self.decoder = MessageDecoder(self.delegate)
-        self.handlers = [FlowController(1024), self.decoder, self]
+        self.handlers = [FlowController(1024), self.decoder]
+        self.closed = False
 
-    def on_start(self, drv):
-        self.driver = drv
-        self.decoder.on_start(drv)
-        self.connect()
+    def on_reactor_init(self, event):
+        event.dispatch(self.decoder)
+        self.connect(event.reactor)
 
-    def connect(self, network=None):
+    def connect(self, reactor, network=None):
         if network is None:
             network = self.address
-        self.conn = self.driver.connection(self)
+        self.conn = reactor.connection(self)
         self.conn.hostname = network.host
         ssn = self.conn.session()
         rcv = ssn.receiver(str(self.address))
@@ -779,25 +362,25 @@ class RecvQueue(Handler):
         network = redirect(event.link)
         event.connection.close()
         if network:
-            self.connect(network)
+            self.connect(event.reactor, network)
 
     def on_transport_closed(self, event):
-        conn = event.context.connection
+        conn = event.connection
         if self.conn != conn: return
         self.conn = None
-        self.driver.schedule(self.connect, 1)
+        if not self.closed:
+            event.reactor.schedule(1, self)
+
+    def on_timer_task(self, event):
+        self.connect(event.reactor)
+
+    def close(self):
+        self.closed = True
+        if self.conn:
+            self.conn.close()
 
 def redirect_link(link, host="127.0.0.1", port="5672"):
     link.condition = Condition("amqp:link:redirect", None,
        {symbol("network-host"): host,
         symbol("port"): port})
     link.close()
-
-import sys
-
-class Logger(object):
-
-    def log(self, msg, *args):
-        if self.trace:
-            sys.stderr.write(("%s\n" % msg) % args)
-            sys.stderr.flush()

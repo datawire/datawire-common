@@ -77,10 +77,7 @@ class Splitter(Service):
         self.store = ScopedStore()
         self.consumers = []
         self.subscribers = []
-        self.handlers = [Handshaker(), FlowController(1024), self]
-
-    # def on_start(self, drv):
-    #    drv.acceptor("localhost", 5672)
+        self.handlers = [Handshaker(), FlowController(1024)]
 
     def is_consumer(self, snd):
         return snd.source.address and snd.source.address.endswith("?consumer")
@@ -149,5 +146,5 @@ pubport = args.public_port
 redirector = args.redirector
 id = args.id
 
-drv = Driver(Splitter(id=id, redirector=redirector, local_host=host, local_port=port, pubhost=pubhost, pubport=pubport, trace=trace))
-drv.run()
+Reactor(Splitter(id=id, redirector=redirector, local_host=host, local_port=port, pubhost=pubhost, pubport=pubport,
+                 trace=trace)).run()

@@ -3,7 +3,7 @@ import random, sys, os, argparse
 from common import *
 from service import get_base_argparser
 
-class Redirector(Handler, Logger):
+class Redirector(Logger):
 
     def __init__(self, host, port, trace=None, pubhost=None, pubport=None):
         self.host = host
@@ -15,11 +15,11 @@ class Redirector(Handler, Logger):
         if self.pubport == 5672:
             self.address = "//%s" % (pubhost or host)
         self.services = {}
-        self.handlers = [Handshaker(), self]
+        self.handlers = [Handshaker()]
         self.count = 0
 
-    def on_start(self, drv):
-        drv.acceptor(self.host, self.port)
+    def on_reactor_init(self, event):
+        event.reactor.acceptor(self.host, str(self.port))
 
     def ancestors(self, address):
         yield address
@@ -64,7 +64,12 @@ class Redirector(Handler, Logger):
             self.log("Adding service %s", service)
             self.log("Services: %s", self.services)
         else:
-            drv.schedule(conn.close, 10)
+            task = event.reactor.schedule(10, self)
+            task.conn = conn
+
+    def on_timer_task(self, event):
+        task = event.context
+        task.conn.close()
 
     def on_link_remote_open(self, event):
         link = event.link
@@ -117,5 +122,4 @@ port = int(args.port)
 pubhost = args.public_host if args.public_host else host
 pubport = int(args.public_port) if args.public_port else port
 
-drv = Driver(Redirector(host, port, trace, pubhost=pubhost, pubport=pubport))
-drv.run()
+Reactor(Redirector(host, port, trace, pubhost=pubhost, pubport=pubport)).run()

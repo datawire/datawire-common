@@ -38,16 +38,16 @@ else:
         time         = 5000   # Use seconds x 1000
         notifications.Notify(app_name, replace_id, icon, title, text, actions_list, hint, time)
 
-class Client(Handler):
+class Client:
 
     def __init__(self, win, send_address, recv_address, notify=False, echo=False):
         self.offset = 0
         self.log = []
         self.input = ""
         self.win = win
+        self.sel = None
         self.sendq = SendQueue(send_address)
         self.recvq = RecvQueue(recv_address, self)
-        self.exiting = False
         self.notify = notify
         self.echo = echo
 
@@ -60,30 +60,19 @@ class Client(Handler):
 
         self.prev_maxyx = None
 
-    def fileno(self):
-        return 0
-
-    def reading(self):
+    def on_reactor_quiesced(self, event):
         maxyx = self.win.getmaxyx()
         if maxyx != self.prev_maxyx:
             self.render()
             self.pref_maxyx = maxyx
-        return True
 
-    def writing(self):
-        return False
-
-    def tick(self, now):
-        pass
-
-    def closed(self):
-        return self.exiting
-
-    def on_start(self, drv):
-        self.driver = drv
-        self.driver.add(self)
-        self.sendq.on_start(drv)
-        self.recvq.on_start(drv)
+    def on_reactor_init(self, event):
+        self.sel = event.reactor.selectable()
+        self.sel.fileno(0)
+        self.sel.reading = True
+        event.reactor.update(self.sel)
+        event.dispatch(self.sendq)
+        event.dispatch(self.recvq)
         self.render()
 
     def pp(self, msg):
@@ -137,7 +126,7 @@ class Client(Handler):
         if notificate:
             notify(name, pretty)
 
-    def readable(self):
+    def on_selectable_readable(self, event):
         while True:
             c = self.win.getch()
             if c < 0:
@@ -175,10 +164,10 @@ class Client(Handler):
                 if self.offset > 0:
                     self.offset -= 1
             elif c == 4:
-                self.exiting = True
-                self.sendq.conn.close()
-                self.recvq.conn.close()
-                self.driver.exit()
+                self.sel.terminate()
+                event.reactor.update(self.sel)
+                self.sendq.close()
+                self.recvq.close()
             elif c == curses.KEY_RESIZE:
                 pass
             elif ascii.isprint(c):
@@ -240,7 +229,6 @@ args = parser.parse_args()
 
 def main(win):
     win.nodelay(1)
-    drv = Driver(Client(win, args.send_address, args.recv_address or args.send_address, args.notify, args.echo))
-    drv.run()
+    Reactor(Client(win, args.send_address, args.recv_address or args.send_address, args.notify, args.echo)).run()
 
 curses.wrapper(main)
