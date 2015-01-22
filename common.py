@@ -17,7 +17,7 @@
 # under the License.
 #
 
-import sys, re
+import sys, re, traceback
 from proton import *
 from proton.reactors import Reactor
 from proton.handlers import CHandshaker as Handshaker, \
@@ -260,11 +260,15 @@ class SendQueuePool:
     def on_start(self, drv):
         self.drv = drv
 
+    def on_reactor_init(self, event):
+        self.dispatcher = event
+
     def to(self, addr):
         if addr in self.pool:
             return self.pool[addr]
         self.pool[addr] = SendQueue(addr)
-        self.pool[addr].on_start(self.drv)
+        # self.pool[addr].on_start(self.drv)
+        self.dispatcher.dispatch(self.pool[addr])
         return self.pool[addr]
 
 class SendQueue:
