@@ -167,12 +167,6 @@ class MessageDecoder:
 
     def __init__(self, delegate):
         self.__delegate = delegate
-
-    def on_reactor_init(self, event):
-        try:
-            self.__delegate
-        except AttributeError:
-            self.__delegate = self
         self.__message = Message()
 
     def on_delivery(self, event):

@@ -93,6 +93,11 @@ class Updater(Logger):
         for snd in self.outgoing:
             self.push(snd)
 
+class Group:
+
+    def __init__(self, handlers):
+        self.handlers = handlers
+
 class Interceptor:
 
     def __init__(self, pattern, *delegates):
@@ -106,9 +111,8 @@ class Interceptor:
             address = event.link.remote_target.address
 
         if address and fnmatch(address, self.pattern):
-            event.link.handlers = self.delegates
-            for h in event.link.handlers:
-                event.dispatch(h)
+            event.link.handler = Group(self.delegates)
+            event.dispatch(event.link.handler)
 
 class Controller(Logger):
 

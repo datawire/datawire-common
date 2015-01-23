@@ -77,7 +77,6 @@ class Splitter(Service):
         self.store = ScopedStore()
         self.consumers = []
         self.subscribers = []
-        self.handlers = [Handshaker(), FlowController(1024)]
 
     def is_consumer(self, snd):
         return snd.source.address and snd.source.address.endswith("?consumer")
