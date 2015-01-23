@@ -74,6 +74,9 @@ class Splitter(Service):
 
         Service.__init__(self, redirector, id, local_host, local_port, trace, pubhost=pubhost, pubport=pubport)
 
+        self.handlers.remove(self.decoder)
+        del self.decoder
+
         self.store = ScopedStore()
         self.consumers = []
         self.subscribers = []
