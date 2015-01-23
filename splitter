@@ -70,7 +70,6 @@ class Splitter(Service):
         pubport = pubport or local_port
         redirector = redirector if redirector and id else "localhost"
         self.trace = trace
-        id = id or ""
 
         Service.__init__(self, redirector, id, local_host, local_port, trace, pubhost=pubhost, pubport=pubport)
 

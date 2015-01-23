@@ -25,9 +25,10 @@ class Redirector(Logger):
         yield address
         if address is None: return
         address = address.split("?", 1)[0]
-        path = address.split("/")
+        path = address.split("/")[:-1]
         while path:
             addr = "/".join(path)
+            yield "%s/" % addr
             yield addr
             path.pop()
 
@@ -47,6 +48,8 @@ class Redirector(Logger):
     def qualify(self, address):
         if address and address[0] == "/":
             return address
+        elif address is None:
+            return self.address
         else:
             return "%s/%s" % (self.address, address)
 
