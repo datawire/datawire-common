@@ -1,5 +1,7 @@
 # Makefile for Sphinx documentation
 #
+SHELL := /usr/bin/env sh
+PYTHON := /usr/bin/env python
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
@@ -48,6 +50,9 @@ help:
 
 clean:
 	rm -rf $(BUILDDIR)/*
+
+install:
+	$(PYTHON) setup.py install
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
