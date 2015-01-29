@@ -1,9 +1,76 @@
+"""
+.. module:: service
+   :platform: Unix
+   :synopsis: Provides building blocks of microservices
+
+Provides building blocks of microservices, including the Service base class
+
+.. moduleauthor:: Rafael Schloming, Richard Li
+
+"""
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
 import sys
 import argparse
 from common import *
 from fnmatch import fnmatch
 
 class Tether:
+    """The Tether forms a connection with another microservice for the purpose
+    of determining whether the other microservice is alive.
+    
+    Currently, the tether only supports connecting to named services connected
+    to the redirector.  But why does it only support this behavior?  Such 
+    questions haunt every man's waking and dreaming moments...
+    
+    It is initially connected when its on_reactor_init event is triggered,
+    so this event must be manually dispatched in the on_reactor_init
+    handler of the main microservice, or the Tether must be added as a handler
+    to the microservice so as to listen for its events.
+    
+    If a delegate is provided, the delegate's on_tether_connect and on_tether_disconnect
+    events will be triggered when the tether's connections open and are interrupted.
+    This can be useful for changing a microservice's behavior depending on whether
+    another microservice is active and accessible or not.
+    
+    :param director: the redirector's address ("//localhost:5672", for example)
+    :param service: the name of the service with which to tether.
+                    Will be looked up on the redirector ("chat", for example)
+    :param host: the public host which can be used to access THIS microservice
+    :param port: the public port which can be used to access THIS microservice
+    :param delegate: the delegate class whose on_tether_connect and on_tether_disconnect
+                     handlers will be called when appropriate, or None if these events
+                     are irrelevant
+    :type director: string
+    :type service: string
+    :type host: string
+    :type port: integer
+    :type delegate: subclass of service.Service
+    
+    :Example:
+    
+    >>> # In __init__ method of a microservice:
+    >>> self.handlers = [Tether("//localhost", "a_microservice", pubhost or host, pubport or port, self)]
+    >>> # Now I can define on_tether_connect and on_tether_disconnect
+    >>> #   handlers within this microservice
+    
+    """
 
     def __init__(self, director, service, host, port, delegate=None):
         self.director = director
@@ -16,7 +83,8 @@ class Tether:
         self.connect(event)
 
     def on_transport_closed(self, event):
-        conn = event.context.connection
+        if self.delegate:
+            dispatch(self.delegate, "on_tether_disconnect", event)
         self.conn = None
         event.reactor.schedule(1, self)
 
@@ -30,10 +98,12 @@ class Tether:
     def connect(self, event):
         self.conn = event.reactor.connection(self)
         self.conn.hostname = self.director
-        self.conn.properties = {symbol("service"): (self.service, self.host, self.port)}
+        self.conn.properties = {symbol("service"): (self.service, self.host, str(self.port))}
         self.conn.open()
 
 class Updater(Logger):
+    """Provides basic tagless pub/sub interaction
+    """
 
     def __init__(self, delegate):
         self.__delegate = delegate
