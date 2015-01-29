@@ -1,6 +1,7 @@
 #!/bin/bash
 
-TEMP=$(mktemp -d)
+TEMP=$(mktemp -d tmp.XXXXXXXXXX)
+echo $TEMP
 git clone https://github.com/ryan-roemer/sphinx-bootstrap-theme.git $TEMP
 ORIGIN=$(pwd)
 cd $TEMP
