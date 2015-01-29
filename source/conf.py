@@ -15,6 +15,13 @@
 import sys
 import os
 
+try:
+    import sphinx_bootstrap_theme
+    bootstrap = True
+except ImportError:
+    sys.stderr.write("Could not import bootstrap theme. Is it installed?%s" % os.linesep)
+    bootstrap = False
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -50,7 +57,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Datawire.io'
-copyright = u'2015, Richard Li, Rafael Schloming'
+copyright = u'2015, Datawire.io'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -104,7 +111,12 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+if bootstrap:
+    # Activate the theme.
+    html_theme = 'bootstrap'
+    html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+else:
+    html_theme = 'default'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

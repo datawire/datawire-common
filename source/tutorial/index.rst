@@ -3,20 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Datawire.io's documentation!
-=======================================
+Tutorial
+========
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-   tutorial/index
-   specifications
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   000_installing_proton
+   001_installing_datawire
