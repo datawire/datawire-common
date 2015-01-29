@@ -88,7 +88,10 @@ def process_tags(example_file_name):
         f.write(line)
     f.close()
 
-clear_folder(os.path.join(FILE_PATH, TAG_DIR))
+full_tags_dir = os.path.join(FILE_PATH, TAG_DIR)
+if not os.path.exists(full_tags_dir):
+    os.makedirs(full_tags_dir)
+clear_folder(full_tags_dir)
 example_files = os.listdir(os.path.join(FILE_PATH, EXAMPLE_DIR))
 for example_file in example_files:
     process_tags(example_file)
