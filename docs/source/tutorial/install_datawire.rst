@@ -11,4 +11,4 @@ Install the latest version of Datawire on Mac OS X or Linux::
   curl https://install.datawire.io | /bin/sh
 
 This will install the Datawire microserver, command line interface,
-and message bus.
+message bus, and an example logging microservice.

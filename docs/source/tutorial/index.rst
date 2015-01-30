@@ -12,4 +12,4 @@ Contents:
    :maxdepth: 2
 
    install_datawire	     
-   001_installing_datawire
+   setup_microlog
