@@ -252,17 +252,3 @@ Note that it is not usually necessary to use the "read" operation
 explicitly since all subscriptions to the controller will be notified
 whenever the configuration is modified.
 
-Documentation
-=============
-
-Documentation is written using Sphinx.  You must have [Sphinx installed](http://sphinx-doc.org/latest/install.html) to build the documentation.
-
-In addition, Sphinx can only build the documentation if the latest version of the datawire modules are installed on the host machine.  To install the latest version of the modules and build the HTML documentation, run:
-
-```sh
-(make install && make html)
-```
-
-You may need to run `make install` as root.
-
-The documentation will be built in the build directory.
