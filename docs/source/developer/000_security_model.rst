@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Datawire Security Architecture
-==============================
+******************************
 
 The Datawire security architecture is a "zero trust" security model
 where security is ubiquitous throughout the infrastructure. In this
@@ -12,13 +12,14 @@ model, there is no perimeter, and authentication and trust are
 established on a per session basis.
 
 Authentication
---------------
+==============
 
 The authentication model for Datawire services is a Trust On First Use
 (TOFU) model that is conceptually similar to ssh. The authentication
 workflow is described below:
 
-User wants to connect microservice A to microservice B.
+Microserver to Microserver authentication
+-----------------------------------------
 
 #. When A is started, it generates a public/private key pair
    (https://rietta.com/blog/2012/01/27/openssl-generating-rsa-key-from-command/).
@@ -51,13 +52,24 @@ User wants to connect microservice A to microservice B.
 
 #. If approved, A can then connect to B.
 
-When a new instance of the service is started, it needs to get a copy
-of the public/private keypair from an existing instance. 
+#. New instances of a service must be started from an existing
+   instance. As part of the instantiation process, the existing key is
+   copied onto the new instance.
 
-Service routers can also copy the key.
+#. When a service router is deployed in front of a microservice, it
+   can request a copy of the key from the microservice. The request
+   generates a control message back to the owner(s) of the
+   microservice who have to approve the change.
 
+Microclient to Microserver authentication
+-----------------------------------------
 
+#. A microclient generates a public/private key pair.
 
+#. The microclient instantiates the microserver.
+
+   * The microclient public key is installed on the microserver.
+   * The microserver public key is installed on the microclient.
 
 
 Wire Level Protection
