@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    tutorial/index
+   developer/index
    specifications
 
 Indices and tables
