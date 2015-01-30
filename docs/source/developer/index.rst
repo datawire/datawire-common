@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Tutorial
-========
+Developer Guide
+===============
 
 Contents:
 
@@ -12,4 +12,3 @@ Contents:
    :maxdepth: 2
 
    000_security_model
-   001_installing_datawire
