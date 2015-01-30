@@ -11,5 +11,5 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   000_installing_proton
+   install_datawire	     
    001_installing_datawire
