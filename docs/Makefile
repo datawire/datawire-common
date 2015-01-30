@@ -53,7 +53,7 @@ clean:
 	rm -rf $(BUILDDIR)/*
 
 install:
-	$(PYTHON) setup.py install
+	$(PYTHON) ../setup.py install
 
 html:
 	$(PYTHON) $(SOURCEDIR)/extract_tags.py

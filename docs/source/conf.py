@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Datawire.io documentation build configuration file, created by
-# sphinx-quickstart on Tue Jan 27 12:04:31 2015.
+# sphinx-quickstart on Fri Jan 30 10:39:21 2015.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
@@ -40,7 +40,7 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
-    'sphinx.ext.viewcode',
+    'sphinx.ext.ifconfig',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -215,7 +215,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   ('index', 'Datawireio.tex', u'Datawire.io Documentation',
-   u'Richard Li, Rafael Schloming', 'manual'),
+   u'Datawire.io', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -245,7 +245,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'datawireio', u'Datawire.io Documentation',
-     [u'Richard Li, Rafael Schloming'], 1)
+     [u'Datawire.io'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -259,7 +259,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'Datawireio', u'Datawire.io Documentation',
-   u'Richard Li, Rafael Schloming', 'Datawireio', 'One line description of project.',
+   u'Datawire.io', 'Datawireio', 'One line description of project.',
    'Miscellaneous'),
 ]
 
