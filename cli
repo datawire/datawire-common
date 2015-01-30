@@ -1,0 +1,240 @@
+#!/usr/bin/env python
+
+'''
+Command-line client for executing a single command on a request/response
+microservice.  The program exits after receiving and printing the first
+message from the server.
+'''
+
+import sys, os, argparse, time, binascii, re
+from collections import deque
+from common import *
+
+def str_to_bytes(string):
+    return [ord(c) for c in string]
+
+def bytes_to_str(byte_list):
+    return ''.join([chr(b) for b in byte_list])
+
+class Client:
+    rcv_conn = None
+    snd_conn = None
+
+    def __init__(self, send_address, recv_address=None, uid="anon", echo=False, attach=False):
+        # Setup decoder and flow controller for buffering and decoding received messages:
+        self.decoder = MessageDecoder(self)
+        self.handlers = [FlowController(1024), self.decoder]
+
+        # Send and receive addresses for connection:
+        self.send_address = Address(send_address)
+        self.recv_address = Address(recv_address) if recv_address else self.send_address
+        self.uid = uid
+        # Whether or not the client has been closed:
+        self.closed = False
+        # The current input buffer for stdin (if no new line detected):
+        self.input_buffer = []
+        # Set up a deque for queued messages:
+        self.queue = deque()
+        # The delivery number for sent messages:
+        self.sent = 0
+        # Whether or not to echo messages as they are sent:
+        self.echo = echo
+        # Whether or not to attach stdout even after stdin receives EOF:
+        self.attach = attach
+
+    def on_reactor_init(self, event):
+        # Create selectable for stdin:
+        sel = event.reactor.selectable()
+        sel.fileno(sys.stdin.fileno())
+        sel.reading = True
+        event.reactor.update(sel)
+        # Start the connection to the server:
+        self._connect(event.reactor)
+
+    def _connect_snd(self, reactor):
+        # Create connection:
+        self.snd_conn = reactor.connection(self)
+        self.snd_conn.hostname = self.send_address.host
+        # Get connection and sender/receiver links:
+        ssn = self.snd_conn.session()
+        self.snd = ssn.sender(str(self.send_address))
+        # Configure the links with the send/recv addresses:
+        self.send_address.configure(self.snd)
+        # Open the session, links, and connection:
+        ssn.open()
+        self.snd.open()
+        self.snd_conn.open()
+        # Send any queued messages:
+        self._pump(self.snd)
+
+    def _connect_rcv(self, reactor):
+        # Create connection:
+        self.rcv_conn = reactor.connection(self)
+        self.rcv_conn.hostname = self.recv_address.host
+        # Get connection and sender/receiver links:
+        ssn = self.rcv_conn.session()
+        self.rcv = ssn.receiver(str(self.recv_address))
+        # Configure the links with the send/recv addresses:
+        self.recv_address.configure(self.rcv)
+        # Open the session, links, and connection:
+        ssn.open()
+        self.rcv.open()
+        self.rcv_conn.open()
+
+    def _connect(self, reactor):
+        if self.rcv_conn:
+            self.rcv_conn.close()
+            self.rcv_conn = None
+        if self.snd_conn:
+            self.snd_conn.close()
+            self.snd_conn = None
+        self._connect_rcv(reactor)
+        self._connect_snd(reactor)
+
+    def on_link_remote_close(self, event):
+        # Handle redirects:
+        link = event.link
+        new_address = redirect(event.link)
+        event.connection.close()
+        link.close()
+        if new_address:
+            if link == self.snd:
+                self.send_address = new_address
+                self._connect_snd(event.reactor)
+            elif link == self.rcv:
+                self.recv_address = new_address
+                self._connect_rcv(event.reactor)
+
+    def on_transport_closed(self, event):
+        # If the connection closes unexpectedly, schedule a reconnect:
+        conn = event.connection
+        if conn != self.rcv_conn and conn != self.snd_conn:
+            return
+        if not self.closed:
+            event.reactor.schedule(1, self)
+
+    def on_timer_task(self, event):
+        # Scheduled by the reactor:
+        self._connect(event.reactor)
+
+    def _exit(self, event):
+        # Close the client if not already closed:
+        if self.closed:
+            return
+        self.closed = True
+        # Close connection:
+        if not self.attach:
+            self.rcv_conn.close()
+            self.snd_conn.close()
+        # Stop listening to stdin:
+        sel = event.context
+        sel.terminate()
+        event.reactor.update(sel)
+
+    def on_link_flow(self, event):
+        # When flow is allotted, try to send queued messages:
+        link = event.context
+        if link == self.snd:
+            self._pump(link)
+
+    def _process_message(self, msg_str):
+        # Convert input string into a message:
+        msg = Message()
+        msg.user_id = self.uid
+        msg.creation_time = time.time()
+        msg.reply_to = str(self.recv_address)
+        # Process opcode messages:
+        if msg_str and msg_str[0] == "/":
+            parts = msg_str.split(None, 1)
+            opcode = parts.pop(0)[1:]
+            msg.properties = {"opcode": unicode(opcode)}
+            if parts:
+                try:
+                    msg.body = eval(parts[0])
+                except:
+                    sys.stderr.write(str(sys.exc_info()[1]) + os.linesep)
+                    self._exit()
+                    return
+            else:
+                msg.body = None
+        else:
+            msg.body = unicode(msg_str)
+        return msg
+
+    def _pump(self, link):
+        # When flow credit is available and messages are queued, send them:
+        while len(self.queue) > 0 and link.credit > 0:
+            dlv = link.delivery(str(self.sent))
+            bytes = self.queue.popleft()
+            link.send(bytes.encode())
+            dlv.settle()
+            self.sent += 1
+            # If echoing messages, echo the sent message to stdout:
+            if self.echo:
+                sys.stdout.write(str(bytes) + os.linesep)
+                sys.stdout.flush()
+        if len(self.queue) == 0 and self.closed and not self.attach:
+            if self.rcv_conn: self.rcv_conn.close()
+            if self.snd_conn: self.snd_conn.close()
+
+    def _buffer_and_send(self, inp):
+        # Given an input string from stdin, buffer it, split it into lines and try to
+        #   pump it through the sender link
+        inp_bytes = str_to_bytes(inp)
+        queued = []
+        line_break = 10
+        # Split by lines:
+        while line_break in inp_bytes:
+            ind = inp_bytes.index(line_break)
+            self.input_buffer.extend(inp_bytes[:ind])
+            queued.append(self.input_buffer)
+            self.input_buffer = []
+            inp_bytes = inp_bytes[(ind + 1):]
+        queued_reconstructed = [self._process_message(msg) for msg in map(bytes_to_str, queued)]
+        # Enqueue the new messages
+        self.queue.extend(queued_reconstructed)
+        # Try to pump the queued messages through the sender link:
+        if self.snd:
+            self._pump(self.snd)
+
+    def on_selectable_readable(self, event):
+        # Called when input is available from stdin:
+        sel = event.context
+        # we use os.read because sys.stdin.read blocks
+        inp = os.read(sel.fileno(), 1024)
+        if len(inp) == 0:
+            # EOF
+            self._exit(event)
+            return
+        self._buffer_and_send(inp)
+
+    def on_message(self, rcv, msg):
+        # Called when a message is received and decoded from
+        #   the receiver link
+        sys.stdout.write(str(msg) + os.linesep)
+        sys.stdout.flush()
+
+parser = argparse.ArgumentParser(description='Proton client.',
+                                 add_help=False)
+parser.add_argument("-e", "--echo", action="store_true", help="enable echo")
+parser.add_argument("-a", "--attach", action="store_true", help="keep STDOUT attached even after STDIN receives EOF")
+parser.add_argument("send_address", default="//localhost", nargs='?', help="send address")
+parser.add_argument("recv_address", nargs='?', help="recv address")
+
+args = parser.parse_args()
+
+def rand_hex(length=16):
+    return binascii.b2a_hex(os.urandom(length))
+
+address = args.send_address
+uid_match = re.compile('^/([A-Za-z0-9_-]+)::').match(address)
+if uid_match is None:
+    uid = rand_hex()
+    address = "/%s::%s" % (uid, address)
+else:
+    uid = uid_match.group(1)
+
+try:
+    Reactor(Client(send_address=address, recv_address=args.recv_address or address, uid=uid, echo=args.echo, attach=args.attach)).run()
+except KeyboardInterrupt:
+    pass
