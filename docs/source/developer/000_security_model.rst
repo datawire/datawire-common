@@ -9,67 +9,118 @@ Datawire Security Architecture
 The Datawire security architecture is a "zero trust" security model
 where security is ubiquitous throughout the infrastructure. In this
 model, there is no perimeter, and authentication and trust are
-established on a per session basis.
+established on a per message basis (with additional features to
+improve throughput).
+
+To protect against errant subscribers, all messages are fully
+encrypted.
+
 
 Authentication
 ==============
 
 The authentication model for Datawire services is a Trust On First Use
 (TOFU) model that is conceptually similar to ssh. The authentication
-workflow is described below:
+workflow is described below.
 
-Microserver to Microserver authentication
------------------------------------------
+Definitions
+-----------
 
-#. When A is started, it generates a public/private key pair
-   (https://rietta.com/blog/2012/01/27/openssl-generating-rsa-key-from-command/).
+Address
+ - A destination for messages
+ - Each address has a 1..1 relationship with a public key.
 
-#. A sends Auth request to B.
+Security session
+ - Governed by a randomly generated symmetric key.
 
-#. B sends back a challenge.
 
-#. A sends a signed message to B containing::
+Auth Handshake
+--------------
 
-   - Organization name
-   - Microservice name
-   - Public key
+When entity A wants to send a message to entity B, the following
+handshake authenticates the public key associated with A's address:
+
+#. A sends to B a signed message containing::
+
+   - A's public key
    - Public key algorithm name
-   - Signature
-
-   where signature is::
-
+   - Reply-to address
    - Organization name
-   - Microservice name
-   - Public key
-   - Public key algorithm name
-   - Challenge
+   - Sender name
 
-#. B validates the signed message using the supplied public key.
+#. B verifies the signature on the message.
 
-#. If the public key is not in B's database, B generates a control
-   message asking for approval of the connection (TOFU). Control message
-   sent to the registered owner(s) of B.
+#. B checks its local key database.
 
-#. If approved, A can then connect to B.
+   * If A's public key/reply-to address match a pre-existing entry,
+     B does nothing further.
+   * If A's public key is not in the database, or it does not match an
+     existing entry, B sends a control message to its administrator(s)
+     asking for further instructions.
 
-#. New instances of a service must be started from an existing
-   instance. As part of the instantiation process, the existing key is
-   copied onto the new instance.
+#. The reverse of this process is also performed, with B sending an
+   authentication message to A. Both parts of this process can be done
+   asynchronously.
 
-#. When a service router is deployed in front of a microservice, it
-   can request a copy of the key from the microservice. The request
-   generates a control message back to the owner(s) of the
-   microservice who have to approve the change.
+Security Sessions
+-----------------
 
-Microclient to Microserver authentication
------------------------------------------
+To reduce the overhead of public key operations, symmetric keys are
+used when possible. When entity A wants to send a message to entity B,
+the authentication handshake is first performed to validate/exchange
+public keys.
 
-#. A microclient generates a public/private key pair.
+#. A generates two random 256-bit symmetric keys, one for encryption,
+   and one for signing.
 
-#. The microclient instantiates the microserver.
+#. Using B's public key, A encrypts the symmetric key and sends the
+   result to B.
 
-   * The microclient public key is installed on the microserver.
-   * The microserver public key is installed on the microclient.
+#. When A wants to send a message to B, it first compresses the body
+   payload, and then encrypts the payload with the encryption key.
+
+#. A signs the message with the signing key. The digital signature
+   includes a nonce to detect replay scenarios.
+
+Intermediaries and Key Copying
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Authentication handshakes between two endpoints when an intermediary
+is involved requires some additional intelligence in the
+intermediary. In the following scenario, A is the publisher, while B
+and B' are subscribers. A is publishing to T, a topic.
+
+#. A authenticates to T, using the authentication handshake described
+   above.
+
+#. A creates a security session key, and encrypts the session key
+   using T's pubic key.
+
+#. T performs an authentication handshake with B and B'.
+
+#. T decrypts the security session key using T's private key, and
+   re-encrypts the security session key using the public keys of B and
+   B'.
+
+#. T sends the security session key to B and B'.
+
+#. All subsequent messages from A to B and B' can be proxied by T
+   without any encryption/decryption operation.
+
+If a new subscriber B'' is added, T shares the security session key
+with B'' after an authentication handshake.
+
+If B' no longer is a subscriber, T can request a new security session
+key from A.
+
+Revocation
+^^^^^^^^^^
+
+Session keys are always generated by the source (sender). As such, the
+sender can set arbitrary policy on when to revoke session keys.
+
+In addition, targets can request (but not require) the sender to
+revoke a session key by sending a revocation request to the sender.
 
 
 Wire Level Protection
@@ -80,7 +131,11 @@ All traffic is encrypted using TLS, with Elliptic Curve Diffie Hellman
 
 - perfect forward secrecy
 - no need to manage SSL certificates
+- protect against message header analysis
 
+Links
+-----
 
+* https://rietta.com/blog/2012/01/27/openssl-generating-rsa-key-from-command/.
 
 
