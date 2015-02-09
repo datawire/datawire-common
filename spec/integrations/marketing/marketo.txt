@@ -1,7 +1,0 @@
-
-
-Marketo integration: http://developers.marketo.com/documentation/webhooks/
-
-Marketo integrates with SFDC every 5 minutes by default (not sure if
-this is configurable).
-
