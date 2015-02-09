@@ -14,7 +14,7 @@ Install the latest version of Datawire on Mac OS X or Linux::
   curl https://install.datawire.io | /bin/sh
 
 This will install the Datawire microserver, command line interface,
-message bus, and an example logging microservice.
+message bus, and an example microservice.
 
 Initialization
 ==============
@@ -94,7 +94,7 @@ Load Balancing
 Now let's try doing some more sophisticated routing. Suppose the
 invoicing microservice starts to fall behind in processing orders. You
 can deploy another instance of the invoicing microservice, and tell
-the directory to load balance between the two invoicing microservices:
+the directory to load balance between the two invoicing microservices::
 
   dw service add invoice2 //example.com/invoices
 
