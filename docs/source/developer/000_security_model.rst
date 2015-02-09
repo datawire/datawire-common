@@ -137,5 +137,6 @@ Links
 -----
 
 * https://rietta.com/blog/2012/01/27/openssl-generating-rsa-key-from-command/.
-
-
+* http://docs.aws.amazon.com/general/latest/gr/sigv4_signing.html
+* http://docs.aws.amazon.com/general/latest/gr/sigv4-signed-request-examples.html
+* https://www.duosecurity.com/docs/authapi#authentication
