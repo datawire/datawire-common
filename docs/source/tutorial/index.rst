@@ -9,5 +9,5 @@ Tutorial
 .. toctree::
    :maxdepth: 2
 
-   install_datawire	     
-   setup_microlog
+   use_datawire
+
