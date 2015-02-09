@@ -1,254 +1,133 @@
-Usage
-=====
+Datawire
+========
 
-Start the analyzer: ./analyzer -t
+Datawire makes it easy to quickly build and manage resilient and
+scalable microservices
+(http://martinfowler.com/articles/microservices.html).
 
-Receive messages from the analyzer:
-    ./arc //localhost
-    ./arc //localhost/controller
+With Datawire, you:
 
-arc commands:
+- write a microservice using Python, JavaScript, C, or Java
+- deploy the microservice, using any technology
 
-/update <dict>
-/update <key:value>
+Datawire provides infrastructure that lets you:
 
-/delete <key>
-/delete
+- Discover other available microservices
+- Communicate asynchronously with other microservices and clients
+- Manage your microservices
+- Authenticate microservices
 
-/read
+Detailed documentation is available at http://docs.datawire.io.
 
-Server
-======
-
-Engine for receiving, routing, and analyzing AMQP messages for Kinetic.
-
-Control Flow
-============
-
-
-                       [global replication]    [regional replication]
-
-    Client ----> DNS -------> Redirector ----------> Analyzers ----> Alert
-                  |               |                      |
-                  |               |                      |
-            map to vhost    global schema            local schema
-           us-west.aws.*   cust <-> analyzer map     git repo
-
-## Network
-
-- routing
-  - analyzer --> redirector
-  - client --> analyzer (internet)
-  - client --> redirector (internet)
-
-- VPC DMZ contains
-  - analyzers
-  - redirector
-  - only allows AMQP traffic on 
-
-## Partioning
-
-Message flow is partitioned in the following hierarchy:
-
-- to region/hosting provider (via DNS vhost, based on customer)
-- to analyzer, based on topology and data type
-
-## Redirector / Analyzer Handshake
-
-When an analyzer is instantiated, it initiates a handshake with the
-redirector. The handshake protocol:
-
-- notifies the redirector that the analyzer is available, and is
-  subsequently used by the redirector for liveness detection
-- notifies the redirector of the data sources that it will subscribe
-  to, based on the topology information available to the analyzer
-
-System architecture
-===================
-
-- Deploy
-  - get code
-  - build image (or docker container?)
-  - create AMI
-  - push AMI to amazon
-
-- Redirector instantiates new analyzer VMs
-
-- Analyzer node
-  - Skynet: deploys new docker containers and sets up HAProxy config
-  - Docker containers running analyzer/custom code
-  - HAProxy to proxy from localport to outside world
-  - Advanced: packet filtering & monitoring on the stuff 
-
-Security architecture
-=====================
-
-Inspiration:
-
-https://www.usenix.org/conference/lisa13/enterprise-architecture-beyond-perimeter
-
-- All point-to-point communications are encrypted with TLS
-- We use TLS client certificates for authentication
-
-## Analyzer security
-
-Docker isolates all Python code in its own container. Network access
-is limited to localhost. An HAProxy that sits on the actual virtual
-machine handles authentication and SSL, and proxies traffic to the
-appropriate container. This insures that the container never has
-access to the client certificates.
-
-## Machine identity
-
-http://pomcor.com/techreports/M2MSec14.pdf
-
-## Certificate handling
-
-Each machine has its own unique certificate:
-
-- Analyzer VM
-- Redirector
-- Alert
-- ...
-
-When a VM is created, it is issued its own certificate by the Kinetic
-certificate server.  (How do you authenticate the Kinetic cert server?)
-
-When a client is created, it is also issued a certificate. 
-
-Certificates are bound to a machine (via IP?).
-
-Do we use RADIUS+EAP?
-
-1. Client will verify server certificate.
-2. Server needs to:
-   - verify client identity
-   - verify authorization (?)
-
-
-the client certificate will have the CA info
-
-Analyzer:
-- can get identity passed in by haproxy
-
-https://raymii.org/s/tutorials/haproxy_client_side_ssl_certificates.html
-http://blog.haproxy.com/2012/10/03/ssl-client-certificate-management-at-application-level/
-
-Questions:
- - how do we partition a single data stream (e.g., statsd/AMQP for Duo) across
-   multiple analyzers?
-
-
-
-Data Architecture
-=================
-
-The message header contains, among other things:
-
-- origin
-- data type (statsd, collectd, etc.)
-
-The local schema contains, among other things:
-
-- user auth info
-- topology info
-- info about data sources
-
-User Config
+Quick Start
 ===========
 
-- they need to generate a client-side config
-  - AMQP address
-  - secret key
-  - profile
-- alert configuration
-  - who to send alerts to
-  - specify data sources to apply alerts to
-- (optional) analytics
-- (optional) topology file
+Install Datawire and example microchat:
 
-Availability
+  curl https://install.datawire.io | /bin/sh
+
+Add the microchat to Datawire:
+
+  dw service add microlog
+
+Start the Python log microservice:
+
+  cd microlog; ./microlog.py
+
+Connect a JavaScript client to the microlog:
+
+  https://localhost:3423/
+
+Introduction
 ============
 
-We minimize moving parts to maximize availability.
+Properly architected, a microservices architecture enables teams to
+develop complex software systems, faster, with greater
+reliability. Unfortunately, the basic infrastructure to bootstrap a
+microservices architecture is extensive, requiring significant DevOps
+expertise and development effort to deploy and integrate.
 
-- Replicate git repo to all filesystems
-- Auth TBD
+The key to a robust microservices architecture is an asynchronous
+messaging system -- once you've decoupled your application into a
+bunch of microservices, they need to talk to each other. Datawire
+provides an easy-to-use, flexible architecture for microservices to
+communicate.
 
-TODO
+Datawire is built on the AMQP 1.0 messaging standard, and embeds Qpid
+Proton to send and receive AMQP messages. Datawire consists of three
+core components:
+
+- Microserver, a lightweight server that connects your microservice
+  to other microservices and clients
+- Service router, a stateful router that operates on application level
+  (Layer 7) data
+- Directory, a distributed service that connects microservices to each
+  other
+
+Resilient Architecture
+======================
+
+Datawire lets you build a *resilient* architecture. In a resilient
+architecture, failures are expected, and failures have limited or zero
+impact on the overall system.
+
+For example, imagine an ecommerce store where ordering has been
+decoupled into several microservices. Once an order is placed,
+information about that order might go to the invoicing microservice,
+the fulfillment microservice, and a warranty registration
+microservice.
+
+Using a synchronous protocol such as HTTP creates a brittle system,
+where the order microservice needs to sequentially call each dependent
+microservice. Not only does the order microservice need to know about
+each of these other services, but it also needs to handle the
+situation where a service fails to respond (typically with timeouts,
+which moves the problem to the end user).
+
+Instead of trying to write 100% reliable microservices, you can use
+asynchronous messaging. By setting up a publish/subscribe messaging
+topology[1], the order microservice publishes a message and forgets
+about the message once it's published. The invoicing, fulfillment, and
+registration microservices subscribe to the order microservice. If one
+of the microservices is temporarily unavailable, the messaging service
+can hold the message until it becomes available. This creates
+resiliency: a failure in one of your microservices does not impact the
+end user.
+
+More
 ====
 
-- Create a language to define message topologies
-- API key authentication mechanism / general auth mechanism
-- Evaluate deploying to both DO and AWS
-  - Dogfood and implement alerting
-- Define a schema for topology
-- Implement alert node (rhs)
-  - Processes alert info from analyzer/aggregator
-  - Sends out AMQP alerts with context, etc. to AMQP<->SMTP bridge, etc.
-  - Alert needs to organize based on topology
-  - Status Board
-- Need Watchdog (richardl)
-- Client certs for authentication (richardl)
-- Pull out average function from analyzer code (rhs)
-- Redirector supports profiles
+In the real world, there are many different types of failures, and
+Datawire provides ways to increase your overall system
+resilience. Datawire also provides integrated service discovery,
+application-level data routing, and security.
 
-Demo Scenario
-=============
+To learn more:
 
-1. User registers on website.
+Twitter: @datawireio
+Github: https://github.com/datawire
+Docs: http://docs.datawire.io
 
-2. User logs into website, and gets wizard that gives step-by-step
-directions on setup.
+[1] Asynchronous messaging is a broad category, and not every
+asynchronous message technology supports this particular topology,
+which is more precisely described as a stateful publish/subscribe
+topology with multiple consumers.
 
-2a. User sets up statsd to communicate with Kinetic. Includes client
-cert, profile, etc.
 
-2b. In website, user sees that the connection is live.
+Other
+=====
 
-2c. In website, user selects the "cluster analytic". The specific
-analytic is going to take the average value from the statsd feed and
-alert if the value of any one of the feeds exceeds the average by more
-than 1 stddev.
-  - metric is a timer on a specific webpage
+TBD if to include:
 
-2d. In website, user configures the analytic & alert:
-  - the recipients (email addresses)
-  - the deviation amount (e.g., 1 std deviation)
-  - the profile and/or data sources to apply the cluster analytics to
 
-2e. In website, user clicks "activate" or something like that.
+Datawire does not help you deploy microservices (you should use
+Docker, Chef, Vagrant, EC2), nor does it help with running your
+microservices (you should look at Mesos, Kubernetes, Fleet).
 
-3a. The alert goes live, and when an anomalous event is detected:
-  - email is sent to the user
-  - history of alerts is shown on the website
-  - TBD: how do we guarantee a test event?
-<
 
-=== Control Messages ===
 
-The general format for all control messages is as follows. The message
-properties of a control message contain a special entry. The key for
-this entry is "opcode" and the value can any string value depending on
-what capabilities the service exposes.
-
-Currently analyzers expose three operations "update", "delete", and
-"read":
-
-  - The "update" operation expects the message body to be a map and
-    will update the analyzer's configuration object based on the
-    key/value pairs in the map.
-
-  - The "delete" operation expects a list of keys and will delete
-    those keys from the analyzer's config object. A "delete" operation
-    with an empty body will delete all keys from the analyzer's config
-    object.
-
-  - The "read" operation causes a snapshot of the config object to be
-    sent to the address indicated in the reply-to field of the control
-    message.
-
-Note that it is not usually necessary to use the "read" operation
-explicitly since all subscriptions to the controller will be notified
-whenever the configuration is modified.
+Datawire operates at the *application* level. As such, it imposes no
+constraints on your deployment infrastructure. You can use Datawire
+with Docker, Kubernetes, bare metal servers, in AWS, or with your own
+data center, or any combination thereof.
 
