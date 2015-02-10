@@ -1,26 +1,36 @@
-Documentation
-=============
+Quickstart
+==========
 
-Documentation is written using Sphinx.  You must have [Sphinx installed](http://sphinx-doc.org/latest/install.html) to build the documentation.
+You can run these inside virtualenv, which I'd recommend. Regardless:
 
-In addition, Sphinx can only build the documentation if the latest version of the datawire modules are installed on the host machine.  To install the latest version of the modules and build the HTML documentation, run:
+   pip install sphinx
+   amke install && make html
 
-```sh
-(make install && make html)
-```
+For nicer looking docs:
 
-You may need to run `make install` as root.
+   git clone -b datawire https://github.com/datawire/sphinx-bootstrap-theme.git
+   cd sphinx-bootstrap-theme
+   pip install .
 
-The documentation will be built in the build directory.
 
-In order to use the bootstrap theme for Sphinx, you need to have the Sphinx bootstrap theme package installed.
-To install it, you can run the install\_bootstrap\_theme.sh script.
-Otherwise, Sphinx will default to the default theme.
+Details
+=======
+
+Documentation is written using Sphinx.  You must have [Sphinx
+installed](http://sphinx-doc.org/latest/install.html) to build the
+documentation.
+
+In order to use the bootstrap theme for Sphinx, you need to have the
+Sphinx bootstrap theme package installed.  To install it, you can run
+the install\_bootstrap\_theme.sh script.  Otherwise, Sphinx will
+default to the default theme.
 
 Example Tags
 ============
 
-You can have put python files in source/examples which can be referenced as examples from within the documentation/tutorials.
+You can have put python files in source/examples which can be
+referenced as examples from within the documentation/tutorials.
+
 To make a named tag within an example python file, use a line of the form `# <tag_name>` to begin the tag (where `tag_name` is replaced with the name of the tag) and a line of the form `# </tag_name>` to end the tag.
 Tags *do not* have to be properly nested.
 
