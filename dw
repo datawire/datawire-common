@@ -87,11 +87,16 @@ class RouteList(Command):
         if self.args.follow:
             self.routes = OrderedDict()
             self.reactor = event.reactor
+            self.render()
 
     def render(self):
         sys.stdout.write(CLS)
+        empty = True
         for address, routes in self.routes.items():
+            empty = False
             self.render_routes(address, routes)
+        if empty:
+            print "(no routes)"
         sys.stdout.flush()
 
     def format_route(self, route):
