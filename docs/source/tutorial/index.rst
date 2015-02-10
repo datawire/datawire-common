@@ -9,5 +9,5 @@ Tutorial
 .. toctree::
    :maxdepth: 2
 
-   intro_directory
+   intro_datawire
 
