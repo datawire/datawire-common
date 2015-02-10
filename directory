@@ -1,0 +1,179 @@
+#!/usr/bin/env python
+import random
+from argparse import ArgumentParser
+from collections import OrderedDict
+from common import Address
+from proton import Condition, symbol, Message
+from proton.reactors import Reactor
+from stream import Entry, Store, Stream
+from container import Container, ancestors
+
+_UNSPECIFIED = object()
+
+class Routes:
+
+    def __init__(self, *targets):
+        self.targets = list(targets)
+        self.on_updated = lambda: None
+
+    def add(self, target, owner=None):
+        self.targets.append((target, owner))
+        self.on_updated()
+
+    def remove(self, target=_UNSPECIFIED, owner=_UNSPECIFIED):
+        before = len(self.targets)
+        if owner is _UNSPECIFIED:
+            self.targets = filter(lambda t: t[0] != target, self.targets)
+        elif target is _UNSPECIFIED:
+            self.targets = filter(lambda t: t[1] != owner, self.targets)
+        else:
+            self.targets = filter(lambda t: t[0] != target and t[1] != owner, self.targets)
+        if before != len(self.targets):
+            self.on_updated()
+
+    def clear(self):
+        self.targets = []
+        self.on_updated()
+
+    def choose(self):
+        if self.targets:
+            return random.choice(self.targets)[0]
+        else:
+            return None
+
+class Redirector:
+
+    def __init__(self):
+        self.tree = {}
+        self.on_updated = lambda a, r: None
+
+    def __getitem__(self, address):
+        for prefix in ancestors(address):
+            if prefix in self.tree:
+                return self.tree[prefix].choose()
+        return None
+
+    def __contains__(self, address):
+        return address in self.tree
+
+    def add(self, address, target, owner=None):
+        if address in self.tree:
+            routes = self.tree[address]
+        else:
+            routes = Routes()
+            def updated():
+                self.on_updated(address, routes)
+            routes.on_updated = updated
+            self.tree[address] = routes
+        routes.add(target, owner=owner)
+
+    def remove(self, address=_UNSPECIFIED, target=_UNSPECIFIED, owner=_UNSPECIFIED):
+        if address is _UNSPECIFIED:
+            addresses = list(self.tree.keys())
+        else:
+            addresses = [address]
+
+        for addr in addresses:
+            if target is _UNSPECIFIED and owner is _UNSPECIFIED:
+                routes = self.tree.pop(addr, None)
+                if routes: routes.clear()
+            elif addr in self.tree:
+                routes = self.tree[addr]
+                routes.remove(target=target, owner=owner)
+                if not routes.targets: del self.tree[addr]
+
+    def on_link_remote_open(self, event):
+        link = event.link
+        if link.is_sender:
+            address = link.remote_source.address or link.remote_target.address
+        else:
+            address = link.remote_target.address or link.remote_source.address
+        target = self[address]
+        if target:
+            host, port, addr = target
+            if addr.startswith("//"):
+                network = Address(addr).host
+                parts = network.split(":", 1)
+                host = host or parts[0]
+                if len(parts) > 1:
+                    port = port or parts[1]
+                else:
+                    port = port or 5672
+            info = {symbol("network-host"): host, symbol("port"): port}
+            if addr: info[symbol("address")] = addr
+            link.condition = Condition("amqp:link:redirect", None, info)
+        link.close()
+
+class RouteStore(Store):
+
+    def __init__(self):
+        Store.__init__(self)
+        self.routes = OrderedDict()
+        self.message = Message()
+        self.message.subject = "routes"
+
+    def update(self, address, routes):
+        self.message.body = (address, map(lambda t: (t[0], str(t[1])), routes.targets))
+        msg = self.message.encode()
+        if routes.targets:
+            self.routes[address] = Entry(msg)
+        elif address in self.routes:
+            del self.routes[address]
+        self.put(msg)
+
+    def compact(self, tail):
+        return self.routes.values()
+
+class Directory(Stream):
+
+    def __init__(self, redirector):
+        Stream.__init__(self, RouteStore())
+        self.redirector = redirector
+        self.redirector.on_updated = self.store.update
+        self.message = Message()
+
+    def on_delivery(self, event):
+        rcv = event.receiver
+        dlv = event.delivery
+        if rcv and self.message.recv(rcv):
+            if self.message.properties and "opcode" in self.message.properties:
+                opcode = self.message.properties["opcode"]
+                if opcode == "route":
+                    address, target, owner = self.message.body
+                    if owner is None: owner = rcv
+                    self.redirector.add(address, target, owner)
+                elif opcode == "unroute":
+                    address, target, owner = self.message.body
+                    kwargs = {}
+                    if address is not None:
+                        kwargs["address"] = address
+                    if target is not None:
+                        kwargs["target"] = target
+                    if owner is not None:
+                        kwargs["owner"] = owner
+                    self.redirector.remove(**kwargs)
+            dlv.settle()
+
+    def on_link_final(self, event):
+        Stream.on_link_final(self, event)
+        if event.receiver:
+            self.redirector.remove(owner=event.receiver)
+
+class Program:
+
+    def __init__(self, args):
+        self.args = args
+        self.container = Container()
+        self.handlers = [self.container]
+
+        self.redirector = Redirector()
+        self.container["//localhost"] = self.redirector
+        self.container["//localhost/directory"] = Directory(self.redirector)
+
+    def on_reactor_init(self, event):
+        event.reactor.acceptor("localhost", 5672)
+
+parser = ArgumentParser(prog="directory")
+parser.add_argument("-n", "--host", default="localhost", help="network host")
+parser.add_argument("-p", "--port", default="5672", help="network port")
+Reactor(Program(parser.parse_args())).run()

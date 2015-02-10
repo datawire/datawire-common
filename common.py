@@ -441,6 +441,10 @@ class Address:
         else:
             return ""
 
+    @property
+    def address(self):
+        self.remote
+
     def configure(self, obj):
         """
         Configures a link to point at the address.
@@ -480,6 +484,22 @@ class Address:
     def __str__(self):
         return self.remote
 
+class RAddr:
+
+    def __init__(self, host, address):
+        self.host = host
+        self.address = address
+
+    def configure(self, link):
+        if link.is_sender:
+            local = link.source
+            remote = link.target
+        else:
+            local = link.target
+            remote = link.source
+
+        remote.address = self.address
+
 def redirect(link):
     """
     Checks the link to see if it was closed due to a redirection and, if it was, returns
@@ -496,7 +516,9 @@ def redirect(link):
         info = link.remote_condition.info
         host = info["network-host"]
         port = info["port"]
-        return Address("//%s:%s" % (host, port))
+        address = info.get("address", None)
+        print host, port, address
+        return RAddr("%s:%s" % (host, port), address)
     else:
         return None
 
@@ -573,11 +595,20 @@ class SendQueue:
         self.conn.hostname = network.host
         ssn = self.conn.session()
         snd = ssn.sender(str(self.address))
-        self.address.configure(snd)
+        if network.address:
+            network.configure(snd)
+        else:
+            self.address.configure(snd)
         ssn.open()
         snd.open()
         self.conn.open()
         self.link = snd
+
+    def on_connection_bound(self, event):
+        event.transport.idle_timeout = 60.0
+
+    def on_connection_remote_close(self, event):
+        event.connection.close()
 
     def on_link_remote_close(self, event):
         link = event.link
@@ -608,6 +639,8 @@ class SendQueue:
             link.send(bytes)
             dlv.settle()
             self.sent += 1
+        if self.closed and not self.messages:
+            self.conn.close()
 
     def on_transport_closed(self, event):
         conn = event.connection
@@ -625,7 +658,7 @@ class SendQueue:
         Closes the send queue and stops attempts to reconnect
         """
         self.closed = True
-        if self.conn:
+        if self.conn and not self.messages:
             self.conn.close()
 
 # XXX: terrible name for this
@@ -656,11 +689,12 @@ class RecvQueue:
     
     """
 
-    def __init__(self, address, delegate):
+    def __init__(self, address, delegate, drain=False):
         self.address = Address(address)
         self.delegate = delegate
         self.decoder = MessageDecoder(self.delegate)
         self.handlers = [FlowController(1024), self.decoder]
+        self.drain = drain
         self.closed = False
 
     def on_reactor_init(self, event):
@@ -703,10 +737,30 @@ class RecvQueue:
         self.conn.hostname = network.host
         ssn = self.conn.session()
         rcv = ssn.receiver(str(self.address))
-        self.address.configure(rcv)
+        if network.address:
+            network.configure(rcv)
+        else:
+            self.address.configure(rcv)
         ssn.open()
         rcv.open()
+        rcv.drain_mode = self.drain
         self.conn.open()
+
+    def on_connection_bound(self, event):
+        event.transport.idle_timeout = 60.0
+
+    def on_connection_remote_close(self, event):
+        event.connection.close()
+
+    def on_delivery(self, event):
+        self.do_drain(event)
+
+    def on_link_flow(self, event):
+        self.do_drain(event)
+
+    def do_drain(self, event):
+        if self.drain and not event.link.draining() and event.link.credit == 0:
+            self.delegate.on_drained(event)
 
     def on_link_remote_close(self, event):
         link = event.link

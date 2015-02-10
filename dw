@@ -1,0 +1,211 @@
+#!/usr/bin/env python
+
+import os, sys
+from argparse import ArgumentParser
+from ConfigParser import SafeConfigParser as ConfigParser
+from StringIO import StringIO
+from collections import OrderedDict
+
+from proton.reactors import Reactor
+from proton import Message
+
+from common import RecvQueue, SendQueue
+
+CONFIG = os.path.expanduser("~/.datawire/config")
+
+defaults = """
+[global]
+directory = //localhost/directory
+"""
+
+config = ConfigParser()
+config.readfp(StringIO(defaults))
+config.read(CONFIG)
+
+
+class Command:
+
+    def __init__(self, args):
+        self.args = args
+
+
+class ConfigInit(Command):
+
+    def on_reactor_init(self, event):
+        dir = os.path.dirname(CONFIG)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        if not os.path.exists(CONFIG):
+            cfg = open(CONFIG, "write")
+            try:
+                config.write(cfg)
+            finally:
+                cfg.close()
+
+class ConfigList(Command):
+
+    def on_reactor_init(self, event):
+        config.write(sys.stdout)
+
+class ConfigSet(Command):
+
+    def on_reactor_init(self, event):
+        config.set(self.args.section, self.args.key, self.args.value)
+        cfg = open(CONFIG, "write")
+        try:
+            config.write(cfg)
+        finally:
+            cfg.close()
+
+def csi(*args):
+    result = ""
+    numeric = []
+    for a in args:
+        if isinstance(a, int):
+            numeric.append(str(a))
+        else:
+            result = "%s\x1B[%s%s" % (result, ";".join(numeric), a)
+            numeric = []
+    return result
+
+CLS = csi(2, "J", 1, 1, "H")
+RED = csi(1, 91, "m")
+RESET = csi(0, "m")
+
+delay = 3.0
+
+def ansi(mode, st):
+    return "%s%s%s" % (mode, st, RESET)
+
+class RouteList(Command):
+
+    def on_reactor_init(self, event):
+        self.recvq = RecvQueue(self.args.directory, self, drain=not self.args.follow)
+        # XXX: should do this with explicit start
+        event.dispatch(self.recvq)
+        self.updated = []
+        if self.args.follow:
+            self.routes = OrderedDict()
+            self.reactor = event.reactor
+
+    def render(self):
+        sys.stdout.write(CLS)
+        for address, routes in self.routes.items():
+            self.render_routes(address, routes)
+        sys.stdout.flush()
+
+    def format_route(self, route):
+        (host, port, target), owner = route
+        result = target
+        if port:
+            result += " on %s:%s" % (host, port)
+        elif host:
+            result += " on %s" % host
+        result += " (%s)" % owner
+        return result
+
+    def render_routes(self, address, routes):
+        line = "%s -> %s" % (address, "; ".join(map(self.format_route, routes)) or "(deleted)")
+        if address in self.updated:
+            print ansi(RED, line)
+        else:
+            print line
+
+    def on_timer_task(self, event):
+        task = event.context
+        self.updated.remove(task.address)
+        if task.address not in self.updated and not self.routes[task.address]:
+            del self.routes[task.address]
+        self.render()
+
+    def on_message(self, rcv, msg):
+        if msg.subject == "routes":
+            address = msg.body[0]
+            routes = msg.body[1]
+            if self.args.follow:
+                self.updated.append(address)
+                task = self.reactor.schedule(delay, self)
+                task.address = address
+                self.routes[address] = routes
+                self.render()
+            else:
+                self.render_routes(address, routes)
+
+    def on_drained(self, event):
+        self.recvq.close()
+
+class RouteAddDel(Command):
+
+    def on_reactor_init(self, event):
+        self.sendq = SendQueue(self.args.directory)
+        event.dispatch(self.sendq)
+        msg = Message()
+        msg.properties = {}
+        msg.properties[u"opcode"] = self.args.opcode
+
+        if self.args.host is None and self.args.port is None and self.args.target is None:
+            target = None
+        else:
+            target = (self.args.host, self.args.port, self.args.target)
+
+        msg.body = [self.args.address, target, self.args.owner]
+        self.sendq.put(msg)
+        self.sendq.close()
+
+def main():
+    dw = ArgumentParser(prog='dw')
+    dw.add_argument('-d', '--directory', default=config.get('global', 'directory'), help='directory address')
+    cmds = dw.add_subparsers()
+
+    # config subcommands
+
+    config_args = cmds.add_parser('config', help='inspect or modify local configuration')
+    config_cmds = config_args.add_subparsers()
+
+    # config init
+    config_init = config_cmds.add_parser('init', help='create a local configuration directory')
+    config_init.set_defaults(command=ConfigInit)
+
+    # config list subcommand
+    config_list = config_cmds.add_parser('list', help='list local configuration values')
+    config_list.set_defaults(command=ConfigList)
+
+    # config list subcommand
+    config_set = config_cmds.add_parser('set', help='set a local configuration value')
+    config_set.add_argument('section', help='config section')
+    config_set.add_argument('key', help='config key')
+    config_set.add_argument('value', help='config value')
+    config_set.set_defaults(command=ConfigSet)
+
+    # route subcommand
+
+    route = cmds.add_parser('route', help='route related subcommands')
+    route_cmds = route.add_subparsers()
+
+    # route list subcommand
+    lst = route_cmds.add_parser('list', help='list routes')
+    lst.add_argument('-f', '--follow', action="store_true", help='follow updates')
+    lst.set_defaults(command=RouteList)
+
+    add_del = ArgumentParser(add_help=False)
+    add_del.add_argument('-n', "--host", help='redirect network host')
+    add_del.add_argument('-p', "--port", help='redirect port')
+
+    # route add subcommand
+    route_add = route_cmds.add_parser('add', help='add a route', parents=[add_del])
+    route_add.add_argument('address', help='address to match')
+    route_add.add_argument('target', help='redirect address')
+    route_add.add_argument('-o', '--owner', default=os.environ.get("USER", "default"), help='route owner')
+    route_add.set_defaults(command=RouteAddDel, opcode="route")
+
+    # route del subcommand
+    route_del = route_cmds.add_parser('del', help='add a route', parents=[add_del])
+    route_del.add_argument('address', nargs='?', help='address to match')
+    route_del.add_argument('target', nargs='?', help='redirect address')
+    route_del.add_argument('-o', '--owner', help='route owner')
+    route_del.set_defaults(command=RouteAddDel, opcode="unroute")
+
+    args = dw.parse_args()
+    Reactor(args.command(args)).run()
+
+main()
