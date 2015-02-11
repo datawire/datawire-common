@@ -3,8 +3,7 @@ Datawire
 
 Datawire is a distributed messaging network for microservices.
 Datawire provides flexible routing topologies, service discovery, and
-security. In Datawire, all communication is peer-to-peer and
-fully asynchronous. 
+security. In Datawire, all communication is fully asynchronous.
 
 Install
 =======
@@ -15,18 +14,11 @@ Install the latest version of Datawire on Mac OS X or Linux::
 
 This will install all the Datawire components, including the
 microserver, command line interface, directory, and example
-microservices. 
+microservices.
 
-Initialization
-==============
+Now, start the directory service locally::
 
-Once Datawire is installed, we can initialize and set up the system to
-run locally with the ``init`` command::
-
-  dw init
-
-This will initialize the command line client, and start an instance of
-the Directory locally.
+  ./directory
 
 Connecting Microservices
 ========================
@@ -63,32 +55,35 @@ address of invoices to the invoices address. So, let's do that now::
 The invoices microservice will start showing the actual orders that
 are being sent by the orders microservice.
 
-Introspection
-=============
+Working with Datawire
+=====================
 
-We're going to take a brief detour and talk about a few built-in ways
-to debug Datawire.
+We're going to take a brief detour and talk about a few ways to
+inspect different Datawire settings.
 
-We can get a real-time list of all routes by subscribing to the
-directory routing table. The directory publishes all ths information
-as a message stream that any client can subscribe to. Because this is
-a common operation, the dw command line client implements this as
-a shortcut::
+To get a list of all routes in the directory, you can use the list
+command::
 
-  dw status
+  dw route list
 
-Type Ctrl-C to exit, or you can leave it running in the background and
-it will always show the latest routing table.
+In addition, the -f ("follow") option lets you subscribe to the
+directory routing table, and any updates to the routing table will be
+published as a message by the directory, and displayed by the dw
+client::
+  
+  dw route list -f
 
-The directory also publishes a log stream. Similarly, any client can
-subscribe to this message stream. You can subscribe to the log stream
-with the dw client::
+Type Ctrl-C to exit, or you can leave it running in the
+background.
 
-  dw listen directory
+You can also get a list of all local configuration settings with the
+config list command::
 
-By exposing all of this data as a raw message stream, Datawire makes
-it easy to write a microservice that processes or displays any of this
-data.
+  dw config list
+
+All of these commands send and receive data as AMQP messages. Thus,
+Datawire makes it easy to write a microservice that controls,
+processes, or displays any of this data.
 
 Load Balancing
 ==============
@@ -107,13 +102,13 @@ address, but we've added a separate network address that shares the
 same Datawire address.
 
 Now, when the orders microservice sends orders to the invoices
-address, the messages will be randomly sent between the two invoices
-order processors.
+address, messages will be routed on one of two links. In order to see
+this load balancing in action, you'll need to start up a new instance
+of orders.py, because messages from the existing orders.py will route
+over the original link.
 
-Because Datawire is dynamically routing the order messages, messages
-will be routed only to live instances. This means you can elastically
-add or remove instances to the address pool without worrying how it
-will affect your load balancing.
+Datawire also supports message-level load balancing, which will be
+discussed later on in this tutorial.
 
 Messaging Topologies
 ====================
@@ -129,6 +124,12 @@ topologies. The table below outlines some common topologies. We use
 the term source to refer to the sender (e.g., orders in the example
 above) and target to refer to the recipient (e.g., invoices).
 
+message streams or flows
+
+properties associated with your to: address
+
+intersetion of address & node
+
 +----------------+------------------------+---------------------+
 |    Type        |      Description       |   Example           |
 +================+========================+=====================+
@@ -137,10 +138,11 @@ above) and target to refer to the recipient (e.g., invoices).
 |                | and only 1 target,     |  (you don't want    |
 |                | guaranteeing a serial  |  your conversations |
 |                | message sequence       |  to be chopped up)  |
+|                |                        |                     |
 +----------------+------------------------+---------------------+
 |                |                        |                     |
 |                | All targets receive    |  Classic pub/sub    |
-|  Topic         | a copy of the same     |                     |
+|   Topic        | a copy of the same     |                     |
 |                | message                |                     |
 |                |                        |                     |
 +----------------+------------------------+---------------------+
