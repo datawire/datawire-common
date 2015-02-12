@@ -102,6 +102,8 @@ class Redirector:
             info = {symbol("network-host"): host, symbol("port"): port}
             if addr: info[symbol("address")] = addr
             link.condition = Condition("amqp:link:redirect", None, info)
+        else:
+            link.condition = Condition("amqp:link:detach-forced", "no such address")
         link.close()
 
 class RouteStore(Store):
