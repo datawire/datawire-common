@@ -14,6 +14,7 @@ fi
 exec 1>&2
 
 INSTALL_DIR="datawire-${RELEASE}"
+WORKDIR=$PWD
 
 rm -rf "$INSTALL_DIR"
 mkdir "$INSTALL_DIR"
@@ -22,7 +23,7 @@ CMAKE_URL="http://www.cmake.org/files/v3.1/cmake-3.1.2-Linux-x86_64.tar.gz"
 PROTON_BRANCH="0.9-alpha-1"
 PROTON_URL="https://github.com/apache/qpid-proton/archive/${PROTON_BRANCH}.zip"
 PROTON_DIR="qpid-proton-${PROTON_BRANCH}"
-DW_URL="http://www.datawire.io/install/datawire-0.1.tar.gz"
+DW_URL="http://www.datawire.io/datawire-0.1.tar.gz"
 
 
 # Install cmake if necessary
@@ -47,6 +48,7 @@ make
 
 
 echo "Installing Datawire ..."
+cd $WORKDIR
 curl --progress-bar --fail "$DW_URL" | tar -xzf - -C "$INSTALL_DIR" -o
 
 # Remove source
