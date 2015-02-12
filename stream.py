@@ -1,4 +1,4 @@
-from proton import Message
+from proton import Message, Endpoint
 from proton.reactors import Reactor
 from proton.handlers import CFlowController, CHandshaker
 
@@ -81,10 +81,24 @@ class Stream:
         self.store = store or Store()
         self.handlers = [CFlowController(), CHandshaker()]
         self.outgoing = []
+        self.message = Message()
+
+    def put(self, msg):
+        if isinstance(msg, Message):
+            self.store.put(msg.encode())
+        else:
+            self.message.body = msg
+            self.store.put(self.message.encode())
+
+    def on_link_local_open(self, event):
+        self.setup(event)
 
     def on_link_remote_open(self, event):
-        if event.sender:
-            snd = event.sender
+        self.setup(event)
+
+    def setup(self, event):
+        snd = event.sender
+        if snd and not hasattr(snd, "reader"):
             snd.reader = self.store.reader()
             self.outgoing.append(snd)
 
