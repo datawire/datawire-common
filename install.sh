@@ -45,19 +45,21 @@ unzip proton.zip -d "$TEMPDIR" >> $INSTALL_LOG
 mkdir "$TEMPDIR/$PROTON_DIR/build"
 cd "$TEMPDIR/$PROTON_DIR/build"
 echo "Configuring Qpid Proton ..."
-${CMAKE_HOME}cmake .. -DCMAKE_INSTALL_PREFIX="${WORKDIR}/${INSTALL_DIR}" -DSYSINSTALL_BINDINGS=OFF -DBUILD_TESTING=OFF -DBUILD_JAVA=OFF -DBUILD_PERL=OFF >> $INSTALL_LOG
+${CMAKE_HOME}cmake .. -DCMAKE_INSTALL_PREFIX="${WORKDIR}/${INSTALL_DIR}" -DSYSINSTALL_BINDINGS=OFF -DBUILD_TESTING=OFF -DBUILD_JAVA=OFF -DBUILD_PERL=OFF -DBUILD_RUBY=OFF -DBUILD_PHP=OFF >> $INSTALL_LOG
 echo "Building Qpid Proton ..."
 make >> $INSTALL_LOG
 make install >> $INSTALL_LOG
 
 
 echo "Installing Datawire ..."
-cd $WORKDIR
-curl --progress-bar --fail "$DW_URL" | tar -xzf - -C "$INSTALL_DIR" -o
+cd ${WORKDIR}/${TEMPDIR}
+curl --progress-bar --fail "$DW_URL" -o dw.tar.gz
+tar -xzf dw.tar.gz
+cd $INSTALL_DIR
+python setup.py install --home=${WORKDIR}/${INSTALL_DIR} --install-lib=lib64 >> $INSTALL_LOG
 
 # Remove source
-
-rm -rf $TEMPDIR
+rm -rf ${WORKDIR}/${TEMPDIR} ${WORKDIR}/proton.zip
 echo ""
 echo ""
 echo "You've successfully installed Datawire!"
