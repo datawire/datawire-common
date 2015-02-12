@@ -159,21 +159,30 @@ class Directory(Stream):
         if event.receiver:
             self.redirector.remove(owner=event.receiver)
 
+def portstr(port):
+    if port in ("5672", "amqp"):
+        return ""
+    else:
+        return ":%s" % port
+
 class Program:
 
     def __init__(self, args):
-        self.args = args
+        self.host = args.host
+        self.port = args.port
+        self.address = args.address or "//%s%s" % (self.host, portstr(self.port))
         self.container = Container()
         self.handlers = [self.container]
 
         self.redirector = Redirector()
-        self.container["//localhost"] = self.redirector
-        self.container["//localhost/directory"] = Directory(self.redirector)
+        self.container[self.address] = self.redirector
+        self.container["%s/directory" % self.address] = Directory(self.redirector)
 
     def on_reactor_init(self, event):
-        event.reactor.acceptor("localhost", 5672)
+        event.reactor.acceptor(self.host, self.port)
 
 parser = ArgumentParser(prog="directory")
-parser.add_argument("-n", "--host", default="localhost", help="network host")
-parser.add_argument("-p", "--port", default="5672", help="network port")
+parser.add_argument("-n", "--host", default="localhost", help="network host (defaults to localhost)")
+parser.add_argument("-p", "--port", default="5672", help="network port (defaults to 5672)")
+parser.add_argument("-a", "--address", help="amqp address, defaults to //<host>[:<port]")
 Reactor(Program(parser.parse_args())).run()
