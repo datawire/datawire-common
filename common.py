@@ -34,8 +34,6 @@ from proton.reactors import Reactor
 from proton.handlers import CHandshaker as Handshaker, \
     CFlowController as FlowController
 
-del Driver, Connector, Listener, Handler
-
 uid_pattern = re.compile('^/[A-Za-z0-9_-]*$')
 
 class Logger(object):
