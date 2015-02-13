@@ -2,7 +2,7 @@
 
 # Datawire installation script
 RELEASE="0.1"
-WORKDIR=$PWD
+WORK_DIR=$PWD
 
 # Check OS
 UNAME=$(uname)
@@ -11,60 +11,86 @@ if [ "$UNAME" != "Linux" -a "$UNAME" != "Darwin" ] ; then
      exit 1
 fi
 
+# Check essential commands that aren't part of POSIX
+COMMANDS="make cmake unzip tar gcc swig patch"
+MISSING=""
+
+for CMD in $COMMANDS; do
+    LOC=$(type $CMD 2>/dev/null)
+    if [ -z "$LOC" ]; then
+	MISSING="${MISSING} ${CMD}"
+    fi
+done
+
+if [[ ! -z $MISSING ]]; then
+    echo "The install program did not find the following commands: "
+    echo "$MISSING"
+    echo "Please install this software and re-run the install script."
+    exit 1
+fi
+
 # Display everything on stderr.
 exec 1>&2
 
 INSTALL_DIR="datawire-${RELEASE}"
-INSTALL_LOG="${WORKDIR}/${INSTALL_DIR}/dw-install.log"
-TEMPDIR=".datawire-temp"
+INSTALL_LOG="${WORK_DIR}/${INSTALL_DIR}/dw-install.log"
+TEMP_DIR=".datawire-temp"
 
-rm -rf "$INSTALL_DIR"
+rm -rf "$INSTALL_DIR" "$TEMP_DIR"
 mkdir "$INSTALL_DIR"
+mkdir "$TEMP_DIR"
 
-CMAKE_URL="http://www.cmake.org/files/v3.1/cmake-3.1.2-Linux-x86_64.tar.gz"
 PROTON_BRANCH="0.9-alpha-1"
 PROTON_URL="https://github.com/apache/qpid-proton/archive/${PROTON_BRANCH}.zip"
 PROTON_DIR="qpid-proton-${PROTON_BRANCH}"
 DW_URL="http://www.datawire.io/datawire-0.1.tar.gz"
 
-
-# Install cmake if necessary
-if command -v cmake >/dev/null; then
-    echo "Found cmake ..."
-    CMAKE_HOME=""
-else
-    echo "No cmake found ... installing ..."
-    curl --progress-bar --fail "$CMAKE_URL" | tar -xzf - -C "$INSTALL_DIR" -o
-    CMAKE_HOME="$INSTALL_DIR/cmake-3.1.2-Linux-x86_64/bin/"
-fi
-
-echo "Installing Qpid Proton ..."
+echo "Downloading Qpid Proton ..."
 # GitHub does a redirect from the download URL, so we use the -L option
 curl --progress-bar --fail -L "$PROTON_URL" -o proton.zip
-unzip proton.zip -d "$TEMPDIR" >> $INSTALL_LOG
-mkdir "$TEMPDIR/$PROTON_DIR/build"
-cd "$TEMPDIR/$PROTON_DIR/build"
+unzip proton.zip -d "$TEMP_DIR" >> $INSTALL_LOG
 echo "Configuring Qpid Proton ..."
-${CMAKE_HOME}cmake .. -DCMAKE_INSTALL_PREFIX="${WORKDIR}/${INSTALL_DIR}" -DSYSINSTALL_BINDINGS=OFF -DBUILD_TESTING=OFF -DBUILD_JAVA=OFF -DBUILD_PERL=OFF -DBUILD_RUBY=OFF -DBUILD_PHP=OFF >> $INSTALL_LOG
+
+# Patch RPATH
+patch -s ${WORK_DIR}/${TEMP_DIR}/${PROTON_DIR}/CMakeLists.txt <<CMAKEPATCH
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -77,6 +77,8 @@ set (SYSCONF_INSTALL_DIR etc CACHE PATH "System read only configuration director
+ set (SHARE_INSTALL_DIR share CACHE PATH "Shared read only data directory")
+ set (MAN_INSTALL_DIR share/man CACHE PATH "Manpage directory")
+ 
++set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR})
++
+ mark_as_advanced (INCLUDE_INSTALL_DIR LIB_INSTALL_DIR SYSCONF_INSTALL_DIR SHARE_INSTALL_DIR MAN_INSTALL_DIR)
+ 
+ ## LANGUAGE BINDINGS
+CMAKEPATCH
+
+mkdir "$TEMP_DIR/$PROTON_DIR/build"
+cd "$TEMP_DIR/$PROTON_DIR/build"
+
+cmake .. -DCMAKE_INSTALL_PREFIX="${WORK_DIR}/${INSTALL_DIR}" -DSYSINSTALL_BINDINGS=OFF -DBUILD_TESTING=OFF -DBUILD_JAVA=OFF -DBUILD_PERL=OFF -DBUILD_RUBY=OFF -DBUILD_PHP=OFF >> $INSTALL_LOG
 echo "Building Qpid Proton ..."
 make >> $INSTALL_LOG
 make install >> $INSTALL_LOG
 
 
 echo "Installing Datawire ..."
-cd ${WORKDIR}/${TEMPDIR}
+cd ${WORK_DIR}/${TEMP_DIR}
 curl --progress-bar --fail "$DW_URL" -o dw.tar.gz
 tar -xzf dw.tar.gz
 cd $INSTALL_DIR
-python setup.py install --home=${WORKDIR}/${INSTALL_DIR} --install-lib=lib64 >> $INSTALL_LOG
+
+## TODO: investigate lib64
+python setup.py install --home=${WORK_DIR}/${INSTALL_DIR} --install-lib=lib64 >> $INSTALL_LOG
 
 # Remove source
-rm -rf ${WORKDIR}/${TEMPDIR} ${WORKDIR}/proton.zip
-echo ""
-echo ""
-echo "You've successfully installed Datawire!"
-echo ""
-echo "Visit http://www.datawire.io/start/ to get started."
+rm -rf ${WORK_DIR}/${TEMP_DIR} ${WORK_DIR}/proton.zip
 
-# save install manifest somewhere
-# user level site packages
+cat <<WELCOME
+
+Welcome to Datawire!
+
+Datawire has been installed into ${WORK_DIR}/${INSTALL_DIR}.
+To get started, visit http://www.datawire.io/tutorial.
+WELCOME
