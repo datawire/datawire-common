@@ -82,6 +82,7 @@ class Stream:
         self.handlers = [CFlowController(), CHandshaker()]
         self.outgoing = []
         self.message = Message()
+        self.closed = False
 
     def put(self, msg):
         if isinstance(msg, Message):
@@ -89,6 +90,9 @@ class Stream:
         else:
             self.message.body = msg
             self.store.put(self.message.encode())
+
+    def close(self):
+        self.closed = True
 
     def on_link_local_open(self, event):
         self.setup(event)
@@ -119,6 +123,8 @@ class Stream:
             dlv.settle()
         if not snd.reader.more():
             snd.drained()
+            if self.closed:
+                snd.close()
 
     def on_reactor_quiesced(self, event):
         for snd in self.outgoing:
