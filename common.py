@@ -30,7 +30,7 @@ The common module which acts as the backbone for datawire.io
 
 import sys, re, traceback
 from proton import *
-from proton.reactors import Reactor
+from proton.reactor import Reactor
 from proton.handlers import CHandshaker as Handshaker, \
     CFlowController as FlowController
 

@@ -6,7 +6,7 @@ from ConfigParser import SafeConfigParser as ConfigParser
 from StringIO import StringIO
 from collections import OrderedDict
 
-from proton.reactors import Reactor
+from proton.reactor import Reactor
 from proton import Message
 
 from common import RecvQueue, SendQueue
