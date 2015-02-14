@@ -1,5 +1,5 @@
 from proton import Message, Endpoint
-from proton.reactors import Reactor
+from proton.reactor import Reactor
 from proton.handlers import CFlowController, CHandshaker
 
 class Entry:
