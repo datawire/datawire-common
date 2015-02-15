@@ -107,7 +107,7 @@ class Linker:
         if kwargs:
             raise TypeError("got unexpected keyword arg(s): %s" % ", ".join(kwargs.keys()))
 
-    def start(self, reactor, address=None):
+    def start(self, reactor, address=None, open=True):
         if address is None:
             address = self.address
         self.link = address.link(reactor)
@@ -115,7 +115,8 @@ class Linker:
             self.link.drain_mode = self.drain
         self.link.open()
         self.link.session.open()
-        self.link.session.connection.open()
+        if open:
+            self.link.session.connection.open()
         self.link.session.connection.handler = self
 
     def stop(self, reactor):
@@ -156,10 +157,11 @@ class Linker:
     def on_connection_unbound(self, event):
         if self.link and self.link.connection == event.connection:
             print "reconnecting to %s" % self.address
+            self.start(event.reactor, open=False)
             event.reactor.schedule(1, self)
 
     def on_transport_closed(self, event):
         event.connection.free()
 
     def on_timer_task(self, event):
-        self.start(event.reactor)
+        self.link.connection.open()
