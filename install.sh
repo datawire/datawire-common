@@ -40,7 +40,7 @@ rm -rf "$INSTALL_DIR" "$TEMP_DIR"
 mkdir "$INSTALL_DIR"
 mkdir "$TEMP_DIR"
 
-PROTON_BRANCH="0.9-alpha-1"
+PROTON_BRANCH="master"
 PROTON_URL="https://github.com/apache/qpid-proton/archive/${PROTON_BRANCH}.zip"
 PROTON_DIR="qpid-proton-${PROTON_BRANCH}"
 DW_URL="http://www.datawire.io/datawire-0.1.tar.gz"
@@ -80,20 +80,25 @@ cd ${WORK_DIR}/${TEMP_DIR}
 curl --progress-bar --fail "$DW_URL" -o dw.tar.gz
 tar -xzf dw.tar.gz
 cd $INSTALL_DIR
+cp -r * ${WORK_DIR}/${INSTALL_DIR}/lib
 
-python setup.py install --user >> $INSTALL_LOG
+# python setup.py install --user >> $INSTALL_LOG
+
 
 # Set up symlinks
+mkdir -p $USER_SITE_DIR
 cd $USER_SITE_DIR
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/cproton.py cproton.py
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/_cproton.so _cproton.so
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/proton proton
+
+# TODO: package as datawire package
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/datawire datawire
 
 cd ${WORK_DIR}/${INSTALL_DIR}/bin
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/dw dw
-ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/dw splitter
-ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/dw directory
+ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/splitter splitter
+ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/directory directory
 
 
 # Remove source
