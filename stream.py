@@ -113,9 +113,9 @@ class Stream:
 
     def on_link_flow(self, event):
         if event.sender:
-            self.pump(event.sender)
+            self.pump_sender(event.sender)
 
-    def pump(self, snd):
+    def pump_sender(self, snd):
         while snd.reader.more() and snd.credit > 0 and snd.queued < 1024:
             entry = snd.reader.next()
             dlv = snd.delivery(snd.delivery_tag())
@@ -126,10 +126,13 @@ class Stream:
             if self.closed:
                 snd.close()
 
-    def on_reactor_quiesced(self, event):
+    def pump(self):
         for snd in self.outgoing:
-            self.pump(snd)
+            self.pump_sender(snd)
         self.store.gc()
+
+    def on_reactor_quiesced(self, event):
+        self.pump()
 
     def on_delivery(self, event):
         rcv = event.receiver
