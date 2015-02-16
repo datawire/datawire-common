@@ -3,19 +3,15 @@ Installation
 
 datawire-XX/
  bin/
-  Contains dw, directory, splitter
+  Contains links to ../lib/{dw,directory,splitter} (make sure the links are relative)
  include/
  lib/
-  Contains datawire module, Proton python bindings
- lib64/
-  Contains Proton library
+  Contains dw, directory, spliiter, and the datawire package
+  Also, camke should point -DPYTHON_SITEARCH_PACKAGES to here
  share/
 
 PYTHON_SITE_ROOT/lib/pythonX.Y/site-packages/
- proton/
-  contains symlink to cproton.py
-  contains symlink to _cproton.so
-  contains symlink to datawire-XX/lib/proton/ (Proton python bindings)
- datawire/ is direct symlink to datawire-XX/lib/datawire
-
- 
+ contains symlink to datawire-XX/lib/cproton.py
+ contains symlink to datawire-XX/lib/_cproton.so
+ contains symlink to datawire-XX/lib/proton
+ contains symlink to datawire-XX/lib/datawire
