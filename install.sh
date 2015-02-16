@@ -85,7 +85,13 @@ cp -r * ${WORK_DIR}/${INSTALL_DIR}/lib
 # python setup.py install --user >> $INSTALL_LOG
 
 
-# Set up symlinks
+# Install Datawire
+cd ${WORK_DIR}/${INSTALL_DIR}/bin
+ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/dw dw
+ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/splitter splitter
+ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/directory directory
+
+# Install bindings for general use
 mkdir -p $USER_SITE_DIR
 cd $USER_SITE_DIR
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/cproton.py cproton.py
@@ -94,12 +100,6 @@ ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/proton proton
 
 # TODO: package as datawire package
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/datawire datawire
-
-cd ${WORK_DIR}/${INSTALL_DIR}/bin
-ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/dw dw
-ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/splitter splitter
-ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/directory directory
-
 
 # Remove source
 rm -rf ${WORK_DIR}/${TEMP_DIR} ${WORK_DIR}/proton.zip
