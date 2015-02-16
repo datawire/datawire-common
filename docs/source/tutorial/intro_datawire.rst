@@ -8,7 +8,13 @@ security. In Datawire, all communication is fully asynchronous.
 Install
 =======
 
-Install the latest version of Datawire on Mac OS X or Linux::
+Datawire installs on Linux, and requires a basic toolchain to
+install. On yum-based systems, install the following packages::
+
+  yum install gcc libuuid-devel openssl-devel swig python-devel unzip
+  tar make patch
+
+Then, install the latest version of Datawire on Mac OS X or Linux::
 
   curl https://install.datawire.io | /bin/sh
 
@@ -115,9 +121,9 @@ Messaging Topologies
 
 Load balancing is a type of messaging topology: messages from the
 orders service are sent once (and only once) to a pool of
-recipients. A Datawire messaging topology describes the logical layout
-of your message network: how each of your microservices are arranged
-on the network, and how they communicate with each other.
+recipients. In Datawire, the term messaging topology refers to the
+logical layout of your message network: how each of your microservices
+are arranged on the network, and how they communicate with each other.
 
 Datawire is very flexible in configuring different types of message
 topologies. The table below outlines some common topologies. We use
