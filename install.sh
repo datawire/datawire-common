@@ -44,6 +44,7 @@ PROTON_BRANCH="0.9-alpha-1"
 PROTON_URL="https://github.com/apache/qpid-proton/archive/${PROTON_BRANCH}.zip"
 PROTON_DIR="qpid-proton-${PROTON_BRANCH}"
 DW_URL="http://www.datawire.io/datawire-0.1.tar.gz"
+USER_SITE_DIR=$(python -m site --user-site)
 
 echo "Downloading Qpid Proton ..."
 # GitHub does a redirect from the download URL, so we use the -L option
@@ -59,7 +60,7 @@ patch -s ${WORK_DIR}/${TEMP_DIR}/${PROTON_DIR}/CMakeLists.txt <<CMAKEPATCH
  set (SHARE_INSTALL_DIR share CACHE PATH "Shared read only data directory")
  set (MAN_INSTALL_DIR share/man CACHE PATH "Manpage directory")
  
-+set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR})
++set (CMAKE_INSTALL_RPATH \${CMAKE_INSTALL_PREFIX}/\${LIB_INSTALL_DIR})
 +
  mark_as_advanced (INCLUDE_INSTALL_DIR LIB_INSTALL_DIR SYSCONF_INSTALL_DIR SHARE_INSTALL_DIR MAN_INSTALL_DIR)
  
@@ -69,11 +70,10 @@ CMAKEPATCH
 mkdir "$TEMP_DIR/$PROTON_DIR/build"
 cd "$TEMP_DIR/$PROTON_DIR/build"
 
-cmake .. -DCMAKE_INSTALL_PREFIX="${WORK_DIR}/${INSTALL_DIR}" -DSYSINSTALL_BINDINGS=OFF -DBUILD_TESTING=OFF -DBUILD_JAVA=OFF -DBUILD_PERL=OFF -DBUILD_RUBY=OFF -DBUILD_PHP=OFF >> $INSTALL_LOG
+cmake .. -DCMAKE_INSTALL_PREFIX="${WORK_DIR}/${INSTALL_DIR}" -DSYSINSTALL_BINDINGS=OFF -DBUILD_TESTING=OFF -DBUILD_JAVA=OFF -DBUILD_PERL=OFF -DBUILD_RUBY=OFF -DBUILD_PHP=OFF -DPYTHON_SITEARCH_PACKAGES="${WORK_DIR}/${INSTALL_DIR}/lib" >> $INSTALL_LOG
 echo "Building Qpid Proton ..."
 make >> $INSTALL_LOG
 make install >> $INSTALL_LOG
-
 
 echo "Installing Datawire ..."
 cd ${WORK_DIR}/${TEMP_DIR}
@@ -81,8 +81,20 @@ curl --progress-bar --fail "$DW_URL" -o dw.tar.gz
 tar -xzf dw.tar.gz
 cd $INSTALL_DIR
 
-## TODO: investigate lib64
-python setup.py install --home=${WORK_DIR}/${INSTALL_DIR} --install-lib=lib64 >> $INSTALL_LOG
+python setup.py install --user >> $INSTALL_LOG
+
+# Set up symlinks
+cd $USER_SITE_DIR
+ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/cproton.py cproton.py
+ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/_cproton.so _cproton.so
+ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/proton proton
+ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/datawire datawire
+
+cd ${WORK_DIR}/${INSTALL_DIR}/bin
+ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/dw dw
+ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/dw splitter
+ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/dw directory
+
 
 # Remove source
 rm -rf ${WORK_DIR}/${TEMP_DIR} ${WORK_DIR}/proton.zip
