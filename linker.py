@@ -1,4 +1,4 @@
-from proton import Endpoint
+from proton import DELEGATED, Endpoint, EventType
 
 def redirect(link, original):
     if link.remote_condition and link.remote_condition.name == "amqp:link:redirect":
@@ -25,7 +25,7 @@ def redirect(link, original):
     else:
         return None
 
-class Address:
+class Config:
 
     def __init__(self, st):
         if "->" in st:
@@ -94,25 +94,27 @@ class Address:
         link.target.address = self.target
         return link
 
+DRAINED = EventType("drained")
+
 class Linker:
 
-    def __init__(self, address, *handlers, **kwargs):
-        if hasattr(address, "link"):
-            self.address = address
+    def __init__(self, config, *handlers, **kwargs):
+        if hasattr(config, "link"):
+            self.config = config
         else:
-            self.address = Address(address)
+            self.config = Config(config)
         self.handlers = handlers
         self.link = None
-        self.drain = kwargs.pop("drain", False)
+        self.on_drained = kwargs.pop("on_drained", None)
         if kwargs:
             raise TypeError("got unexpected keyword arg(s): %s" % ", ".join(kwargs.keys()))
 
-    def start(self, reactor, address=None, open=True):
-        if address is None:
-            address = self.address
-        self.link = address.link(reactor)
-        if self.link.is_receiver:
-            self.link.drain_mode = self.drain
+    def start(self, reactor, config=None, open=True):
+        if config is None:
+            config = self.config
+        self.link = config.link(reactor)
+        if self.link.is_receiver and self.on_drained:
+            self.link.drain_mode = True
         self.link.open()
         self.link.session.open()
         if open:
@@ -123,12 +125,20 @@ class Linker:
         if self.link:
             self.link.close()
 
-    # should we do this stuff here or in the handler?
     def on_link_flow(self, event):
+        self.do_drained(event)
+
+    def on_delivery(self, event):
+        for h in self.handlers:
+            event.dispatch(h)
+        self.do_drained(event)
+        return DELEGATED
+
+    def do_drained(self, event):
         link = event.link
         if link != self.link: return
-        if self.drain and link.drain_mode and link.credit == 0:
-            self.stop(event.reactor)
+        if self.on_drained and link.drain_mode and link.credit == 0:
+            event.dispatch(self, DRAINED)
 
     def on_link_local_close(self, event):
         link = event.link
@@ -142,10 +152,10 @@ class Linker:
         link.close()
         event.session.close()
         event.connection.close()
-        address = redirect(event.link, self.address)
-        if address:
-            print "redirecting to %s" % address
-            self.start(event.reactor, address)
+        config = redirect(event.link, self.config)
+        if config:
+            print "redirecting to %s" % config
+            self.start(event.reactor, config)
         elif link.remote_condition:
             print link.remote_condition
             if link == self.link:
@@ -156,9 +166,13 @@ class Linker:
 
     def on_connection_unbound(self, event):
         if self.link and self.link.connection == event.connection:
-            print "reconnecting to %s" % self.address
+            print "reconnecting to %s" % self.config
             self.start(event.reactor, open=False)
             event.reactor.schedule(1, self)
+
+    def on_transport_error(self, event):
+        cond = event.transport.condition
+        print "%s: %s" % (cond.name, cond.description)
 
     def on_transport_closed(self, event):
         event.connection.free()

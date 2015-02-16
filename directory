@@ -173,12 +173,10 @@ class Program:
         self.host = args.host
         self.port = args.port
         self.address = args.address or "//%s%s" % (self.host, portstr(self.port))
-        self.container = Container()
-        self.handlers = [self.container]
-
         self.redirector = Redirector()
-        self.container[self.address] = self.redirector
+        self.container = Container(self.redirector)
         self.container["%s/directory" % self.address] = Directory(self.redirector)
+        self.handlers = [self.container]
 
     def on_reactor_init(self, event):
         event.reactor.acceptor(self.host, self.port)
