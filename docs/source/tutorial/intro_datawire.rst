@@ -16,15 +16,15 @@ install. On yum-based systems, install the following packages::
 
 Then, install the latest version of Datawire on Mac OS X or Linux::
 
-  curl https://install.datawire.io | /bin/sh
+  curl https://www.datawire.io/install.sh | /bin/sh
 
-This will install all the Datawire components, including the
-microserver, command line interface, directory, and example
-microservices.
+This will install into the `datawire-XX` directory all Datawire
+components, including the microserver, command line interface,
+directory, and example microservices.
 
 Now, start the directory service locally::
 
-  ./directory
+  bin/directory &
 
 Connecting Microservices
 ========================

@@ -12,7 +12,7 @@ if [ "$UNAME" != "Linux" -a "$UNAME" != "Darwin" ] ; then
 fi
 
 # Check essential commands that aren't part of POSIX
-COMMANDS="make cmake unzip tar gcc swig patch"
+COMMANDS="make cmake unzip tar gcc swig patch python"
 MISSING=""
 
 for CMD in $COMMANDS; do
@@ -52,7 +52,8 @@ curl --progress-bar --fail -L "$PROTON_URL" -o proton.zip
 unzip proton.zip -d "$TEMP_DIR" >> $INSTALL_LOG
 echo "Configuring Qpid Proton ..."
 
-# Patch RPATH
+# We want to do a local install, not a system install, of Proton,
+# so we want to specify a local lib location. See PROTON-808.
 patch -s ${WORK_DIR}/${TEMP_DIR}/${PROTON_DIR}/CMakeLists.txt <<CMAKEPATCH
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
@@ -81,9 +82,6 @@ curl --progress-bar --fail "$DW_URL" -o dw.tar.gz
 tar -xzf dw.tar.gz
 cd $INSTALL_DIR
 cp -r * ${WORK_DIR}/${INSTALL_DIR}/lib
-
-# python setup.py install --user >> $INSTALL_LOG
-
 
 # Install Datawire
 cd ${WORK_DIR}/${INSTALL_DIR}/bin
