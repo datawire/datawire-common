@@ -5,6 +5,7 @@ setup(name='datawire',
       description='Infrastructure for dataflow-driven, resilient microservices',
       author='datawire.io',
       url='http://www.datawire.io',
-      py_modules=['common', 'service', 'stream', 'container', 'linker'],
+      py_modules=['common', 'service'],
+      packages=['datawire'],
       scripts=['directory', 'dw', 'splitter', 'arc']
       )
