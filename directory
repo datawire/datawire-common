@@ -2,11 +2,9 @@
 import random
 from argparse import ArgumentParser
 from collections import OrderedDict
-from common import Address
 from proton import Condition, symbol, Message
 from proton.reactor import Reactor
-from stream import Entry, Store, Stream
-from container import Container, ancestors
+from datawire import ancestors, network, Container, Entry, Store, Stream
 
 _UNSPECIFIED = object()
 
@@ -92,8 +90,8 @@ class Redirector:
         if target:
             host, port, addr = target
             if addr.startswith("//"):
-                network = Address(addr).host
-                parts = network.split(":", 1)
+                hostport = network(addr)
+                parts = hostport.split(":", 1)
                 host = host or parts[0]
                 if len(parts) > 1:
                     port = port or parts[1]

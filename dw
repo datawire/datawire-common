@@ -9,8 +9,7 @@ from collections import OrderedDict
 from proton.reactor import Reactor
 from proton.handlers import CFlowController
 from proton import Message
-from stream import Stream
-from linker import Sender, Receiver
+from datawire import Stream, Sender, Receiver
 
 CONFIG = os.path.expanduser("~/.datawire/config")
 
