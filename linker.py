@@ -6,12 +6,19 @@ def redirect(link, original):
         # XXX: should default these based on "//" address
         host = info.get("network-host", None)
         port = info.get("port", None)
+
         address = info.get("address", None)
+        network = "%s:%s" % (host, port)
+
+        if address and address.startswith("//%s" % network):
+            pretty = address
+        else:
+            pretty = "%s, %s" % (network, address)
 
         class Redirect:
-            def link(self, reactor):
-                link = original.link(reactor)
-                link.session.connection.hostname = "%s:%s" % (host, port)
+            def __call__(self, reactor):
+                link = original(reactor)
+                link.session.connection.hostname = network
                 if address:
                     if link.is_sender:
                         link.target.address = address
@@ -19,111 +26,42 @@ def redirect(link, original):
                         link.source.address = address
                 return link
 
+
             def __str__(self):
-                return "%s => %s" % (original, (host, port, address))
+                return pretty
+
         return Redirect()
     else:
         return None
 
-class Config:
-
-    def __init__(self, st):
-        if "->" in st:
-            self.sender = True
-            self.source, self.target = st.split("->", 1)
-        elif "<-" in st:
-            self.sender = False
-            self.target, self.source = st.split("<-", 1)
-        else:
-            raise ValueError(st)
-
-        if self.source == "":
-            self.source = None
-        if self.target == "":
-            self.target = None
-
-    def __str__(self):
-        if self.sender:
-            return "%s->%s" % (self.source, self.target)
-        else:
-            return "%s<-%s" % (self.target, self.source)
-
-    def _get_local(self):
-        if self.sender:
-            return self.source
-        else:
-            return self.target
-    def _set_local(self, value):
-        if self.sender:
-            self.source = value
-        else:
-            self.target = value
-
-    local = property(_get_local, _set_local)
-
-    def _get_remote(self):
-        if self.sender:
-            return self.target
-        else:
-            return self.source
-    def _set_remote(self, value):
-        if self.sender:
-            self.target = value
-        else:
-            self.source = value
-
-    remote = property(_get_remote, _set_remote)
-
-    @property
-    def network(self):
-        if self.remote is None: return None
-        if self.remote.startswith("//"):
-            return self.remote[2:].split("/", 1)[0]
-        else:
-            return None
-
-    def link(self, reactor):
-        conn = reactor.connection()
-        conn.hostname = self.network
-        ssn = conn.session()
-        if self.sender:
-            link = ssn.sender(str(self))
-        else:
-            link = ssn.receiver(str(self))
-        link.source.address = self.source
-        link.target.address = self.target
-        return link
+def network(address):
+    if address is None: return None
+    if address.startswith("//"):
+        return address[2:].split("/", 1)[0]
+    else:
+        return None
 
 DRAINED = EventType("drained")
 
 class Linker:
 
-    def __init__(self, config, *handlers, **kwargs):
-        if hasattr(config, "link"):
-            self.config = config
-        else:
-            self.config = Config(config)
+    def __init__(self, *handlers, **kwargs):
         self.handlers = handlers
-        self.link = None
-        self.on_drained = kwargs.pop("on_drained", None)
-        if kwargs:
-            raise TypeError("got unexpected keyword arg(s): %s" % ", ".join(kwargs.keys()))
+        self._link = None
 
-    def start(self, reactor, config=None, open=True):
-        if config is None:
-            config = self.config
-        self.link = config.link(reactor)
-        if self.link.is_receiver and self.on_drained:
-            self.link.drain_mode = True
-        self.link.open()
-        self.link.session.open()
+    def start(self, reactor, link=None, open=True):
+        if link is None:
+            link = self.link
+        self._link = link(reactor)
+        self._link.open()
+        self._link.session.open()
         if open:
-            self.link.session.connection.open()
-        self.link.session.connection.handler = self
+            self._link.session.connection.open()
+        self._link.session.connection.handler = self
 
     def stop(self, reactor):
-        if self.link:
-            self.link.close()
+        if self._link:
+            self._link.close()
 
     def on_link_flow(self, event):
         self.do_drained(event)
@@ -136,37 +74,37 @@ class Linker:
 
     def do_drained(self, event):
         link = event.link
-        if link != self.link: return
-        if self.on_drained and link.drain_mode and link.credit == 0:
+        if link != self._link: return
+        if link.drain_mode and link.credit == 0:
             event.dispatch(self, DRAINED)
 
     def on_link_local_close(self, event):
         link = event.link
-        if link == self.link and not link.state & Endpoint.REMOTE_CLOSED:
+        if link == self._link and not link.state & Endpoint.REMOTE_CLOSED:
             link.session.close()
             link.connection.close()
-            self.link = None
+            self._link = None
 
     def on_link_remote_close(self, event):
         link = event.link
         link.close()
         event.session.close()
         event.connection.close()
-        config = redirect(event.link, self.config)
-        if config:
-            print "redirecting to %s" % config
-            self.start(event.reactor, config)
+        rlink = redirect(event.link, self.link)
+        if rlink:
+            print "redirecting to %s" % rlink
+            self.start(event.reactor, rlink)
         elif link.remote_condition:
             print link.remote_condition
-            if link == self.link:
-                self.link = None
+            if link == self._link:
+                self._link = None
 
     def on_connection_bound(self, event):
         event.transport.idle_timeout = 60.0
 
     def on_connection_unbound(self, event):
-        if self.link and self.link.connection == event.connection:
-            print "reconnecting to %s" % self.config
+        if self._link and self._link.connection == event.connection:
+            print "reconnecting... to %s" % self.network()
             self.start(event.reactor, open=False)
             event.reactor.schedule(1, self)
 
@@ -178,4 +116,48 @@ class Linker:
         event.connection.free()
 
     def on_timer_task(self, event):
-        self.link.connection.open()
+        self._link.connection.open()
+
+    def _session(self, reactor):
+        conn = reactor.connection()
+        conn.hostname = self.network()
+        return conn.session()
+
+class Sender(Linker):
+
+    def __init__(self, target, *handlers, **kwargs):
+        Linker.__init__(self, *handlers)
+        self.target = target
+        self.source = kwargs.pop("source", None)
+        if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.keys()))
+
+    def network(self):
+        return network(self.target)
+
+    def link(self, reactor):
+        ssn = self._session(reactor)
+        snd = ssn.sender("%s->%s" % (self.source, self.target))
+        snd.source.address = self.source
+        snd.target.address = self.target
+        return snd
+
+class Receiver(Linker):
+
+    def __init__(self, source, *handlers, **kwargs):
+        Linker.__init__(self, *handlers)
+        self.source = source
+        self.target = kwargs.pop("target", None)
+        self.drain = kwargs.pop("drain", None)
+        if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.keys()))
+
+    def network(self):
+        return network(self.source)
+
+    def link(self, reactor):
+        ssn = self._session(reactor)
+        rcv = ssn.receiver("%s->%s" % (self.source, self.target))
+        if self.drain:
+            rcv.drain_mode = self.drain
+        rcv.source.address = self.source
+        rcv.target.address = self.target
+        return rcv

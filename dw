@@ -7,9 +7,10 @@ from StringIO import StringIO
 from collections import OrderedDict
 
 from proton.reactor import Reactor
+from proton.handlers import CFlowController
 from proton import Message
-
-from common import RecvQueue, SendQueue
+from stream import Stream
+from linker import Sender, Receiver
 
 CONFIG = os.path.expanduser("~/.datawire/config")
 
@@ -80,13 +81,12 @@ def ansi(mode, st):
 class RouteList(Command):
 
     def on_reactor_init(self, event):
-        self.recvq = RecvQueue(self.args.directory, self, drain=not self.args.follow)
-        # XXX: should do this with explicit start
-        event.dispatch(self.recvq)
+        self.recv = Receiver(self.args.directory, CFlowController(1024), self, drain=not self.args.follow)
+        self.recv.start(event.reactor)
+        self.message = Message()
         self.updated = []
         if self.args.follow:
             self.routes = OrderedDict()
-            self.reactor = event.reactor
             self.render()
 
     def render(self):
@@ -123,13 +123,19 @@ class RouteList(Command):
             del self.routes[task.address]
         self.render()
 
-    def on_message(self, rcv, msg):
+    def on_delivery(self, event):
+        if self.message.recv(event.link):
+            self.on_message(event)
+            event.delivery.settle()
+
+    def on_message(self, event):
+        msg = self.message
         if msg.subject == "routes":
             address = msg.body[0]
             routes = msg.body[1]
             if self.args.follow:
                 self.updated.append(address)
-                task = self.reactor.schedule(delay, self)
+                task = event.reactor.schedule(delay, self)
                 task.address = address
                 self.routes[address] = routes
                 self.render()
@@ -137,13 +143,14 @@ class RouteList(Command):
                 self.render_routes(address, routes)
 
     def on_drained(self, event):
-        self.recvq.close()
+        self.recv.stop(event.reactor)
 
 class RouteAddDel(Command):
 
     def on_reactor_init(self, event):
-        self.sendq = SendQueue(self.args.directory)
-        event.dispatch(self.sendq)
+        self.out = Stream()
+        self.sender = Sender(self.args.directory, self.out)
+        self.sender.start(event.reactor)
         msg = Message()
         msg.properties = {}
         msg.properties[u"opcode"] = self.args.opcode
@@ -154,8 +161,8 @@ class RouteAddDel(Command):
             target = (self.args.host, self.args.port, self.args.target)
 
         msg.body = [self.args.address, target, self.args.owner]
-        self.sendq.put(msg)
-        self.sendq.close()
+        self.out.put(msg)
+        self.out.close()
 
 def main():
     dw = ArgumentParser(prog='dw')

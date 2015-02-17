@@ -1,5 +1,5 @@
 from proton.handlers import CHandshaker
-from linker import Config, Linker
+from linker import Sender, Receiver
 
 def ancestors(address):
     yield address
@@ -29,12 +29,21 @@ class Container:
                 return self.nodes[prefix]
         return self.root
 
-    def link(self, config, **kwargs):
-        a = Config(config)
-        node = self[a.local]
-        l = Linker(a, node, **kwargs)
-        self.links.append(l)
-        return l
+    def _link(self, type, local, remote, handlers, **kwargs):
+        if not handlers:
+            node = self[local]
+            if node: handlers = (node,)
+        link = type(remote, *handlers, **kwargs)
+        self.links.append(link)
+        return link
+
+    def sender(self, target, *handlers, **kwargs):
+        source = kwargs.get("source", None)
+        return self._link(Sender, source, target, handlers, **kwargs)
+
+    def receiver(self, source, *handlers, **kwargs):
+        target = kwargs.get("target", None)
+        return self._link(Receiver, target, source, handlers, **kwargs)
 
     def start(self, reactor):
         for l in self.links:
