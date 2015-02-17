@@ -142,7 +142,7 @@ class Directory(Stream):
             opcode = self.message.properties["opcode"]
             if opcode == "route":
                 address, target, owner = self.message.body
-                if owner is None: owner = rcv
+                if owner is None: owner = event.link
                 self.redirector.add(address, target, owner)
             elif opcode == "unroute":
                 address, target, owner = self.message.body

@@ -1,4 +1,4 @@
-from proton import DELEGATED, Endpoint, EventType
+from proton import DELEGATED, Endpoint, EventType, Message
 
 def redirect(link, original):
     if link.remote_condition and link.remote_condition.name == "amqp:link:redirect":
@@ -63,6 +63,10 @@ class Linker:
         if self._link:
             self._link.close()
 
+    @property
+    def linked(self):
+        return (self._link.state & Endpoint.LOCAL_ACTIVE and self._link.state & Endpoint.REMOTE_ACTIVE)
+
     def on_link_flow(self, event):
         self.do_drained(event)
 
@@ -106,7 +110,10 @@ class Linker:
         if self._link and self._link.connection == event.connection:
             print "reconnecting... to %s" % self.network()
             self.start(event.reactor, open=False)
-            event.reactor.schedule(1, self)
+            class Open:
+                def on_timer_task(_self, event):
+                    self._link.connection.open()
+            event.reactor.schedule(1, Open())
 
     def on_transport_error(self, event):
         cond = event.transport.condition
@@ -114,9 +121,6 @@ class Linker:
 
     def on_transport_closed(self, event):
         event.connection.free()
-
-    def on_timer_task(self, event):
-        self._link.connection.open()
 
     def _session(self, reactor):
         conn = reactor.connection()
@@ -161,3 +165,16 @@ class Receiver(Linker):
         rcv.source.address = self.source
         rcv.target.address = self.target
         return rcv
+
+class Tether(Sender):
+
+    def __init__(self, directory, address, target):
+        Sender.__init__(self, directory)
+        self.address = address
+        self.redirect_target = target
+
+    def on_link_local_open(self, event):
+        msg = Message()
+        msg.properties = {u"opcode": "route"}
+        msg.body = (self.address, (None, None, self.redirect_target), None)
+        msg.send(event.link)
