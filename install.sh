@@ -6,8 +6,8 @@ WORK_DIR=$PWD
 
 # Check OS
 UNAME=$(uname)
-if [ "$UNAME" != "Linux" -a "$UNAME" != "Darwin" ] ; then
-     echo "This OS is not currently supported."
+if [ "$UNAME" != "Linux" ] ; then
+     echo "Sorry, Datawire is only supported on Linux right now."
      exit 1
 fi
 
@@ -22,7 +22,7 @@ for CMD in $COMMANDS; do
     fi
 done
 
-if [[ ! -z $MISSING ]]; then
+if [ ! -z $MISSING ]; then
     echo "The install program did not find the following commands: "
     echo "$MISSING"
     echo "Please install this software and re-run the install script."
