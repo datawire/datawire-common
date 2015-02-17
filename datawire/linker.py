@@ -1,3 +1,6 @@
+# Copyright (C) k736, inc. All Rights Reserved.
+# Unauthorized copying or redistribution of this file is strictly prohibited. 
+
 from proton import DELEGATED, Endpoint, EventType, Message
 
 def redirect(link, original):

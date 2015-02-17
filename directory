@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+
+# Copyright (C) k736, inc. All Rights Reserved.
+# Unauthorized copying or redistribution of this file is strictly prohibited. 
+
 import random
 from argparse import ArgumentParser
 from collections import OrderedDict

@@ -1,3 +1,6 @@
+# Copyright (C) k736, inc. All Rights Reserved.
+# Unauthorized copying or redistribution of this file is strictly prohibited. 
+
 from proton.handlers import CHandshaker
 from linker import Sender, Receiver
 
