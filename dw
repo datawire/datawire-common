@@ -9,8 +9,7 @@ from collections import OrderedDict
 from proton.reactor import Reactor
 from proton.handlers import CFlowController
 from proton import Message
-from stream import Stream
-from linker import Sender, Receiver
+from datawire import Stream, Sender, Receiver
 
 CONFIG = os.path.expanduser("~/.datawire/config")
 
@@ -84,6 +83,8 @@ class RouteList(Command):
         self.recv = Receiver(self.args.directory, CFlowController(1024), self, drain=not self.args.follow)
         self.recv.start(event.reactor)
         self.message = Message()
+
+    def on_link_local_open(self, event):
         self.updated = []
         if self.args.follow:
             self.routes = OrderedDict()
@@ -91,12 +92,15 @@ class RouteList(Command):
 
     def render(self):
         sys.stdout.write(CLS)
-        empty = True
-        for address, routes in self.routes.items():
-            empty = False
-            self.render_routes(address, routes)
-        if empty:
-            print "(no routes)"
+        if self.recv.linked:
+            empty = True
+            for address, routes in self.routes.items():
+                empty = False
+                self.render_routes(address, routes)
+            if empty:
+                print "(no routes)"
+        else:
+            print "(not linked)"
         sys.stdout.flush()
 
     def format_route(self, route):
@@ -118,6 +122,7 @@ class RouteList(Command):
 
     def on_timer_task(self, event):
         task = event.context
+        if self.updated != task.updated: return
         self.updated.remove(task.address)
         if task.address not in self.updated and not self.routes[task.address]:
             del self.routes[task.address]
@@ -136,6 +141,7 @@ class RouteList(Command):
             if self.args.follow:
                 self.updated.append(address)
                 task = event.reactor.schedule(delay, self)
+                task.updated = self.updated
                 task.address = address
                 self.routes[address] = routes
                 self.render()

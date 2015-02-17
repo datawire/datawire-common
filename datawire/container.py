@@ -70,11 +70,3 @@ class Container:
 
     def on_transport_closed(self, event):
         event.connection.free()
-
-# add link/route/incoming/outgoing?
-
-# container.link(...)
-# container.route(...)
-
-# origin.to("//foo/bar")
-# origin.from("//foo/bar")

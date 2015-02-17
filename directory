@@ -2,11 +2,9 @@
 import random
 from argparse import ArgumentParser
 from collections import OrderedDict
-from common import Address
 from proton import Condition, symbol, Message
 from proton.reactor import Reactor
-from stream import Entry, Store, Stream
-from container import Container, ancestors
+from datawire import ancestors, network, Container, Entry, Store, Stream
 
 _UNSPECIFIED = object()
 
@@ -92,8 +90,8 @@ class Redirector:
         if target:
             host, port, addr = target
             if addr.startswith("//"):
-                network = Address(addr).host
-                parts = network.split(":", 1)
+                hostport = network(addr)
+                parts = hostport.split(":", 1)
                 host = host or parts[0]
                 if len(parts) > 1:
                     port = port or parts[1]
@@ -135,26 +133,27 @@ class Directory(Stream):
         self.message = Message()
 
     def on_delivery(self, event):
-        rcv = event.receiver
-        dlv = event.delivery
-        if rcv and self.message.recv(rcv):
-            if self.message.properties and "opcode" in self.message.properties:
-                opcode = self.message.properties["opcode"]
-                if opcode == "route":
-                    address, target, owner = self.message.body
-                    if owner is None: owner = rcv
-                    self.redirector.add(address, target, owner)
-                elif opcode == "unroute":
-                    address, target, owner = self.message.body
-                    kwargs = {}
-                    if address is not None:
-                        kwargs["address"] = address
-                    if target is not None:
-                        kwargs["target"] = target
-                    if owner is not None:
-                        kwargs["owner"] = owner
-                    self.redirector.remove(**kwargs)
-            dlv.settle()
+        if self.message.recv(event.link):
+            self.on_message(event)
+            event.delivery.settle()
+
+    def on_message(self, event):
+        if self.message.properties and "opcode" in self.message.properties:
+            opcode = self.message.properties["opcode"]
+            if opcode == "route":
+                address, target, owner = self.message.body
+                if owner is None: owner = event.link
+                self.redirector.add(address, target, owner)
+            elif opcode == "unroute":
+                address, target, owner = self.message.body
+                kwargs = {}
+                if address is not None:
+                    kwargs["address"] = address
+                if target is not None:
+                    kwargs["target"] = target
+                if owner is not None:
+                    kwargs["owner"] = owner
+                self.redirector.remove(**kwargs)
 
     def on_link_final(self, event):
         Stream.on_link_final(self, event)
