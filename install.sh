@@ -81,6 +81,7 @@ cd ${WORK_DIR}/${TEMP_DIR}
 curl --progress-bar --fail "$DW_URL" -o dw.tar.gz
 tar -xzf dw.tar.gz
 cd $INSTALL_DIR
+mv examples ${WORK_DIR}/${INSTALL_DIR}
 cp -r * ${WORK_DIR}/${INSTALL_DIR}/lib
 
 # Install Datawire
@@ -92,11 +93,10 @@ ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/directory directory
 # Install bindings for general use
 mkdir -p $USER_SITE_DIR
 cd $USER_SITE_DIR
-ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/cproton.py cproton.py
-ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/_cproton.so _cproton.so
-ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/proton proton
+ln -fs ${WORK_DIR}/${INSTALL_DIR}/lib/cproton.py cproton.py
+ln -fs ${WORK_DIR}/${INSTALL_DIR}/lib/_cproton.so _cproton.so
+ln -fs ${WORK_DIR}/${INSTALL_DIR}/lib/proton proton
 
-# TODO: package as datawire package
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/datawire datawire
 
 # Remove source
