@@ -93,17 +93,21 @@ class RouteList(Command):
             self.routes = OrderedDict()
             self.render()
 
+    def on_link_remote_open(self, event):
+        if self.args.follow:
+            self.render()
+
     def render(self):
         sys.stdout.write(CLS)
-        if self.recv.linked:
-            empty = True
-            for address, routes in self.routes.items():
-                empty = False
-                self.render_routes(address, routes)
-            if empty:
+        empty = True
+        for address, routes in self.routes.items():
+            empty = False
+            self.render_routes(address, routes)
+        if empty:
+            if self.recv.linked:
                 print "(no routes)"
-        else:
-            print "(detached)"
+            else:
+                print "(detached)"
         sys.stdout.flush()
 
     def format_route(self, route):
