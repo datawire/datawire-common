@@ -17,7 +17,7 @@ On an apt-based system, install the following packages::
 
   apt-get install curl gcc uuid-dev libssl-dev swig python-dev unzip make patch cmake
 
-Then, install the latest version of Datawire on Mac OS X or Linux::
+Then, install the latest version of Datawire:
 
   curl http://www.datawire.io/install.sh | /bin/sh
 
@@ -69,10 +69,6 @@ redirects that message to the receiver. The directory essentially
 separates the physical addresses of each entity from their logical
 addresses.
 
-now, start up another instance of recv
-
-//recv -p //localhost:3000 //localhost/foo
-
 Load Balancing
 ==============
 
@@ -91,6 +87,7 @@ address::
 
   examples/send //localhost/foo
   examples/send //localhost/foo
+  ...
 
 You'll see the Hello, World message randomly appear in one of the two
 receiver instances.
