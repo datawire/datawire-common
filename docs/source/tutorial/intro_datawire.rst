@@ -1,10 +1,3 @@
-Datawire
-========
-
-Datawire is a distributed messaging network for microservices.
-Datawire provides flexible routing topologies, service discovery, and
-security. In Datawire, all communication is fully asynchronous.
-
 Install
 =======
 
@@ -110,3 +103,49 @@ config list command::
 All of these commands send and receive data as AMQP messages. Thus,
 Datawire makes it easy to write a microservice that controls,
 processes, or displays any of this data.
+
+Code
+====
+
+So far, we've only discussed using the Datawire command line to do
+some basic configuration. Datawire is designed for use by developers,
+and includes language bindings for Python and C out of the box.
+
+Here is the code for the receiver (for simplicity, we've left out the
+argument parsing code)::
+
+  from proton import Message
+  from proton.reactor import Reactor
+  from proton.handlers import CFlowController, CHandshaker
+  from datawire import network, Tether
+
+  class Client:
+
+    def __init__(self, args):
+        self.network = network(args.physical)
+        if ":" in self.network:
+            self.host, self.port = self.network.split(":", 1)
+        else:
+            self.host = self.network
+            self.port = 5672
+        self.tether = Tether(args.directory, args.address, args.physical)
+        self.message = Message()
+        self.handlers = [CFlowController(1024), CHandshaker()]
+
+    def on_reactor_init(self, event):
+        event.reactor.acceptor(self.host, self.port)
+        self.tether.start(event.reactor)
+
+    def on_delivery(self, event):
+        if self.message.recv(event.link):
+            print self.message
+            event.delivery.settle()
+
+    Reactor(Client(parser.parse_args())).run()
+
+The ``__init__`` method creates a tethered connection to the Datawire
+directory. The tether keeps track of the liveness of the receiver.
+
+The ``on_delivery`` method uses the `Qpid Proton
+<http://qpid.apache.org/proton>`_ Reactor API to create a message
+handler.
