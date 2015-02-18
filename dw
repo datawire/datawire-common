@@ -103,7 +103,7 @@ class RouteList(Command):
             if empty:
                 print "(no routes)"
         else:
-            print "(not linked)"
+            print "(detached)"
         sys.stdout.flush()
 
     def format_route(self, route):
