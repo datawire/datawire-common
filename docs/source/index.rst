@@ -10,7 +10,6 @@ datawire.io Documentation
    :maxdepth: 2
 
    tutorial/index
-   specifications
 
 Indices and tables
 ==================

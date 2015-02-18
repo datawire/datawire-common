@@ -11,13 +11,11 @@ Install
 Datawire installs on Linux, and requires a basic toolchain to
 install. On a yum-based systems, install the following packages::
 
-  yum install gcc libuuid-devel openssl-devel swig python-devel unzip
-  tar make patch cmake
+  yum install gcc libuuid-devel openssl-devel swig python-devel unzip tar make patch cmake
  
 On an apt-based system, install the following packages::
 
-  apt-get install curl gcc uuid-dev libssl-dev swig python-dev unzip
-  make patch cmake
+  apt-get install curl gcc uuid-dev libssl-dev swig python-dev unzip make patch cmake
 
 Then, install the latest version of Datawire on Mac OS X or Linux::
 
