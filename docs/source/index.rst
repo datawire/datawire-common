@@ -9,6 +9,7 @@ datawire.io Documentation
 .. toctree::
    :maxdepth: 2
 
+   introduction	      
    tutorial/index
 
 Indices and tables
