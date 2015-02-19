@@ -8,7 +8,7 @@ install. On a yum-based systems, install the following packages::
  
 On an apt-based system, install the following packages::
 
-  apt-get install curl gcc uuid-dev libssl-dev swig python-dev unzip make patch cmake
+  apt-get update; apt-get install curl gcc uuid-dev libssl-dev swig python-dev unzip make patch cmake
 
 Then, install the latest version of Datawire:
 
