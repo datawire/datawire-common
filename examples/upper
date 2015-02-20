@@ -27,7 +27,7 @@ class Upper:
             event.message.body = event.message.body.upper()
         self.stream.put(event.message)
 
-parser = ArgumentParser(prog="recv")
+parser = ArgumentParser(prog="upper")
 parser.add_argument("-d", "--directory", default="//localhost/directory", help="datawire directory")
 parser.add_argument("-p", "--physical", default="//localhost:5678", help="physical address")
 parser.add_argument("address", help="service address")
