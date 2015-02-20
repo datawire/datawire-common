@@ -4,22 +4,36 @@ from argparse import ArgumentParser
 from proton.reactor import Reactor
 from datawire import Address, Tether, Sender, Stream
 
+# The fanout service will broadcast any incoming messages to a
+# configurable list of target addresses.
+
 class Fanout:
 
     def __init__(self, args):
         self.tether = Tether(args.directory, args.address, args.physical)
         self.physical = Address(args.physical)
+        # a stream is an event handler that holds a customizable store
+        # representing a linear sequence of messages, the stream will
+        # collect messages from any incoming links into the store, and
+        # broadcast them to all outgoing links
         self.stream = Stream()
+        # by supplying the stream as the Sender's event handler, we
+        # can locally establish outgoing links to push any messages in
+        # the store to our target addresses
         self.senders = [Sender(target, self.stream) for target in args.targets]
+        # propogate reactor events to the stream
         self.handlers = [self.stream]
 
     def on_reactor_init(self, event):
-        event.reactor.acceptor(self.physical.host, self.physical.port)
+        # by supplying the stream as the event handler for incoming
+        # connections, we can collect any messages that are sent to us
+        # into the stream's message store
+        event.reactor.acceptor(self.physical.host, self.physical.port, self.stream)
         self.tether.start(event.reactor)
         for sender in self.senders:
             sender.start(event.reactor)
 
-parser = ArgumentParser(prog="recv")
+parser = ArgumentParser(prog="fanout")
 parser.add_argument("-d", "--directory", default="//localhost/directory", help="datawire directory")
 parser.add_argument("-p", "--physical", default="//localhost:5678", help="physical address")
 parser.add_argument("address", help="service address")

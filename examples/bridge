@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+from argparse import ArgumentParser
+from proton.reactor import Reactor
+from datawire import Receiver, Sender, Stream
+
+# A bridge pulls messages from one or more sources and pushes them to
+# one or more targets. This is easy to construct using some of the
+# building blocks provided in the datawire library.
+
+class Bridge:
+
+    def __init__(self, args):
+        # a stream is an event handler that holds a customizable store
+        # representing a linear sequence of messages, the stream will
+        # collect messages from any incoming links into the store, and
+        # broadcast anything in the store to all outgoing links
+        self.stream = Stream()
+        # by supplying the stream as the Receivers's event handler, we
+        # can locally establish incoming links to pull messages into
+        # the stream
+        self.receivers = [Receiver(source, self.stream) for source in args.sources]
+        # likewise, by supplying the stream as the Sender's event
+        # handler, we can locally establish outgoing links to push
+        # messages out of the stream
+        self.senders = [Sender(target, self.stream) for target in args.targets]
+        self.handlers = [self.stream]
+
+    def on_reactor_init(self, event):
+        for receiver in self.receivers:
+            receiver.start(event.reactor)
+        for sender in self.senders:
+            sender.start(event.reactor)
+
+parser = ArgumentParser(prog="bridge")
+parser.add_argument("-s", "--sources", nargs='+', required=True, help="source addresses")
+parser.add_argument("-t", "--targets", nargs='+', required=True, help="target addresses")
+
+Reactor(Bridge(parser.parse_args())).run()
