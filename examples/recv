@@ -4,14 +4,42 @@ from argparse import ArgumentParser
 from proton.reactor import Reactor
 from datawire import Address, Tether, Processor
 
+# A service is just an ordinary process that binds to a local port and
+# accepts incoming AMQP connections. You can handle those connections
+# however you like. In this example we are simply printing any
+# incoming messages.
+#
+# Although clients can connect directly to a service if they know it's
+# physical address, it's not a good idea to tie a service to a single
+# physical address. This address might change due to hardware or
+# network failures, or you may want to deploy additional instances of
+# a service for load balancing purposes.
+#
+# Using a Tether, our service can advertise it's physical address with
+# a logical address in the datawire directory. Clients can then
+# connect to the logical address and be routed to the service's
+# physical address.
+#
+# Tethers also keep the datawire bus aware of the current status of a
+# service. If the service's process dies or becomes unresponsive for
+# any reason, the thether will be broken, and the route will be
+# automatically dropped. This ensures clients are only routed to
+# functioning service instances.
+
 class Service:
 
     def __init__(self, args):
+        # Create a tether to the datawire directory that routes
+        # connections made to args.address to args.physical
         self.tether = Tether(args.directory, args.address, args.physical)
-        self.physical = Address.parse(args.physical)
+        # parse the physical address so we can bind to the host/port later
+        self.physical = Address(args.physical)
 
     def on_reactor_init(self, event):
+        # bind to the physical host/port with an event handler that
+        # delegates message processing to our on_message method
         event.reactor.acceptor(self.physical.host, self.physical.port, Processor(self))
+        # start the tether *after* we've bound to the physical host/port
         self.tether.start(event.reactor)
 
     def on_message(self, event):
