@@ -9,6 +9,7 @@ def _network(address):
         return None
 
 def _hostport(network):
+    if network is None: return None, None
     if ":" in network:
         return network.split(":", 1)
     else:
