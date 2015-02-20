@@ -7,7 +7,7 @@ from proton.reactor import Reactor
 from proton.handlers import CFlowController, CHandshaker
 from datawire import Address, Tether, Processor
 
-class Client:
+class Service:
 
     def __init__(self, args):
         self.tether = Tether(args.directory, args.address, args.physical)
@@ -25,4 +25,4 @@ parser.add_argument("-d", "--directory", default="//localhost/directory", help="
 parser.add_argument("-p", "--physical", default="//localhost:5678", help="physical address")
 parser.add_argument("address", help="amqp address")
 
-Reactor(Client(parser.parse_args())).run()
+Reactor(Service(parser.parse_args())).run()
