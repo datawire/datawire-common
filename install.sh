@@ -16,13 +16,13 @@ COMMANDS="make cmake unzip tar gcc swig patch python"
 MISSING=""
 
 for CMD in $COMMANDS; do
-    LOC=$(type $CMD 2>/dev/null)
+    LOC=$(command -v $CMD 2>/dev/null)
     if [ -z "$LOC" ]; then
 	MISSING="${MISSING} ${CMD}"
     fi
 done
 
-if [ ! -z $MISSING ]; then
+if [ ! -z "$MISSING" ]; then
     echo "The install program did not find the following commands: "
     echo "$MISSING"
     echo "Please install this software and re-run the install script."
