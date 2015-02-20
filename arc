@@ -3,7 +3,9 @@
 import argparse, curses, textwrap, time, sys, os
 from datetime import datetime
 from curses import ascii
-from common import *
+from proton import Message
+from proton.reactor import Reactor
+from datawire import Stream, Sender, Receiver, Processor
 
 try:
     import dbus
@@ -46,19 +48,16 @@ class Client:
         self.input = ""
         self.win = win
         self.sel = None
-        self.sendq = SendQueue(send_address)
-        self.recvq = RecvQueue(recv_address, self)
+        self.stream = Stream()
+        self.sender = Sender(send_address, self.stream)
+        self.receiver = Receiver(recv_address, Processor(self))
         self.notify = notify
         self.echo = echo
-
-        if self.sendq.address.host == self.recvq.address.host:
-            self.send_name = self.sendq.address.path
-            self.recv_name = self.recvq.address.path
-        else:
-            self.send_name = str(self.sendq.address)
-            self.recv_name = str(self.recvq.address)
+        self.send_name = send_address
+        self.recv_name = recv_address
 
         self.prev_maxyx = None
+        self.handlers = [self.sender, self.receiver]
 
     def on_reactor_quiesced(self, event):
         maxyx = self.win.getmaxyx()
@@ -71,8 +70,8 @@ class Client:
         self.sel.fileno(0)
         self.sel.reading = True
         event.reactor.update(self.sel)
-        event.dispatch(self.sendq)
-        event.dispatch(self.recvq)
+        self.receiver.start(event.reactor)
+        self.sender.start(event.reactor)
         self.render()
 
     def pp(self, msg):
@@ -82,12 +81,7 @@ class Client:
             return str(msg)
 
     def abbreviate(self, address):
-        addr = Address(address)
-        if addr.host == self.recvq.address.host and \
-           addr.host == self.sendq.address.host:
-            return addr.path
-        else:
-            return address
+        return address
 
     def wrap(self, prefix, text, width):
         if prefix:
@@ -107,7 +101,9 @@ class Client:
     def pretty_time(self, t):
         return datetime.fromtimestamp(t).strftime("%a %I:%M%p")
 
-    def on_message(self, rcv, msg):
+    def on_message(self, event):
+        rcv = event.receiver
+        msg = event.message
         name = self.abbreviate(msg.user_id or msg.reply_to or rcv.source.address or "")
 
         notificate = self.notify and name != os.environ["USER"]
@@ -135,7 +131,6 @@ class Client:
                 msg = Message()
                 msg.user_id = os.environ["USER"]
                 msg.creation_time = time.time()
-                msg.reply_to = self.recvq.address.local
                 if self.input and self.input[0] == "/":
                     parts = self.input.split(None, 1)
                     opcode = parts.pop(0)[1:]
@@ -150,7 +145,7 @@ class Client:
                         msg.body = None
                 else:
                     msg.body = unicode(self.input)
-                self.sendq.put(msg)
+                self.stream.put(msg)
                 if self.echo:
                     prefix = "%s %s -> " % (self.pretty_time(msg.creation_time), self.recv_name)
                     self.log.append((prefix, self.input))
