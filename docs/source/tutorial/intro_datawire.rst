@@ -74,7 +74,7 @@ Let's try setting up an intermediary service between the sender and
 receiver. We'll set up a service that upper cases all the letters in a
 message::
 
-  examples/upper //localhost/transform //localhost/receiver &
+  examples/upper -p //localhost:5680 //localhost/transform //localhost/receiver &
 
 This configures the upper service to receive messages at the
 ``/localhost/upper`` address, and forward its processed messages to
@@ -105,7 +105,7 @@ microservice, and changing the ``on_message`` event handler::
 Instead of just starting the new service on a different service
 address, let's start it up on the same transform address::
 
-  examples/lower -p //localhost:5680 //localhost/transform //localhost/receiver &
+  examples/lower -p //localhost:5681 //localhost/transform //localhost/receiver &
 
 We now have two separate services, upper and lower, that are on the
 same ``//localhost/transform`` address, and on different physical
