@@ -3,8 +3,7 @@
 import sys, time
 from argparse import ArgumentParser
 from proton.reactor import Reactor
-from proton import Endpoint
-from datawire import Stream, Container
+from datawire import Sender, Stream
 
 class Logger:
 
@@ -20,12 +19,11 @@ class Client:
 
     def __init__(self, args):
         self.stream = Stream()
-        self.me = Container(self.stream)
-        self.me.sender(args.address)
-        self.handlers = [self.me]
+        self.sender = Sender(args.address, self.stream)
+        self.handlers = [self.sender]
 
     def on_reactor_init(self, event):
-        self.me.start(event.reactor)
+        self.sender.start(event.reactor)
         self.stream.put("Hello World!")
         self.stream.close()
 
