@@ -48,6 +48,6 @@ class Service:
 parser = ArgumentParser(prog="recv")
 parser.add_argument("-d", "--directory", default="//localhost/directory", help="datawire directory")
 parser.add_argument("-p", "--physical", default="//localhost:5678", help="physical address")
-parser.add_argument("address", help="amqp address")
+parser.add_argument("address", help="service address")
 
 Reactor(Service(parser.parse_args())).run()
