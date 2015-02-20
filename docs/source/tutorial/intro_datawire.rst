@@ -6,9 +6,11 @@ install. On a yum-based systems, install the following packages::
 
   yum install gcc libuuid-devel openssl-devel swig python-devel unzip tar make patch cmake
  
-On an apt-based system, install the following packages::
+On an apt-based system, update your system and then install the
+following packages::
 
-  apt-get update; apt-get install curl gcc uuid-dev libssl-dev swig python-dev unzip make patch cmake
+  apt-get update
+  apt-get install curl gcc uuid-dev libssl-dev swig python-dev unzip make patch cmake
 
 Then, install the latest version of Datawire:
 
@@ -41,7 +43,7 @@ addition/deletion of new routes.
 
 Now, let's set up a receiver for the messages::
 
-  examples/recv //localhost/foo
+  examples/recv //localhost/receiver
 
 This starts a program that listens for messages at the address
 ``//localhost/foo``. Note that this is a *logical* address, not a
@@ -52,7 +54,7 @@ if you stop it.)
 
 We then want to send messages to the receiver::
 
-  examples/send //localhost/foo
+  examples/send //localhost/receiver
 
 You'll see a Hello, World message appear in STDOUT on the receiver!
 
@@ -62,12 +64,17 @@ redirects that message to the receiver. The directory essentially
 separates the physical addresses of each entity from their logical
 addresses.
 
-Load Balancing
-==============
+Intermediaries and Load Balancing
+=================================
 
-Now let's try doing some more sophisticated routing. Let's support
-randomized load balancing between the receivers. To do this, we start
-another receiver process, registered to the same address::
+Now let's try doing some more sophisticated routing. We'll set up an
+intermediary service that upper cases all the letters in a message::
+
+  examples/upper //localhost/upper //localhost/receiver
+
+Let's support randomized load balancing between the receivers. To do
+this, we start another receiver process, registered to the same
+address::
 
   examples/recv -p //localhost:5679 //localhost/foo
 
@@ -109,43 +116,43 @@ Code
 
 So far, we've only discussed using the Datawire command line to do
 some basic configuration. Datawire is designed for use by developers,
-and includes language bindings for Python and C out of the box.
+and includes support for Python and C out of the box.
 
-Here is the code for the receiver (for simplicity, we've left out the
-argument parsing code)::
+We'll start by walking through the code for the receiver. The receiver
+is implemented as a service, which is just an ordinary process that
+binds to a local port and accepts incoming AMQP connections. You can
+handle those connections however you like. In this example we are
+simply printing any incoming messages.
 
-  from proton import Message
-  from proton.reactor import Reactor
-  from proton.handlers import CFlowController, CHandshaker
-  from datawire import network, Tether
+Although clients can connect directly to a service if they know its
+physical address, it's not a good idea to tie a service to a single
+physical address. This address might change due to hardware or
+network failures, or you may want to deploy additional instances of a
+service for load balancing purposes.
 
-  class Client:
+Using a Tether, our service can advertise its physical address with
+a logical address in the datawire directory. Clients can then
+connect to the logical address and be routed to the service's
+physical address.
 
-    def __init__(self, args):
-        self.network = network(args.physical)
-        if ":" in self.network:
-            self.host, self.port = self.network.split(":", 1)
-        else:
-            self.host = self.network
-            self.port = 5672
-        self.tether = Tether(args.directory, args.address, args.physical)
-        self.message = Message()
-        self.handlers = [CFlowController(1024), CHandshaker()]
+Tethers also keep the datawire bus aware of the current status of a
+service. If the service's process dies or becomes unresponsive for
+any reason, the thether will be broken, and the route will be
+automatically dropped. This ensures clients are only routed to
+functioning service instances.
 
-    def on_reactor_init(self, event):
-        event.reactor.acceptor(self.host, self.port)
-        self.tether.start(event.reactor)
+We set up the Tether and set the physical address in ``__init__``:
 
-    def on_delivery(self, event):
-        if self.message.recv(event.link):
-            print self.message
-            event.delivery.settle()
+.. literalinclude:: ../../../examples/recv
+   :language: python
+   :pyobject: Service.__init__
 
-    Reactor(Client(parser.parse_args())).run()
+Now, we initialize the Proton Reactor (for more details, see
+`Apache Qpid Proton <http://qpid.apache.org/proton>`_).
 
-The ``__init__`` method creates a tethered connection to the Datawire
-directory. The tether keeps track of the liveness of the receiver.
+.. literalinclude:: ../../../examples/recv
+   :language: python
+   :pyobject: Service.on_reactor_init
 
-The ``on_delivery`` method uses the `Qpid Proton
-<http://qpid.apache.org/proton>`_ Reactor API to create a message
-handler.
+
+
