@@ -130,6 +130,9 @@ class Sender(Linker):
         Linker.__init__(self, *handlers)
         self.target = target
         self.source = kwargs.pop("source", None)
+        self.__message = Message()
+        self.__buffer = []
+        self.__closed = False
         if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.keys()))
 
     def network(self):
@@ -141,6 +144,31 @@ class Sender(Linker):
         snd.source.address = self.source
         snd.target.address = self.target
         return snd
+
+    def on_link_flow(self, event):
+        self.__pump(event.link)
+        Linker.on_link_flow(self, event)
+
+    def __pump(self, link):
+        while self.__buffer and link.credit:
+            dlv = link.delivery(link.delivery_tag())
+            link.send(self.__buffer.pop(0))
+            dlv.settle()
+        if self.__closed and not self.__buffer:
+            link.close()
+
+    def send(self, o):
+        if self._link is None:
+            raise ValueError("link is not started")
+        if isinstance(o, Message):
+            self.__buffer.append(o.encode())
+            self.__pump(self._link)
+        else:
+            self.__message.body = o
+            return self.send(self.__message)
+
+    def close(self):
+        self.__closed = True
 
 class Receiver(Linker):
 

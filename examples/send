@@ -3,19 +3,17 @@
 import sys, time
 from argparse import ArgumentParser
 from proton.reactor import Reactor
-from datawire import Sender, Stream
+from datawire import Sender
 
 class Client:
 
     def __init__(self, args):
-        self.stream = Stream()
-        self.sender = Sender(args.address, self.stream)
-        self.handlers = [self.sender]
+        self.sender = Sender(args.address)
 
     def on_reactor_init(self, event):
         self.sender.start(event.reactor)
-        self.stream.put("Hello World!")
-        self.stream.close()
+        self.sender.send("Hello World!")
+        self.sender.close()
 
 parser = ArgumentParser(prog="send")
 parser.add_argument("address", help="target address")
