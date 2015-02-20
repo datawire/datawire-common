@@ -13,6 +13,8 @@ class Client:
     def on_reactor_init(self, event):
         self.sender.start(event.reactor)
         self.sender.send("Hello World!")
+        # closing the sender will automatically stop it when any
+        # buffered messages have been sent
         self.sender.close()
 
 parser = ArgumentParser(prog="send")
