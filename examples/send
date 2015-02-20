@@ -5,16 +5,6 @@ from argparse import ArgumentParser
 from proton.reactor import Reactor
 from datawire import Sender, Stream
 
-class Logger:
-
-    def on_unhandled(self, name, event):
-        print name, event
-
-class Autoclose:
-
-    def on_drained(self, event):
-        event.link.close()
-
 class Client:
 
     def __init__(self, args):
