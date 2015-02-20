@@ -18,6 +18,6 @@ class Client:
         self.stream.close()
 
 parser = ArgumentParser(prog="send")
-parser.add_argument("address", help="amqp address")
+parser.add_argument("address", help="target address")
 
 Reactor(Client(parser.parse_args())).run()
