@@ -7,11 +7,6 @@ from proton.reactor import Reactor
 from proton.handlers import CFlowController, CHandshaker
 from datawire import Address, Tether, Processor
 
-class Logger:
-
-    def on_unhandled(self, name, event):
-        print name, event
-
 class Client:
 
     def __init__(self, args):
