@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+
+from argparse import ArgumentParser
+from proton.reactor import Reactor
+from datawire import Address, Tether, Processor, Sender, Stream
+
+# This service uppercases all text messages and passes them along to
+# the forwarding address supplied on the command line. If the message
+# isn't a text message it will just pass it through unmodified.
+
+class Upper:
+
+    def __init__(self, args):
+        self.tether = Tether(args.directory, args.address, args.physical)
+        self.physical = Address(args.physical)
+        self.stream = Stream()
+        self.sender = Sender(args.forward, self.stream)
+        self.handlers = [self.sender]
+
+    def on_reactor_init(self, event):
+        event.reactor.acceptor(self.physical.host, self.physical.port, Processor(self))
+        self.tether.start(event.reactor)
+        self.sender.start(event.reactor)
+
+    def on_message(self, event):
+        if hasattr(event.message.body, "upper"):
+            event.message.body = event.message.body.upper()
+        self.stream.put(event.message)
+
+parser = ArgumentParser(prog="recv")
+parser.add_argument("-d", "--directory", default="//localhost/directory", help="datawire directory")
+parser.add_argument("-p", "--physical", default="//localhost:5678", help="physical address")
+parser.add_argument("address", help="service address")
+parser.add_argument("forward", help="forwarding address")
+
+Reactor(Upper(parser.parse_args())).run()
