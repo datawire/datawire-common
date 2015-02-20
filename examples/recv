@@ -2,9 +2,7 @@
 
 import sys, time
 from argparse import ArgumentParser
-from proton import Message
 from proton.reactor import Reactor
-from proton.handlers import CFlowController, CHandshaker
 from datawire import Address, Tether, Processor
 
 class Service:
