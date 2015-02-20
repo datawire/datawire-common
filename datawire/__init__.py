@@ -6,3 +6,4 @@ from .container import ancestors, Container
 from .linker import Sender, Receiver, Tether
 from .stream import Entry, Store, Stream
 from .decoder import Decoder
+from .processor import Processor
