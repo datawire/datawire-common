@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from proton import Message
 from proton.reactor import Reactor
 from proton.handlers import CFlowController, CHandshaker
-from datawire import network, Tether
+from datawire import Address, Decoder, Tether, Receiver
 
 class Logger:
 
@@ -15,24 +15,17 @@ class Logger:
 class Client:
 
     def __init__(self, args):
-        self.network = network(args.physical)
-        if ":" in self.network:
-            self.host, self.port = self.network.split(":", 1)
-        else:
-            self.host = self.network
-            self.port = 5672
+        self.physical = Address.parse(args.physical)
         self.tether = Tether(args.directory, args.address, args.physical)
-        self.message = Message()
-        self.handlers = [CFlowController(1024), CHandshaker()]
+        self.decoder = Decoder(self)
+        self.handlers = [CFlowController(1024), CHandshaker(), self.decoder]
 
     def on_reactor_init(self, event):
-        event.reactor.acceptor(self.host, self.port)
+        event.reactor.acceptor(self.physical.host, self.physical.port)
         self.tether.start(event.reactor)
 
-    def on_delivery(self, event):
-        if self.message.recv(event.link):
-            print self.message
-            event.delivery.settle()
+    def on_message(self, event):
+        print event.message
 
 parser = ArgumentParser(prog="recv")
 parser.add_argument("-d", "--directory", default="//localhost/directory", help="datawire directory")

@@ -2,6 +2,7 @@
 # Unauthorized copying or redistribution of this file is strictly prohibited. 
 
 from proton import DELEGATED, Endpoint, EventType, Message
+from .address import Address
 
 def redirect(link, original):
     if link.remote_condition and link.remote_condition.name == "amqp:link:redirect":
@@ -10,11 +11,11 @@ def redirect(link, original):
         host = info.get("network-host", None)
         port = info.get("port", None)
 
-        address = info.get("address", None)
+        address = Address.parse(info.get("address", None))
         network = "%s:%s" % (host, port)
 
-        if address and address.startswith("//%s" % network):
-            pretty = address
+        if address and address.network:
+            pretty = address.text
         else:
             pretty = "%s, %s" % (network, address)
 
@@ -24,9 +25,9 @@ def redirect(link, original):
                 link.session.connection.hostname = network
                 if address:
                     if link.is_sender:
-                        link.target.address = address
+                        link.target.address = address.text
                     else:
-                        link.source.address = address
+                        link.source.address = address.text
                 return link
 
 
@@ -34,13 +35,6 @@ def redirect(link, original):
                 return pretty
 
         return Redirect()
-    else:
-        return None
-
-def network(address):
-    if address is None: return None
-    if address.startswith("//"):
-        return address[2:].split("/", 1)[0]
     else:
         return None
 
@@ -139,7 +133,7 @@ class Sender(Linker):
         if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.keys()))
 
     def network(self):
-        return network(self.target)
+        return Address(self.target).network
 
     def link(self, reactor):
         ssn = self._session(reactor)
@@ -158,7 +152,7 @@ class Receiver(Linker):
         if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.keys()))
 
     def network(self):
-        return network(self.source)
+        return Address(self.source).network
 
     def link(self, reactor):
         ssn = self._session(reactor)

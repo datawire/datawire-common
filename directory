@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 from collections import OrderedDict
 from proton import Condition, symbol, Message
 from proton.reactor import Reactor
-from datawire import ancestors, network, Container, Entry, Store, Stream
+from datawire import ancestors, Address, Container, Entry, Store, Stream
 
 _UNSPECIFIED = object()
 
@@ -93,14 +93,10 @@ class Redirector:
         target = self[address]
         if target:
             host, port, addr = target
-            if addr.startswith("//"):
-                hostport = network(addr)
-                parts = hostport.split(":", 1)
-                host = host or parts[0]
-                if len(parts) > 1:
-                    port = port or parts[1]
-                else:
-                    port = port or 5672
+            parsed = Address.parse(addr)
+            if parsed:
+                host = host or parsed.host
+                port = port or parsed.port
             info = {symbol("network-host"): host, symbol("port"): port}
             if addr: info[symbol("address")] = addr
             link.condition = Condition("amqp:link:redirect", None, info)
