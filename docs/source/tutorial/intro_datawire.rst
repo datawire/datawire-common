@@ -2,17 +2,18 @@ Install
 =======
 
 Datawire installs on Linux, and requires a basic toolchain to
-install. On a yum-based systems, install the following packages::
+install. On a yum-based system, install the following packages::
 
   yum install gcc libuuid-devel openssl-devel swig python-devel unzip tar make patch cmake
  
-On an apt-based system, update your system and then install the
-following packages::
+On an apt-based system, update your system with ``apt-get``, and then
+install the following packages::
 
   apt-get update
   apt-get install curl gcc uuid-dev libssl-dev swig python-dev unzip make patch cmake
 
-Then, install the latest version of Datawire:
+Once you've satisfied the necessary dependencies, install the latest
+version of Datawire:
 
   curl http://www.datawire.io/install.sh | /bin/sh
 
@@ -42,9 +43,9 @@ present in the directory::
   dw route list -f
 
 This -f ("follow") argument subscribes to messages from the directory on the
-addition/deletion of new routes.
-
-Now, let's set up a receiver for the messages::
+addition/deletion of new routes. Let's keep this terminal window open,
+and open up a second terminal window. We'll set up the receiver for
+messages in the second terminal window::
 
   examples/recv //localhost/receiver
 
@@ -55,7 +56,7 @@ see a route has appeared. (And if you stop the recv process by typing
 Ctrl-C, you'll see the route disappears. Start the recv process again
 if you stop it.)
 
-We then want to send messages to the receiver::
+Open a third terminal window to send messages to the receiver::
 
   examples/send //localhost/receiver
 
@@ -154,8 +155,8 @@ All of these commands send and receive data as AMQP messages. Thus,
 Datawire makes it easy to write a microservice that controls,
 processes, or displays any of this data.
 
-Code
-====
+Receiving Messages
+==================
 
 So far, we've only discussed different ways to configure Datawire
 microservices, but not how you actually write a microservice. Datawire
@@ -210,4 +211,21 @@ the ``Reactor`` when a new message arrives:
    :language: python
    :pyobject: Service.on_message
 
+
+Sending Messages
+================
+
+The code to send messages parallels the receiver code:
+
+.. literalinclude:: ../../../examples/send
+   :language: python
+
+Instead of the ``on_message`` function, the message is initialized in
+``on_reactor_init``:
+
+.. literalinclude:: ../../../examples/send
+   :language: python
+   :pyobject: Client.on_reactor_init
+
+**rafi, would you always encode sending in the init function?**
 
