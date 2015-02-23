@@ -100,7 +100,7 @@ ln -fs ${WORK_DIR}/${INSTALL_DIR}/lib/proton proton
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/datawire datawire
 
 # Set up config file
-OUTFILE=dw-config.sh
+OUTFILE=${WORK_DIR}/${INSTALL_DIR}/dw-config.sh
 (
 cat <<EOF
 
@@ -114,6 +114,7 @@ cat <<EOF
 export PATH=\$PATH:${WORK_DIR}/${INSTALL_DIR}/bin
 
 EOF
+) > $OUTFILE
 
 # Remove source
 rm -rf ${WORK_DIR}/${TEMP_DIR} ${WORK_DIR}/proton.zip
