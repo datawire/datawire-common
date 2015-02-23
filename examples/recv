@@ -14,7 +14,6 @@ class Service:
         # bind to the physical host/port with an event handler that
         # delegates message processing to our on_message method
         event.reactor.acceptor(self.physical.host, self.physical.port, Processor(self))
-        # start the tether *after* we've bound to the physical host/port
 
     def on_message(self, event):
         print event.message

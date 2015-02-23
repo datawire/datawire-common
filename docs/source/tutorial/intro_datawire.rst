@@ -37,10 +37,9 @@ Sending / Receiving Messages
 We'll start by sending messages between a sender and receiver. In your
 first terminal window, start up the receiver::
 
-  examples/recv --physical //localhost:5678 //localhost/recv
+  examples/recv --h localhost -p 5678
 
-This binds the receiver to the physical port ``localhost:5678``, and
-registers a logical address of ``localhost/recv``. Let's take a quick
+This binds the receiver to to ``localhost:5678``. Let's take a quick
 peek at the code:
 
 .. literalinclude:: ../../../examples/recv
@@ -74,14 +73,12 @@ different terminal window, type::
   examples/send //localhost:5678
 
 You'll see a "Hello, World" message appear on STDOUT. This creates a
-direct peer-to-peer connection for sending a message. You can also try
-to send a message to the logical address::
+direct peer-to-peer connection for sending a message. The bulk of the
+work for ``send`` is again done in ``on_reactor_init``:
 
-  examples/send //localhost/recv
-
-Which will fail, because the send program does not know about the
-logical address. We're going to show how you can use logical
-addresses, next.
+.. literalinclude:: ../../../examples/send
+   :language: python
+   :pyobject: Client.on_reactor_init
 
 .. note:: Messages are sent by default on port 5672 (the IANA assigned
 	  port for AMQP). Make sure you don't have a firewall
@@ -113,28 +110,31 @@ a route into the locator::
 
   dw route add //localhost:5678 //localhost/recv
 
-Wcan rerun the previous send command to a logical address that failed::
+Now, we can send to a logical address, instead of just the physical
+address::
 
   examples/send //localhost/recv
 
-You'll see the Hello, World message now appears in the receiver.
+You'll see the Hello, World message now appears in the receiver. By
+introducing a layer of indirection, you can change the physical
+address of the receiver, without requiring any change in the sender.
 
 Connecting Services to Datawire
 ===============================
 
-There are several ways to connect services to Datawire. In the example
-above, recv uses a ``tether`` to connect to Datawire. A tether is the
-easiest way to connect services to Datawire. The tether provides live route
-information and heartbeat data to the service locator. If a heartbeat
-dies, the service locator stops routing messages to the service until
-the heartbeat is restored.
+There are several ways to connect services to Datawire. In the above
+example, we manually added a route using the command line. For
+developers, the easiest way to connect to Datawire is to use a
+`tether`. The tether provides live route information and heartbeat
+data to the service locator. If a heartbeat dies, the service locator
+stops routing messages to the service until the heartbeat is restored.
 
 The recv service we've been using does not use a tether. Let's switch
 to the printer service, which is identical to the recv service, except
 that it uses a tether. In the receiver window, terminate the receiver
 (Ctrl-C), and start the printer service::
 
-  examples/printer //localhost:5678 //localhost/printer
+  examples/printer -p localhost -h 5678 //localhost/printer
 
 The tether automatically registers the logical and physical address,
 which you can see by sending directly to the printer address::
@@ -143,15 +143,15 @@ which you can see by sending directly to the printer address::
 
 The printer service has automatically added a route; there is no need
 to manually add a route. Code-wise, we create a tether in
-``__init__``::
+``__init__``:
 
-  .. literalinclude:: ../../../examples/printer
+.. literalinclude:: ../../../examples/printer
    :language: python
    :pyobject: Service.__init__
 
-and then we start the tether in ``on_reactor_init``::
+and then we start the tether in ``on_reactor_init``:
 
-  .. literalinclude:: ../../../examples/printer
+.. literalinclude:: ../../../examples/printer
    :language: python
    :pyobject: Service.on_reactor_init
 
@@ -162,12 +162,12 @@ subscribe to the service locator routing table::
 
 We're subscribing (``-f``, for follow) to the routing table message
 stream. You'll see routing rules that map between the physical address
-and logical address of the ``recv`` service. This view will update in
+and logical address of the ``printer`` service. This view will update in
 real-time.
 
-In the receiver window, terminate the printer service. You'll see the
-route disappear from the route list. Start the printer service again,
-and you'll see the route reappear.
+In the receiver window, terminate the ``printer`` service. You'll see
+the route disappear from the route list. Start the ``printer`` service
+again, and you'll see the route reappear.
 
 Similarly, if the locator dies, the routes will be regenerated when
 the locator reappears.
@@ -184,21 +184,21 @@ through multiple services that process and transform the message.
 We'll start by running a new microservice, ``upper``. ``upper`` simply
 uppercases all the letters in a message::
 
-  examples/upper --physical //localhost:5680 //localhost/transform //localhost/recv &
+  examples/upper -p localhost -h 5680 //localhost/transform //localhost/printer &
   
 This configures the upper service to receive messages at the
 ``/localhost/transform`` address, and forward its processed messages to
-``//localhost/receiver``. (We can run it as a background process
+``//localhost/printer``. (We can run it as a background process
 because this example doesn't output to STDOUT.)
 
-Now, we can send a message to the upper service::
+Now, we can send a message to ``upper``::
 
   examples/send //localhost/transform
 
 We'll see that the original receiver receives a capitalized
 message. We've just created a simple message processing pipeline. You
 can also bypass the pipeine by sending a message directly to
-``//localhost/receiver``. In this way, we've set up a processing
+``//localhost/printer``. In this way, we've set up a processing
 pipeline that is transparent to the receiver.
 
 Load Balancing
@@ -207,9 +207,9 @@ Load Balancing
 In most scenarios, you'll actually want to set up a processing
 pipeline that's transparent to the `sender`, not the receiver. We'll
 show how this can be done by creating a load balancer in front of the
-receiver. 
+receiver.
 
-Let's now create a "lower" microservice by copying the upper
+Let's start by creating a "lower" microservice by copying the upper
 microservice, and changing the ``on_message`` event handler::
 
   def on_message(self, event):
@@ -217,24 +217,33 @@ microservice, and changing the ``on_message`` event handler::
           event.message.body = event.message.body.lower()
       self.stream.put(event.message)
 
-Instead of just starting the new service on a different service
-address, let's start it up on the same transform address::
+Let's start the ``lower`` service on the printer's address, along with
+a new instance of the ``upper`` service::
 
-  examples/lower -p //localhost:5681 //localhost/transform //localhost/receiver &
+  examples/lower -h localhost -p 5681 //localhost/printer //localhost/display &
+  examples/upper -h localhost -p 5682 //localhost/printer //localhost/display &
+  
+Finally, let's terminate the current ``printer`` service (Ctrl-C), and
+restart it on a new address::
+  
+  examples/printer -h localhost -p 5678 //localhost/display
 
-We now have two separate services, upper and lower, that are on the
-same ``//localhost/transform`` address, and on different physical
-addresses. Now, let's try sending a few more messages to the transform
-address::
+What we've just done is set up two services, ``lower`` and ``upper``,
+that receive messages on ``//localhost/printer``, process them, and
+pass on the results to ``//localhost/display``. The original
+``printer`` microservice is now receiving messages on
+``//localhost/display``. So, if we rerun our send command from above::
 
-  examples/send //localhost/transform
-  examples/send //localhost/transform
-  examples/send //localhost/transform
+  examples/send //localhost/printer
+  examples/send //localhost/printer
+  examples/send //localhost/printer
   ...
 
 You'll see that the original Hello, World message is randomly received
-as all caps, or all lower case. This is because Datawire is
-automatically load balancing between the two different services.
+as all caps, or all lower case, as Datawire automatically load
+balances between the ``upper`` and ``lower`` services. What's
+important to note here is that we've just transparently added load
+balancing without affecting the sender.
 
 Dataflow
 ========
@@ -269,30 +278,13 @@ All of these commands send and receive data as AMQP messages. Thus,
 Datawire makes it easy to write a microservice that controls,
 processes, or displays any of this data.
 
-Receiving Messages
-==================
+Next Steps
+==========
 
-So far, we've only discussed different ways to configure Datawire
-microservices, but not how you actually write a microservice. Datawire
-tries to make it as simple as possible for developers to write their
-own microservices. Today, we include native support for Python and C,
-with JavaScript and Ruby not too far behind.
+Congratulations on making your way through the Datawire tutorial!
+You've seen how to connect microservices in a variety of ways, using a
+few different dataflows. Here are some things to try next:
 
-
-Sending Messages
-================
-
-The code to send messages parallels the receiver code:
-
-.. literalinclude:: ../../../examples/send
-   :language: python
-
-Instead of the ``on_message`` function, the message is initialized in
-``on_reactor_init``:
-
-.. literalinclude:: ../../../examples/send
-   :language: python
-   :pyobject: Client.on_reactor_init
-
-**rafi, would you always encode sending in the init function?**
-
+1. Check out the Reactor API documentation at ...
+2. Send feedback about your use cases to feedback@datawire.io.
+3. Try using Datawire in some of your microserivces.
