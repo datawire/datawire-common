@@ -8,18 +8,19 @@ class Service:
 
     def __init__(self, args):
         # parse the physical address so we can bind to the host/port later
-        self.physical = Address(args.physical)
+        self.host = args.host
+        self.port = args.port
 
     def on_reactor_init(self, event):
         # bind to the physical host/port with an event handler that
         # delegates message processing to our on_message method
-        event.reactor.acceptor(self.physical.host, self.physical.port, Processor(self))
+        event.reactor.acceptor(self.host, self.port, Processor(self))
 
     def on_message(self, event):
         print event.message
 
 parser = ArgumentParser(prog="recv")
-parser.add_argument("-p", "--physical", default="//localhost:5678", help="physical address")
-parser.add_argument("address", help="service address")
+parser.add_argument("--host", default="localhost", help="host binding")
+parser.add_argument("-p", "--port", default="5678", help="port binding")
 
 Reactor(Service(parser.parse_args())).run()
