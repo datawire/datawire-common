@@ -24,6 +24,12 @@ user's local ``site-packages`` directory to the Datawire libraries, so
 you can write code using the Datawire APIs without hacking your
 PYTHONPATH.
 
+The install script also generates the ``dw-config.sh`` file, which
+will set your environment variables correctly. Use the ``source``
+command to run this file::
+
+  source datawire-0.1/dw-config.sh
+
 The rest of this tutorial will walk you through Datawire. Because
 we'll be sending and receiving messages, it will be easiest if you can
 keep three different terminal windows open: one for the sender, one
