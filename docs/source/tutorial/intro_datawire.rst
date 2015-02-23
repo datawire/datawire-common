@@ -149,13 +149,13 @@ to manually add a route. Code-wise, we create a tether in
 
 .. literalinclude:: ../../../examples/printer
    :language: python
-   :pyobject: Service.__init__
+   :pyobject: Printer.__init__
 
 and then we start the tether in ``on_reactor_init``:
 
 .. literalinclude:: ../../../examples/printer
    :language: python
-   :pyobject: Service.on_reactor_init
+   :pyobject: Printer.on_reactor_init
 
 Let's now see the tether in action. In the command window, we'll
 subscribe to the service locator routing table::
