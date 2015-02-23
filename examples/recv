@@ -20,7 +20,7 @@ class Service:
         print event.message
 
 parser = ArgumentParser(prog="recv")
-parser.add_argument("--host", default="localhost", help="host binding")
+parser.add_argument("-n", "--host", default="localhost", help="hostName binding")
 parser.add_argument("-p", "--port", default="5678", help="port binding")
 
 Reactor(Service(parser.parse_args())).run()

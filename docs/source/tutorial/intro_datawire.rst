@@ -37,7 +37,7 @@ Sending / Receiving Messages
 We'll start by sending messages between a sender and receiver. In your
 first terminal window, start up the receiver::
 
-  examples/recv --h localhost -p 5678
+  examples/recv --host localhost --port 5678
 
 This binds the receiver to to ``localhost:5678``. Let's take a quick
 peek at the code:
@@ -115,9 +115,11 @@ address::
 
   examples/send //localhost/recv
 
-You'll see the Hello, World message now appears in the receiver. By
-introducing a layer of indirection, you can change the physical
-address of the receiver, without requiring any change in the sender.
+You'll see the Hello, World message now appears in the receiver. In
+the sender, you'll see that the message is redirected by the
+locator. By introducing a layer of indirection, you can change the
+physical address of the receiver, without requiring any change in the
+sender.
 
 Connecting Services to Datawire
 ===============================
@@ -134,7 +136,7 @@ to the printer service, which is identical to the recv service, except
 that it uses a tether. In the receiver window, terminate the receiver
 (Ctrl-C), and start the printer service::
 
-  examples/printer -p localhost -h 5678 //localhost/printer
+  examples/printer --host localhost --port 5678 //localhost/printer
 
 The tether automatically registers the logical and physical address,
 which you can see by sending directly to the printer address::
@@ -184,7 +186,7 @@ through multiple services that process and transform the message.
 We'll start by running a new microservice, ``upper``. ``upper`` simply
 uppercases all the letters in a message::
 
-  examples/upper -p localhost -h 5680 //localhost/transform //localhost/printer &
+  examples/upper --host localhost --port 5680 //localhost/transform //localhost/printer &
   
 This configures the upper service to receive messages at the
 ``/localhost/transform`` address, and forward its processed messages to
@@ -220,13 +222,13 @@ microservice, and changing the ``on_message`` event handler::
 Let's start the ``lower`` service on the printer's address, along with
 a new instance of the ``upper`` service::
 
-  examples/lower -h localhost -p 5681 //localhost/printer //localhost/display &
-  examples/upper -h localhost -p 5682 //localhost/printer //localhost/display &
+  examples/lower --host localhost --port 5681 //localhost/printer //localhost/display &
+  examples/upper --host localhost --port 5682 //localhost/printer //localhost/display &
   
 Finally, let's terminate the current ``printer`` service (Ctrl-C), and
 restart it on a new address::
   
-  examples/printer -h localhost -p 5678 //localhost/display
+  examples/printer --host localhost --port 5678 //localhost/display
 
 What we've just done is set up two services, ``lower`` and ``upper``,
 that receive messages on ``//localhost/printer``, process them, and

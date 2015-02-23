@@ -9,14 +9,15 @@ class Service:
     def __init__(self, args):
         # Create a tether to the datawire directory that routes
         # connections made to args.address to args.physical
-        self.tether = Tether(args.directory, args.address, args.physical)
-        # parse the physical address so we can bind to the host/port later
-        self.physical = Address(args.physical)
+        bind_address = "//" + args.host + ":" + args.port
+        self.tether = Tether(args.directory, args.address, bind_address)
+        self.host = args.host
+        self.port = args.port
 
     def on_reactor_init(self, event):
         # bind to the physical host/port with an event handler that
         # delegates message processing to our on_message method
-        event.reactor.acceptor(self.physical.host, self.physical.port, Processor(self))
+        event.reactor.acceptor(self.host, self.port, Processor(self))
         # start the tether *after* we've bound to the physical host/port
         self.tether.start(event.reactor)
 
@@ -25,7 +26,8 @@ class Service:
 
 parser = ArgumentParser(prog="recv")
 parser.add_argument("-d", "--directory", default="//localhost/directory", help="datawire directory")
-parser.add_argument("-p", "--physical", default="//localhost:5678", help="physical address")
+parser.add_argument("-n", "--host", default="localhost", help="hostName binding")
+parser.add_argument("-p", "--port", default="5678", help="port binding")
 parser.add_argument("address", help="service address")
 
 Reactor(Service(parser.parse_args())).run()
