@@ -1,7 +1,7 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
-import traceback
+import sys, traceback
 from proton import EventType, Message, Delivery
 
 MESSAGE = EventType("message")
