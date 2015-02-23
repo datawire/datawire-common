@@ -99,13 +99,34 @@ ln -fs ${WORK_DIR}/${INSTALL_DIR}/lib/proton proton
 
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/datawire datawire
 
+# Set up config file
+OUTFILE=dw-config.sh
+(
+cat <<EOF
+
+#!/bin/sh
+
+# Set up Datawire environment variables
+#
+# Run this file using the source command, e.g.,
+#    source dw-config.sh
+
+export PATH=\$PATH:${WORK_DIR}/${INSTALL_DIR}/bin
+
+EOF
+
 # Remove source
 rm -rf ${WORK_DIR}/${TEMP_DIR} ${WORK_DIR}/proton.zip
 
 cat <<WELCOME
 
-Welcome to Datawire!
+Welcome to Datawire! Datawire has been installed into
+${WORK_DIR}/${INSTALL_DIR}. For information on how to get started,
+visit http://www.datawire.io/docs/.
 
-Datawire has been installed into ${WORK_DIR}/${INSTALL_DIR}.
-To get started, visit http://www.datawire.io/tutorial.
+You can also start using Datawire by typing:
+
+source ${WORK_DIR}/${INSTALL_DIR}/dw-config.sh
+dw <command>
+
 WELCOME
