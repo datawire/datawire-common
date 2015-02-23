@@ -108,7 +108,12 @@ the service locator by invoking it from the command line::
 Now, we can use ``dw``, the command-line interface to Datawire, to add
 a route into the locator::
 
-  dw route add //localhost:5678 //localhost/recv
+  dw route add //localhost/recv //localhost:5678
+
+You can verify that the route has been added with the ``route list``
+command::
+
+  dw route list
 
 Now, we can send to a logical address, instead of just the physical
 address::
@@ -206,7 +211,7 @@ pipeline that is transparent to the receiver.
 Load Balancing
 ==============
 
-In most scenarios, you'll actually want to set up a processing
+In many scenarios, you'll actually want to set up a processing
 pipeline that's transparent to the `sender`, not the receiver. We'll
 show how this can be done by creating a load balancer in front of the
 receiver.
