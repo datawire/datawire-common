@@ -2,11 +2,14 @@
 
 from argparse import ArgumentParser
 from proton.reactor import Reactor
-from datawire import Address, Processor
+from datawire import Address, Tether, Processor
 
 class Service:
 
     def __init__(self, args):
+        # Create a tether to the datawire directory that routes
+        # connections made to args.address to args.physical
+        self.tether = Tether(args.directory, args.address, args.physical)
         # parse the physical address so we can bind to the host/port later
         self.physical = Address(args.physical)
 
@@ -15,11 +18,13 @@ class Service:
         # delegates message processing to our on_message method
         event.reactor.acceptor(self.physical.host, self.physical.port, Processor(self))
         # start the tether *after* we've bound to the physical host/port
+        self.tether.start(event.reactor)
 
     def on_message(self, event):
         print event.message
 
 parser = ArgumentParser(prog="recv")
+parser.add_argument("-d", "--directory", default="//localhost/directory", help="datawire directory")
 parser.add_argument("-p", "--physical", default="//localhost:5678", help="physical address")
 parser.add_argument("address", help="service address")
 
