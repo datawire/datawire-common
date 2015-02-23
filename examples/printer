@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from proton.reactor import Reactor
 from datawire import Address, Tether, Processor
 
-class Service:
+class Printer:
 
     def __init__(self, args):
         # Create a tether to the datawire directory that routes
@@ -30,4 +30,4 @@ parser.add_argument("-n", "--host", default="localhost", help="hostName binding"
 parser.add_argument("-p", "--port", default="5678", help="port binding")
 parser.add_argument("address", help="service address")
 
-Reactor(Service(parser.parse_args())).run()
+Reactor(Printer(parser.parse_args())).run()
