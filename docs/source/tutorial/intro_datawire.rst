@@ -291,6 +291,23 @@ All of these commands send and receive data as AMQP messages. Thus,
 Datawire makes it easy to write a microservice that controls,
 processes, or displays any of this data.
 
+Bugs
+====
+
+This is the 0.1 release. While our underlying libraries have been used
+in numerous production scenarios, the full integrated Datawire
+infrastructure has not. We expect that as more users use Datawire,
+more bugs will be identified.
+
+If you run into issues, please contact us at
+support@datawire.io. Beside a bug report and reproducer (if
+available), we may also request a debug trace. To get a debug trace,
+type::
+
+  export PN_TRACE_FRM=1
+
+and rerun the commands. To turn off tracing, set ``PN_TRACE_FRM=0``.  
+
 Next Steps
 ==========
 
@@ -299,5 +316,5 @@ You've seen how to connect microservices in a variety of ways, using a
 few different dataflows. Here are some things to try next:
 
 1. Check out the Reactor API documentation at ...
-2. Send feedback about your use cases to feedback@datawire.io.
-3. Try using Datawire in some of your microserivces.
+2. Send feedback about your use cases to support@datawire.io.
+3. Try using Datawire in some of your microservices.
