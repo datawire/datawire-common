@@ -3,10 +3,9 @@ Datawire
 
 Adopting a microservice architecture means, among other things, that
 you're committed to building a distributed system. Building and
-maintaining distributed systems can be hard and complex. Datawire is
-designed to make it easier for you to build and maintain
-microservices by providing a basic set of services that all your
-microservices can use.
+maintaining distributed systems can be hard and complex. Datawire
+provides infrastructure that makes it easier for you to build and
+maintain microservices.
 
 Datawire's underlying architectural assumption is that all
 communication should be asynchronous. A microservice should be able to
@@ -20,6 +19,11 @@ messaging protocol, to provide asynchronous communication. Any AMQP
 and Datawire itself depends on Apache QPid Proton, an open source AMQP
 1.0 client.
 
-By using AMQP 1.0 as its basic building block, Datawire enables you to
-build more composable, resilient microservices faster. In the
-subsequent tutorial and developer guide, you'll see how.
+Using asynchronous messaging as its basic building block, Datawire
+enables you to build composable, resilient microservices
+faster. Datawire also lets you start thinking about your microservices
+in terms of its `dataflow` -- how messages and data flow between
+different parts of your system. In the subsequent tutorial and
+documentation, we'll see how these concepts can help you build
+smarter, better microservices.
+
