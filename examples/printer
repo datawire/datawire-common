@@ -24,7 +24,7 @@ class Printer:
     def on_message(self, event):
         print event.message
 
-parser = ArgumentParser(prog="recv")
+parser = ArgumentParser(prog="printer")
 parser.add_argument("-d", "--directory", default="//localhost/directory", help="datawire directory")
 parser.add_argument("-n", "--host", default="localhost", help="hostName binding")
 parser.add_argument("-p", "--port", default="5678", help="port binding")
