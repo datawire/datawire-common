@@ -12,9 +12,7 @@ datawire.io Documentation
    introduction	      
    tutorial/index
 
-Indices and tables
-==================
+Search
+======
 
-* :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
