@@ -52,7 +52,6 @@ help:
 setup:
 	-mkdir source/_static 2>/dev/null
 	-mkdir source/_templates 2>/dev/null
-	$(PYTHON) $(SOURCEDIR)/extract_tags.py
 
 clean:
 	rm -rf $(BUILDDIR)/*
