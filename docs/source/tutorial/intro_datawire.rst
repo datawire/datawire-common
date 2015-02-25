@@ -13,11 +13,11 @@ install the following packages::
   apt-get install curl gcc uuid-dev libssl-dev swig python-dev unzip make patch cmake
 
 Once you've satisfied the necessary dependencies, install the latest
-version of Datawire:
+version of Datawire::
 
   curl http://www.datawire.io/install.sh | /bin/sh
 
-This will install into the `datawire-XX` directory all Datawire
+This will install into the datawire-|version| directory all Datawire
 components, including the microserver, command line interface, service
 locator, and example microservices. This also creates symlinks in the
 user's local ``site-packages`` directory to the Datawire libraries, so
@@ -26,23 +26,28 @@ PYTHONPATH.
 
 The install script also generates the ``dw-config.sh`` file, which
 will set your environment variables correctly. Use the ``source``
-command to run this file::
+command to run this file:
 
-  source datawire-0.1/dw-config.sh
+.. parsed-literal::
+
+  source datawire-|version|/dw-config.sh
 
 The rest of this tutorial will walk you through Datawire. Because
 we'll be sending and receiving messages, it will be easiest if you can
 keep three different terminal windows open: one for the sender, one
 for the receiver, and one for status commands. This tutorial will
-refer to the sender window, receiver window, and command window to
-help you keep track.
+occasionally refer to the sender window, receiver window, and command
+window to help you keep track.
 
 Sending / Receiving Messages
 ============================
 
 We'll start by sending messages between a sender and receiver. In your
-first terminal window, start up the receiver::
+first terminal window, start up the receiver:
 
+.. parsed-literal::
+
+  cd datawire-|version|/
   examples/recv --host localhost --port 5678
 
 This binds the receiver to to ``localhost:5678``. Let's take a quick
@@ -102,12 +107,13 @@ instances of a service for load balancing purposes.
 The Datawire `service locator` maps physical addresses to logical
 addresses. To maximize scalability, performance, and reliability, the
 service locator does not directly route or process messages. Instead,
-it redirects AMQP links. Thus, messages still flow directly from
-senders to receivers, and the service locator simply provides routing
-directions. This is distinct from a traditional message broker
-architecture, where the broker provides centralized service locator
-and message processing capabilities. In the command window, start
-the service locator by invoking it from the command line::
+it redirects AMQP links (unidirectional message flow). Thus, messages
+still flow directly from senders to receivers, and the service locator
+simply provides routing directions. This is distinct from a
+traditional message broker architecture, where the broker provides
+centralized service locator and message processing capabilities. In
+the command window, start the service locator by invoking it from the
+command line::
 
   directory &
 
@@ -122,7 +128,8 @@ command::
   dw route list
 
 Now, we can send to a logical address, instead of just the physical
-address::
+address. Let's create a new window in your terminal, the sender
+window, and type::
 
   examples/send //localhost/recv
 
@@ -204,7 +211,7 @@ This configures the upper service to receive messages at the
 ``//localhost/printer``. (We can run it as a background process
 because this example doesn't output to STDOUT.)
 
-Now, we can send a message to ``upper``::
+Now, we can send a message to ``upper`` in the sender window::
 
   examples/send //localhost/transform
 
@@ -223,7 +230,12 @@ show how this can be done by creating a load balancer in front of the
 receiver.
 
 Let's start by creating a "lower" microservice by copying the upper
-microservice, and changing the ``on_message`` event handler::
+microservice::
+
+  cp examples/upper examples/lower
+
+Then, edit the ``on_message`` event handler of ``lower`` to look like
+this::
 
   def on_message(self, event):
       if hasattr(event.message.body, "lower"):
@@ -294,7 +306,7 @@ processes, or displays any of this data.
 Bugs
 ====
 
-This is the 0.1 release. While our underlying libraries have been used
+This is the |version| release. While our underlying libraries have been used
 in numerous production scenarios, the full integrated Datawire
 infrastructure has not. We expect that as more users use Datawire,
 more bugs will be identified.
