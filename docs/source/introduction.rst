@@ -1,30 +1,22 @@
 Introduction to Datawire
 ########################
 
-Adopting a microservice architecture means, among other things, that
-you're committed to building a distributed system. Building and
-maintaining distributed systems can be hard and complex. Datawire
-provides infrastructure that makes it much easier for you to build and
-maintain microservices without thinking about the nuances of a
-distributed system.
+Microservice architectures can bring many benefits: greater
+development velocity, more efficient resource utilization, better
+code reuse, and the ability to use different languages and tools
+for different tasks. Microservices can also be hard: they're
+distributed systems and they require new skills and DevOps
+infrastructure to deploy.
 
-Datawire's underlying architectural assumption is that all
-communication should be asynchronous. A microservice should be able to
-fire a message off to a destination, and forget about that
-message. Asynchronous communication adds resilience, since a sender no
-longer needs to wait for a receiver to proceed.
+Datawire lets you build composable, resilient microservices quickly
+and easily. Intended for software developers, Datawire takes care of
+the intricacies of building a distributed system so developers can
+just focus on the code they need to write. Used in conjunction with
+rapid deployment technologies such as Docker and CoreOS (although you
+certainly don't have to), Datawire enables you to deploy a
+sophisticated microservice architecture that can scale with your
+customers.
 
-Datawire uses AMQP 1.0, a language-independent, OASIS/ISO standard
-messaging protocol, to provide asynchronous communication. Any AMQP
-1.0-compliant broker or client can interact seamlessly with Datawire,
-and Datawire itself depends on Apache QPid Proton, an open source AMQP
-1.0 client.
-
-Using asynchronous messaging as its basic building block, Datawire
-enables you to build composable, resilient microservices
-faster. Datawire also lets you start thinking about your microservices
-in terms of its **dataflow** -- how messages and data flow between
-different parts of your system. In the subsequent tutorial and
-documentation, we'll see how these concepts can help you build
-smarter, better microservices.
-
+In the subsequent pages, we'll talk about what we mean by
+composability and resilience, and how Datawire lets you achieve those
+goals. 

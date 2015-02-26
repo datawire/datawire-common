@@ -5,7 +5,7 @@ Overview
 ========
 
 Datawire enables you to build a fully distributed microservices
-architecture. What does this mean?
+architecture using asynchronous messaging. What does this mean?
 
    **Messages can (but do not have to) flow asynchronously from any
    entity on the network directly to any other entity on the
