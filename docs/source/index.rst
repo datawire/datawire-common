@@ -12,8 +12,3 @@ datawire.io Documentation
    introduction
    architecture
    tutorial/intro_datawire.rst
-
-Search
-======
-
-* :ref:`search`
