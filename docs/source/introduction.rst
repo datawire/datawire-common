@@ -1,5 +1,5 @@
-Datawire
-========
+Introduction to Datawire
+########################
 
 Adopting a microservice architecture means, among other things, that
 you're committed to building a distributed system. Building and

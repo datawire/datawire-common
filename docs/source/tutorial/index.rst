@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Tutorial
-========
+########
 
 .. toctree::
    :maxdepth: 2

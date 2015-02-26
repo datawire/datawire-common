@@ -9,8 +9,9 @@ datawire.io Documentation
 .. toctree::
    :maxdepth: 2
 
-   introduction	      
-   tutorial/index
+   introduction
+   architecture
+   tutorial/intro_datawire.rst
 
 Search
 ======

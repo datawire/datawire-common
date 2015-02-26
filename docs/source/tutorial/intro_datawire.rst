@@ -1,3 +1,11 @@
+.. _tutorial:
+
+Tutorial
+########
+
+This tutorial will walk you through the install and configuration of
+Datawire, as well as some simple code and usage scenarios.
+
 Install
 =======
 
