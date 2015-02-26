@@ -20,6 +20,7 @@ def redirect(link, original):
             pretty = "%s, %s" % (network, address)
 
         class Redirect:
+
             def __call__(self, reactor):
                 link = original(reactor)
                 link.session.connection.hostname = network
@@ -29,7 +30,6 @@ def redirect(link, original):
                     else:
                         link.source.address = address.text
                 return link
-
 
             def __str__(self):
                 return pretty
