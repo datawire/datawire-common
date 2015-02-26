@@ -17,23 +17,32 @@ receive messages. Common entity types include:
 * *Microservices*, which process the content of messages. For example,
   a search microservice could index incoming messages, and send
   notifications when new items are added to the index.
-  
-* *Messaging intermediaries*, entities which do not inspect the content
-  of a message, but can buffer, forward, or publish messages to other
-  entities. For example, a queue is a type of messaging intermediary.
-  
+
 * *Client endpoints*, which interact with users. For example, a web
   browser client can directly send and receive messages on the
   Datawire network.
 
-This basic concept where every entity on the network is a first class
-citizen enables two design goals for Datawire:
+Thus, in Datawire, a microservice can send messages asynchronously
+directly to a client or other microservice, without a broker in
+between.
+
+At the same time, Datawire also supports the concept of transparent
+intermediaries. These intermediaries can buffer, forward, or publish
+messages to and from entities. An intermediary can provide all the
+functions of a traditional message broker (in fact, an AMQP 1.0
+compliant message broker could be used as an intermediary).
+
+In other words, every Datawire entity is a first class citizen, and
+Datawire also supports transparent intermediated communication
+*without* requiring a central broker. This basic architecture is what
+enables Datawire to achieve its core design goals:
 
 1. Make microservice communication as easy to use as HTTP. HTTP has
-   gained ubiquity in part because it's a point-to-point protocol,
-   with no central dispatch mechanism -- just a global address
-   mechanism enabled by DNS. Datawire is similar: there's a global
-   addressing mechanism, and point-to-point messaging.
+   gained ubiquity in part because no new infrastructure is needed to
+   wire two services together: it's a point-to-point protocol with a
+   global address mechanism enabled by DNS. Datawire is similar:
+   there's a global addressing mechanism, and point-to-point
+   messaging.
 
 2. Expose the full capabilities of system built on asynchronous
    messaging. Asynchronous messaging enables greater resiliency,
@@ -47,16 +56,17 @@ to skip directly to the :ref:`tutorial`.
 AMQP 1.0
 ========
 
-Datawire leans heavily on the Advanced Messaging Queuing Protocol 1.0
-specification, and uses `Apache Qpid Proton
-<http://qpid.apache.org/proton>`_ as a robust, high performance
-implementation of the AMQP 1.0 specification. Note that Datawire uses
-1.0 and not 0.9.x, because 1.0 provides a much greater amount of
-flexibility around messaging topologies. The 0.9.x specification was
-written with a specific set of use cases, and codified some basic
-messaging patterns directly into the specification. By using AMQP 1.0,
-Datawire is able to support a full superset of the topologies
-supported by AMQP 0.9.
+Datawire leans heavily on the `Advanced Messaging Queuing Protocol 1.0
+specification
+<http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-overview-v1.0-os.html>`_,
+and uses `Apache Qpid Proton <http://qpid.apache.org/proton>`_ as a
+robust, high performance implementation of the AMQP 1.0
+specification. Note that Datawire uses 1.0 and not 0.9.x, because 1.0
+provides a much greater amount of flexibility around messaging
+topologies. The 0.9.x specification was written with a specific set of
+use cases, and codified some basic messaging patterns directly into
+the specification. By using AMQP 1.0, Datawire is able to support a
+full superset of the topologies supported by AMQP 0.9.x.
 
 The following section will walk through some of the core capabilities
 of Datawire, and point to specific features of AMQP 1.0 that Datawire
@@ -81,7 +91,7 @@ create message processing pipelines, where the output of a
 microservice can be passed on to one or more microservices, ad
 infinitum. Datawire relies upon the notion of `settlement
 <http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-transactions-v1.0-os.html#doc-idp145616>`_,
-which transfers responsibility for message delivery to the next node
+which transfers responsibility for message delivery to the next stage
 in the pipeline.
 
 In traditional messaging systems, direct microservice chaining is not
@@ -106,16 +116,14 @@ Resilience, Scale, and Performance
 Datawire uses the `flow control
 <http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-transport-v1.0-os.html#doc-flow-control>`_
 features of AMQP as a key mechanism to improve resilience, scale, and
-performance. The credit-based flow control mechanism enables Datawire
-to optimize the flow of messages between different entities on the
-network based on the resource capacity of each entity. This helps
-alleviate issues such as backpressure in your network, and maximizes
-the total network throughput.
+performance. In Datawire, applications and services can communicate
+their resource capacity. Datawire is able to use this information for
+application level flow control, and optimize the flow of messages
+between different entities on the network. This maximizes the total
+throughput of your applications, and not just the network. 
 
-Note that Datawire provides many other mechanisms for resilience,
-e.g., Datawire components can be started in any particular order,
-which is essential for failure recovery.
+Note that Datawire itself provides many other mechanisms for
+resilience, e.g., Datawire components can be started in any particular
+order, which is essential for failure recovery. These mechanisms will
+be discussed in a future version of the documentation.
 
-
-
- 
