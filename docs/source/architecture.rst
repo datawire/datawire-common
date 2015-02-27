@@ -50,7 +50,7 @@ enables Datawire to achieve its core design goals:
    messaging.
 
 2. Expose the full capabilities of a system built on asynchronous
-   messaging. Asynchronous messaging enables greater resiliency,
+   messaging. Asynchronous messaging [#f1]_ enables greater resiliency,
    composability, and scalability, and Datawire aims to expose this
    functionality without compromising on ease of use.
 
@@ -131,3 +131,13 @@ resilience, e.g., Datawire components can be started in any particular
 order, which is essential for failure recovery. These mechanisms will
 be discussed in a future version of the documentation.
 
+.. rubric:: Footnotes
+
+.. [#f1] A synchronous protocol such as HTTP requires both the
+	 sender and receiver to be available. With asynchronous
+	 communication, neither the sender nor receiver block each
+	 other. Thus, if one of the parties is unavailable (it's
+	 failed, or it's under massive load), the other party can
+	 continue to function, improving resilience. This is
+	 particularly important in distributed systems, where each
+	 entity is loosely coupled.
