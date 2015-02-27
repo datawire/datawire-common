@@ -19,9 +19,8 @@ certainly don't have to), Datawire enables you to deploy a
 sophisticated microservice architecture that can scale up or down as
 your needs grow or shrink.
 
-  "... at its heart is the idea that the power of a system comes more
-  from the relationships among programs than from the programs
-  themselves."
+  "... the power of a system comes more from the relationships among
+  programs than from the programs themselves."
 
  *Brian Kernigan and Rob Pike, The Unix Programming Environment, 1984*
 
