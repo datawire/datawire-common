@@ -3,7 +3,7 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited. 
 
-import random
+import logging, random, sys
 from argparse import ArgumentParser
 from collections import OrderedDict
 from proton import Condition, symbol, Message
@@ -100,37 +100,56 @@ class Redirector:
             info = {symbol("network-host"): host, symbol("port"): port}
             if addr: info[symbol("address")] = addr
             link.condition = Condition("amqp:link:redirect", None, info)
-        else:
-            link.condition = Condition("amqp:link:detach-forced", "no such address")
         link.close()
 
 class RouteStore(Store):
 
-    def __init__(self):
-        Store.__init__(self)
+    def __init__(self, name):
+        Store.__init__(self, name)
         self.routes = OrderedDict()
         self.message = Message()
         self.message.subject = "routes"
 
-    def update(self, address, routes):
+    def update(self, address, routes, put=True):
         self.message.body = (address, map(lambda t: (t[0], str(t[1])), routes.targets))
         msg = self.message.encode()
         if routes.targets:
             self.routes[address] = Entry(msg)
+            persistent = True
         elif address in self.routes:
             del self.routes[address]
-        self.put(msg)
+            persistent = False
+        if put:
+            self.put(msg, persistent)
+
+    def recover_update(self, address, routes):
+        self.update(address, routes, put=False)
 
     def compact(self, tail):
         return self.routes.values()
 
 class Directory(Stream):
 
-    def __init__(self, redirector):
-        Stream.__init__(self, RouteStore())
+    def __init__(self, redirector, filename):
+        Stream.__init__(self, RouteStore(filename))
         self.redirector = redirector
-        self.redirector.on_updated = self.store.update
         self.message = Message()
+        self.redirector.on_updated = self.store.recover_update
+        self.recover()
+        self.redirector.on_updated = self.store.update
+
+    def recover(self):
+        r = self.store.reader()
+        while r.more():
+            msg = r.next().message
+            self.message.decode(msg)
+            addr, routes = self.message.body
+            for target, owner in routes:
+                if "<" in owner and ">" in owner:
+                    pass
+                else:
+                    self.redirector.add(addr, target, owner)
+        r.close()
 
     def on_delivery(self, event):
         if self.message.recv(event.link):
@@ -174,7 +193,7 @@ class Program:
         self.address = args.address or "//%s%s" % (self.host, portstr(self.port))
         self.redirector = Redirector()
         self.container = Container(self.redirector)
-        self.container["%s/directory" % self.address] = Directory(self.redirector)
+        self.container["%s/directory" % self.address] = Directory(self.redirector, args.store)
         self.handlers = [self.container]
 
     def on_reactor_init(self, event):
@@ -184,4 +203,14 @@ parser = ArgumentParser(prog="directory")
 parser.add_argument("-n", "--host", default="localhost", help="network host (defaults to localhost)")
 parser.add_argument("-p", "--port", default="5672", help="network port (defaults to 5672)")
 parser.add_argument("-a", "--address", help="amqp address, defaults to //<host>[:<port]")
-Reactor(Program(parser.parse_args())).run()
+parser.add_argument("-s", "--store", help="save routes to store")
+parser.add_argument("-l", "--level", default="warn", help="logging level")
+parser.add_argument("-o", "--output", help="file for log output")
+
+args = parser.parse_args()
+level = getattr(logging, args.level.upper())
+if args.output:
+    logging.basicConfig(filename=args.output, level=level)
+else:
+    logging.basicConfig(stream=sys.stderr, level=level)
+Reactor(Program(args)).run()
