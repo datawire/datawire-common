@@ -335,6 +335,7 @@ Congratulations on making your way through the Datawire tutorial!
 You've seen how to connect microservices in a variety of ways, using a
 few different dataflows. Here are some things to try next:
 
-1. Check out the Reactor API documentation at ...
+1. Check out some of the more advanced examples in the examples
+   directory such as ``fanout`` and ``bridge``.
 2. Send feedback about your use cases to support@datawire.io.
 3. Try using Datawire in some of your microservices.
