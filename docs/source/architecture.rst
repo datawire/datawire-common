@@ -22,6 +22,11 @@ receive messages. Common entity types include:
   browser client can directly send and receive messages on the
   Datawire network.
 
+* *Traditional monolithic applications*, which can be easily updated
+  to communicate to other entities. This is a common scenario where a
+  developer may want to incrementally refactor an application into
+  microservices.
+
 Thus, in Datawire, a microservice can send messages asynchronously
 directly to a client or other microservice, without a broker in
 between.
@@ -44,14 +49,13 @@ enables Datawire to achieve its core design goals:
    there's a global addressing mechanism, and point-to-point
    messaging.
 
-2. Expose the full capabilities of system built on asynchronous
+2. Expose the full capabilities of a system built on asynchronous
    messaging. Asynchronous messaging enables greater resiliency,
    composability, and scalability, and Datawire aims to expose this
    functionality without compromising on ease of use.
 
 The rest of this document will explore some of the design choices that
-we've made to help achieve these goals. If you're impatient, feel free
-to skip directly to the :ref:`tutorial`.
+we've made to help achieve these goals.
    
 AMQP 1.0
 ========
@@ -86,19 +90,19 @@ applications and services, and operate at the application layer.
 Composability
 -------------
 
-Datawire enables highly composable web services by allowing users to
+Datawire enables highly composable microservices by allowing users to
 create message processing pipelines, where the output of a
 microservice can be passed on to one or more microservices, ad
 infinitum. Datawire relies upon the notion of `settlement
 <http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-transactions-v1.0-os.html#doc-idp145616>`_,
-which transfers responsibility for message delivery to the next stage
-in the pipeline.
+which reliably transfers responsibility for message delivery to the
+next stage in the pipeline.
 
 In traditional messaging systems, direct microservice chaining is not
 possible -- instead, microservices need to adopt a hub-and-spoke model
 where each microservice consumes messages from a central broker, and
-then sends messages back to the central broker, creating a single
-bottleneck and point of failure.
+then sends messages back to the central broker, creating a bottleneck
+and point of failure.
 
 Polyglot
 --------
