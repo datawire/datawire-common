@@ -1,28 +1,62 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited. 
 
+import sqlite3, logging
 from proton import Message, Endpoint
 from proton.reactor import Reactor
 from proton.handlers import CFlowController, CHandshaker
 
+log = logging.getLogger(__name__)
+
 class Entry:
 
-    def __init__(self, msg):
+    def __init__(self, msg, persistent=True, deleted = False):
         self.message = msg
+        self.persistent = persistent
+        self.deleted = deleted
 
 class Store:
 
-    def __init__(self):
+    def __init__(self, name=None):
+        self.name = name
+        if self.name:
+            self.db = sqlite3.connect(self.name)
+            if not list(self.db.execute('pragma table_info(streams)')):
+                log.info("%s: creating schema", self.name)
+                self.db.execute('''create table streams (serial integer,
+                                                         message blob,
+                                                         primary key(serial))''')
+        else:
+            self.db = None
         self.serial = 0
         self.entries = []
         self.readers = []
         self.lastgc = 0
+        if self.db:
+            self._recover()
+
+    def _recover(self):
+        serial = None
+        for row in self.db.execute('select serial, message from streams order by serial'):
+            if serial is None:
+                serial = row[0]
+                self.serial = serial
+            else:
+                while serial < row[0] - 1:
+                    self.entries.append(Entry(None, persistent=False, deleted=True))
+                    serial += 1
+                assert row[0] == serial + 1
+                serial = row[0]
+            log.debug("%s: recovering %s", self.name, serial)
+            self.put(str(row[1]))
+        self.lastgc = self.min()
+        self.lastflush = self.max()
 
     def start(self):
         return self.min()
 
-    def put(self, msg):
-        self.entries.append(Entry(msg))
+    def put(self, msg, persistent=True):
+        self.entries.append(Entry(msg, persistent=persistent))
 
     def max(self):
         return self.serial + len(self.entries)
@@ -32,6 +66,38 @@ class Store:
 
     def get(self, serial):
         return self.entries[serial - self.serial]
+
+    def flush(self):
+        if self.db:
+            for serial in range(self.lastflush, self.max()):
+                entry = self.entries[serial - self.serial]
+                if entry.persistent:
+                    log.debug("%s: insert %s, %r", self.name, serial, entry.message)
+                    self.db.execute("insert into streams (serial, message) values (?, ?)",
+                                    (serial, sqlite3.Binary(entry.message)))
+            self.db.commit()
+        self.lastflush = self.max()
+
+    def _update(self, deleted, updated):
+        commit = False
+        if self.serial - deleted < self.lastflush:
+            log.debug("%s: delete < %s", self.name, self.serial)
+            self.db.execute("delete from streams where serial < ?", (self.serial,))
+            commit = True
+        for idx in range(0, updated):
+            entry = self.entries[idx]
+            if entry.persistent:
+                log.debug("%s: update %s, %r", self.name, self.serial + idx, entry.message)
+                self.db.execute("insert or replace into streams (serial, message) values (?, ?)",
+                                (self.serial + idx, sqlite3.Binary(entry.message)))
+            else:
+                log.debug("%s: delete %s", self.name, self.serial + idx)
+                self.db.execute("delete from streams where serial = ?", (self.serial + idx,))
+            commit = True
+        if commit:
+            self.db.commit()
+        if self.lastflush < self.serial + updated:
+            self.lastflush = self.serial + updated
 
     def gc(self):
         serial = self.max()
@@ -46,6 +112,8 @@ class Store:
             tail = self.compact(self.entries[:delta])
             self.entries[:delta] = tail
             self.serial += delta - len(tail)
+            if self.db:
+                self._update(delta - len(tail), len(tail))
 
         self.lastgc = serial
 
@@ -65,8 +133,11 @@ class Reader:
 
     def next(self):
         if self.more():
-            result = self.store.get(self.serial)
-            self.serial += 1
+            while True:
+                result = self.store.get(self.serial)
+                self.serial += 1
+                if not result.deleted:
+                    break
             return result
         else:
             return None
@@ -80,7 +151,6 @@ class Reader:
 class Stream:
 
     def __init__(self, store = None):
-        self.history = Store()
         self.store = store or Store()
         self.handlers = [CFlowController(), CHandshaker()]
         self.outgoing = []
@@ -133,6 +203,7 @@ class Stream:
         for snd in self.outgoing:
             self.pump_sender(snd)
         self.store.gc()
+        self.store.flush()
 
     def on_reactor_quiesced(self, event):
         self.pump()
