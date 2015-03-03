@@ -48,8 +48,8 @@ number every half second.
    :pyobject: Program
 
 
-on_unhandled
-============
+Handlers
+========
 
 The ``on_unhandled`` event is called when an event occurs and the
 event handler doesn't have an ``on_<event>`` method. This can be
@@ -77,4 +77,43 @@ may have a separate handler. The reactor implements a
 		
    r.global_handler.add(Logger())
    r.run()
+
+
+Events know how to dispatch themselves to handlers. By combining this
+with ``on_unhandled``, you can provide a kind of inheritance between
+handlers using delegation.
+
+.. literalinclude:: delegates.py
+   :language: python
+
+When an event dispatches itself to a handler, it also checks if that
+handler has a ``handlers`` attribute and dispatches the event to any
+children. 
+   
+.. literalinclude:: handlers.py
+   :language: python
+
+Selectors
+=========
+
+.. literalinclude:: echo.py
+   :language: python
+
+Tornado
+=======
+
+We'll walk through how the reactor can integrate with an external
+event loop. We'll use `Tornado <http://www.tornadoweb.org>`_ as our
+example framework.
+
+.. literalinclude:: tornado-hello-world.py
+   :language: python
+
+The TornadoApp integrates a reactor into Tornado's ``ioloop``, and is
+a good that combines the different handlers and selectors previously
+discussed.
+
+.. literalinclude:: tornado_app.py
+   :language: python
+
 
