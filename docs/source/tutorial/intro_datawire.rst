@@ -281,13 +281,14 @@ balancing without affecting the sender.
 Dataflow
 ========
 
-In Datawire, we use the term `dataflow` to refer to your messaging
-topology. Load balancing is a type of dataflow. By thinking about the
-dataflow of your system, you can easily identify how your system can
-be broken into smaller microservices. Since you will probably want to
-iterate on your dataflow over time, Datawire makes it easy to
-reconfigure your dataflow, without changing any of your software
-components. 
+In Datawire, we use the term `dataflow` to refer to how messages flow
+through your system. Load balancing is a type of dataflow: messages
+flow to several identical processing stages depending on resource
+availability. By thinking about the dataflow of your system, you can
+easily identify how your system can be broken into smaller
+microservices. Since you will probably want to iterate on your
+dataflow over time, Datawire makes it easy to reconfigure your
+dataflow, without changing any of your software components.
 
 We're now going to walk through a more complex dataflow example to
 give you a better sense of what Datawire can do.
@@ -311,8 +312,8 @@ All of these commands send and receive data as AMQP messages. Thus,
 Datawire makes it easy to write a microservice that controls,
 processes, or displays any of this data.
 
-Bugs
-====
+Bug Reporting
+=============
 
 This is the |version| release. While our underlying libraries have been used
 in numerous production scenarios, the full integrated Datawire

@@ -4,7 +4,9 @@ Reactor API Tutorial
 The reactor provides a general purpose event processing library for
 writing reactive programs. A reactive program is defined by a set of
 event handlers. An event handler is any class or object that defines
-the ``on_<event>`` methods that it cares to handle.
+the ``on_<event>`` methods that it cares to handle. This tutorial will
+use a number of different examples to illustrate how to use the
+reactor API.
 
 Initializing and Exiting the Reactor
 ====================================
