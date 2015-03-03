@@ -349,7 +349,7 @@ few different dataflows. Here are some things to try next:
 
 1. Read the :ref:`reactor_tutorial`, which covers the difference types
    of events that can be used in a microservice.
-2. Check out some of the more advanced examples in the examples
-   directory such as ``fanout`` and ``bridge``.
+2. Try modifying and running the examples in ``examples/``, including
+   ``bridge``, which we haven't covered in this tutorial.
 3. Try using Datawire in some of your microservices.
 4. Send feedback about your use cases to support@datawire.io.
