@@ -122,8 +122,9 @@ rm -rf ${WORK_DIR}/${TEMP_DIR} ${WORK_DIR}/proton.zip
 cat <<WELCOME
 
 Welcome to Datawire! Datawire has been installed into
-${WORK_DIR}/${INSTALL_DIR}. For information on how to get started,
-visit http://www.datawire.io/docs/.
+${WORK_DIR}/${INSTALL_DIR}, and symlinks to the library have been
+added to your local site-packages directory. For information on how to
+get started, visit http://www.datawire.io/docs/.
 
 You can also start using Datawire by typing:
 
