@@ -1,4 +1,4 @@
-.. _tutorial:
+.. _dw_tutorial:
 
 Tutorial
 ########
@@ -29,7 +29,7 @@ This will install into the datawire-|version| directory all Datawire
 components, including the microserver, command line interface, service
 locator, and example microservices. This also creates symlinks in the
 user's local ``site-packages`` directory to the Datawire libraries, so
-you can write code using the Datawire APIs without hacking your
+you can write code using the Datawire APIs without editing your
 PYTHONPATH.
 
 The install script also generates the ``dw-config.sh`` file, which
@@ -278,21 +278,32 @@ balances between the ``upper`` and ``lower`` services. What's
 important to note here is that we've just transparently added load
 balancing without affecting the sender.
 
-Dataflow
-========
+Fanout
+======
 
-In Datawire, we use the term `dataflow` to refer to how messages flow
-through your system. Load balancing is a type of dataflow: messages
-flow to several identical processing stages depending on resource
-availability. By thinking about the dataflow of your system, you can
-easily identify how your system can be broken into smaller
-microservices. Since you will probably want to iterate on your
-dataflow over time, Datawire makes it easy to reconfigure your
-dataflow, without changing any of your software components.
+In the load balancing example, the directory is changing the routes
+dynamically between different microservices running on the same
+address. Microservices themselves can also send messages on multiple
+addresses. In this example, we'll start with setting up the fanout
+example (you'll want to open a second receiver window, or run this in
+the command window)::
 
-We're now going to walk through a more complex dataflow example to
-give you a better sense of what Datawire can do.
+  examples/printer --host localhost --port 5683 //localhost/display2
+  examples/fanout --host localhost --port 5683 //localhost/fan //localhost/display //localhost/display2
 
+Here, we're registering an address of ``localhost/fan`` and telling
+``fanout`` to send any messages it receives to ``localhost/display``
+and ``localhost/display2``. Now, run ``send`` again::
+
+  examples/send //localhost/fan
+
+and you'll see the message appear to both recipient addresses. Fanout
+uses a ``Stream`` to simplify part of the code.
+
+.. literalinclude:: ../../../examples/fanout
+   :language: python
+   :pyobject: Fanout
+  
 Working with Datawire
 =====================
 
@@ -336,7 +347,9 @@ Congratulations on making your way through the Datawire tutorial!
 You've seen how to connect microservices in a variety of ways, using a
 few different dataflows. Here are some things to try next:
 
-1. Check out some of the more advanced examples in the examples
+1. Read the :ref:`reactor_tutorial`, which covers the difference types
+   of events that can be used in a microservice.
+2. Check out some of the more advanced examples in the examples
    directory such as ``fanout`` and ``bridge``.
-2. Send feedback about your use cases to support@datawire.io.
 3. Try using Datawire in some of your microservices.
+4. Send feedback about your use cases to support@datawire.io.

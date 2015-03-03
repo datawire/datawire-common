@@ -4,9 +4,6 @@ from argparse import ArgumentParser
 from proton.reactor import Reactor
 from datawire import Address, Tether, Sender, Stream
 
-# The fanout service will broadcast any incoming messages to a
-# configurable list of target addresses.
-
 class Fanout:
 
     def __init__(self, args):
