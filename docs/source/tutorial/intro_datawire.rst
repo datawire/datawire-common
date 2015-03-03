@@ -26,11 +26,11 @@ version of Datawire::
   curl http://www.datawire.io/install.sh | /bin/sh
 
 This will install into the datawire-|version| directory all Datawire
-components, including the microserver, command line interface, service
-locator, and example microservices. This also creates symlinks in the
-user's local ``site-packages`` directory to the Datawire libraries, so
-you can write code using the Datawire APIs without editing your
-PYTHONPATH.
+components, including the microserver, command line interface,
+directory, and example microservices. This also creates symlinks in
+the user's local ``site-packages`` directory to the Datawire
+libraries, so you can write code using the Datawire APIs without
+editing your PYTHONPATH.
 
 The install script also generates the ``dw-config.sh`` file, which
 will set your environment variables correctly. Use the ``source``
@@ -103,8 +103,8 @@ work for ``send`` is again done in ``on_reactor_init``:
 	  port for AMQP). Make sure you don't have a firewall
 	  filtering port 5672, or none of these examples will work.
 
-The Service Locator
-===================
+The Directory
+=============
 
 Although clients can connect directly to a service if they know its
 physical address, as shown above, it's usually not a good idea to tie
@@ -112,21 +112,21 @@ a service to a single physical address. This address might change due
 to hardware or network failures, or you may want to deploy additional
 instances of a service for load balancing purposes.
 
-The Datawire `service locator` maps physical addresses to logical
+The Datawire `directory` maps physical addresses to logical
 addresses. To maximize scalability, performance, and reliability, the
-service locator does not directly route or process messages. Instead,
+directory does not directly route or process messages. Instead,
 it redirects AMQP links (unidirectional message flow). Thus, messages
-still flow directly from senders to receivers, and the service locator
+still flow directly from senders to receivers, and the directory
 simply provides routing directions. This is distinct from a
 traditional message broker architecture, where the broker provides
-centralized service locator and message processing capabilities. In
-the command window, start the service locator by invoking it from the
+centralized directory and message processing capabilities. In
+the command window, start the directory by invoking it from the
 command line::
 
   directory &
 
 Now, we can use ``dw``, the command-line interface to Datawire, to add
-a route into the locator::
+a route into the directory::
 
   dw route add //localhost/recv //localhost:5678
 
@@ -143,7 +143,7 @@ window, and type::
 
 You'll see the Hello, World message now appears in the receiver. In
 the sender, you'll see that the message is redirected by the
-locator. By introducing a layer of indirection, you can change the
+directory. By introducing a layer of indirection, you can change the
 physical address of the receiver, without requiring any change in the
 sender.
 
@@ -154,7 +154,7 @@ There are several ways to connect services to Datawire. In the above
 example, we manually added a route using the command line. For
 developers, the easiest way to connect to Datawire is to use a
 `tether`. The tether provides live route information and heartbeat
-data to the service locator. If a heartbeat dies, the service locator
+data to the directory. If a heartbeat dies, the directory
 stops routing messages to the service until the heartbeat is restored.
 
 The recv service we've been using does not use a tether. Let's switch
@@ -184,7 +184,7 @@ and then we start the tether in ``on_reactor_init``:
    :pyobject: Printer.on_reactor_init
 
 Let's now see the tether in action. In the command window, we'll
-subscribe to the service locator routing table::
+subscribe to the directory routing table::
 
   dw route list -f
 
@@ -197,14 +197,14 @@ In the receiver window, terminate the ``printer`` service. You'll see
 the route disappear from the route list. Start the ``printer`` service
 again, and you'll see the route reappear.
 
-Similarly, if the locator dies, the routes will be regenerated when
-the locator reappears.
+Similarly, if the directory dies, the routes will be regenerated when
+the directory reappears.
 
 Message Processing Pipelines
 ============================
 
 So far, we've shown how you can asynchronously send and receive
-messages, and how the service locator redirects messages from logical
+messages, and how the directory redirects messages from logical
 addresses to physical addresses. We're now going to show how you can
 build `message processing pipelines` where a message can be sent
 through multiple services that process and transform the message.
