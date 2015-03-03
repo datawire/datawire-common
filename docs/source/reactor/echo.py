@@ -9,7 +9,7 @@ class Echo:
         self.source = source
 
     def on_selectable_init(self, event):
-        sel = event.context # XXX: no selectable property yet
+        sel = event.context
 
         # We can configure a selectable with any file descriptor we want.
         sel.fileno(self.source.fileno())
