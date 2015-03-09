@@ -103,8 +103,8 @@ work for ``send`` is again done in ``on_reactor_init``:
 	  port for AMQP). Make sure you don't have a firewall
 	  filtering port 5672, or none of these examples will work.
 
-The Directory
-=============
+Directory
+=========
 
 Although clients can connect directly to a service if they know its
 physical address, as shown above, it's usually not a good idea to tie

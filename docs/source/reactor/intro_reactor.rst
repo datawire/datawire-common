@@ -101,7 +101,7 @@ Selectable
 ==========
 
 The reactor API includes a set of event handlers that operate on
-streams, e.g. file descriptors. In this example, the reactor echoes
+byte streams, e.g. file descriptors. In this example, the reactor echoes
 what is typed on STDIN.
 
 .. literalinclude:: echo.py
