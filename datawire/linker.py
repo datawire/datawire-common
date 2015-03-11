@@ -1,8 +1,11 @@
 # Copyright (C) k736, inc. All Rights Reserved.
-# Unauthorized copying or redistribution of this file is strictly prohibited. 
+# Unauthorized copying or redistribution of this file is strictly prohibited.
 
+import logging
 from proton import DELEGATED, Endpoint, EventType, Message
 from .address import Address
+
+log = logging.getLogger(__name__)
 
 def redirect(link, original):
     if link.remote_condition and link.remote_condition.name == "amqp:link:redirect":
@@ -93,10 +96,10 @@ class Linker:
         event.connection.close()
         rlink = redirect(event.link, self.link)
         if rlink:
-            print "redirecting to %s" % rlink
+            log.debug("redirecting to %s", rlink)
             self.start(event.reactor, rlink)
         elif link.remote_condition:
-            print link.remote_condition
+            log.info("on_link_remote_close: %s", link.remote_condition)
             if link == self._link:
                 self._link = None
 
@@ -105,7 +108,7 @@ class Linker:
 
     def on_connection_unbound(self, event):
         if self._link and self._link.connection == event.connection:
-            print "reconnecting... to %s" % self.network()
+            log.info("reconnecting... to %s", self.network())
             self.start(event.reactor, open=False)
             class Open:
                 def on_timer_task(_self, event):
@@ -114,7 +117,7 @@ class Linker:
 
     def on_transport_error(self, event):
         cond = event.transport.condition
-        print "%s: %s" % (cond.name, cond.description)
+        log.error("transport error %s: %s", cond.name, cond.description)
 
     def on_transport_closed(self, event):
         event.connection.free()
@@ -194,9 +197,16 @@ class Receiver(Linker):
 class Tether(Sender):
 
     def __init__(self, directory, address, target):
+        if directory is None:
+            directory = "//%s/directory" % Address(address).host
+            log.debug("Tether picking default directory %r from in_address %r", directory, address)
         Sender.__init__(self, directory)
         self.address = address
         self.redirect_target = target
+
+        if Address(self.address).host != Address(self.redirect_target).host:
+            log.warning("Service address and announce address hostnames do not match: %s, %s",
+                        Address(self.address).host, Address(self.redirect_target).host)
 
     def on_link_local_open(self, event):
         msg = Message()
