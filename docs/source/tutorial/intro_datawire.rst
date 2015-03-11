@@ -58,7 +58,7 @@ first terminal window, start up the receiver:
   cd datawire-|version|/
   examples/recv --host localhost --port 5678
 
-This binds the receiver to to ``localhost:5678``. Let's take a quick
+This binds the receiver to ``localhost:5678``. Let's take a quick
 peek at the code:
 
 .. literalinclude:: ../../../examples/recv
@@ -162,7 +162,7 @@ to the printer service, which is identical to the recv service, except
 that it uses a tether. In the receiver window, terminate the receiver
 (Ctrl-C), and start the printer service::
 
-  examples/printer --host localhost --port 5678 //localhost/printer
+  examples/printer --port 5678 //localhost/printer
 
 The tether automatically registers the logical and physical address,
 which you can see by sending directly to the printer address::
@@ -212,8 +212,8 @@ through multiple services that process and transform the message.
 We'll start by running a new microservice, ``upper``. ``upper`` simply
 uppercases all the letters in a message::
 
-  examples/upper --host localhost --port 5680 //localhost/transform //localhost/printer &
-  
+  examples/upper --port 5680 //localhost/transform //localhost/printer &
+
 This configures the upper service to receive messages at the
 ``/localhost/transform`` address, and forward its processed messages to
 ``//localhost/printer``. (We can run it as a background process
@@ -253,13 +253,13 @@ this::
 Let's start the ``lower`` service on the printer's address, along with
 a new instance of the ``upper`` service::
 
-  examples/lower --host localhost --port 5681 //localhost/printer //localhost/display &
-  examples/upper --host localhost --port 5682 //localhost/printer //localhost/display &
-  
+  examples/lower --port 5681 //localhost/printer //localhost/display &
+  examples/upper --port 5682 //localhost/printer //localhost/display &
+
 Finally, let's terminate the current ``printer`` service (Ctrl-C), and
 restart it on a new address::
-  
-  examples/printer --host localhost --port 5678 //localhost/display
+
+  examples/printer --port 5678 //localhost/display
 
 What we've just done is set up two services, ``lower`` and ``upper``,
 that receive messages on ``//localhost/printer``, process them, and
@@ -288,8 +288,8 @@ addresses. In this example, we'll start with setting up the fanout
 example (you'll want to open a second receiver window, or run this in
 the command window)::
 
-  examples/printer --host localhost --port 5683 //localhost/display2
-  examples/fanout --host localhost --port 5683 //localhost/fan //localhost/display //localhost/display2
+  examples/printer --port 5683 //localhost/display2
+  examples/fanout --port 5684 //localhost/fan //localhost/display //localhost/display2
 
 Here, we're registering an address of ``localhost/fan`` and telling
 ``fanout`` to send any messages it receives to ``localhost/display``
@@ -322,6 +322,35 @@ config list command::
 All of these commands send and receive data as AMQP messages. Thus,
 Datawire makes it easy to write a microservice that controls,
 processes, or displays any of this data.
+
+Using Multiple Hosts
+====================
+
+The localhost-only scenarios shown above can easily be modified to support
+running microservices on multiple hosts. The key point to remember is that
+any host running a microservice (printer, upper, lower, fanout) must also
+run a directory. The non-service examples (send and bridge) do not need to
+run on a host that is running a directory.
+
+For the following example, consider a network with two hosts, sapphire and
+may. Launch the directory and the display service on sapphire (in separate
+terminals)::
+
+  sapphire$ ./directory --host sapphire
+
+  sapphire$ examples/printer //sapphire/display
+
+Next, launch the directory and the upper service on may (again, in separate
+terminals)::
+
+  may$ ./directory --host may
+
+  may$ examples/upper //may/upper //sapphire/display
+
+Now we can use the multi-host message pipeline from any machine, with the
+ultimate results being displayed by the display service on sapphire::
+
+  anyHost$ examples/send //may/upper
 
 Bug Reporting
 =============
