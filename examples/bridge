@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import logging
 from argparse import ArgumentParser
 from proton.reactor import Reactor
 from datawire import Receiver, Sender, Stream
@@ -31,6 +32,8 @@ class Bridge:
             receiver.start(event.reactor)
         for sender in self.senders:
             sender.start(event.reactor)
+
+logging.basicConfig(level=logging.DEBUG)
 
 parser = ArgumentParser(prog="bridge")
 parser.add_argument("-s", "--sources", nargs='+', required=True, help="source addresses")

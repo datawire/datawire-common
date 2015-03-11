@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
+import logging
 from argparse import ArgumentParser
 from proton.reactor import Reactor
-from datawire import Address, Processor
+from datawire import Processor
 
 class Service:
 
@@ -18,6 +19,8 @@ class Service:
 
     def on_message(self, event):
         print event.message
+
+logging.basicConfig(level=logging.DEBUG)
 
 parser = ArgumentParser(prog="recv")
 parser.add_argument("-n", "--host", default="localhost", help="hostName binding")

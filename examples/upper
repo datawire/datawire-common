@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
+import logging
 from argparse import ArgumentParser
 from proton.reactor import Reactor
-from datawire import Address, Tether, Processor, Sender, Stream
+from datawire import Address, Tether, Processor, Sender
 
 # This service uppercases all text messages and passes them along to
 # the forwarding address supplied on the command line. If the message
@@ -11,9 +12,11 @@ from datawire import Address, Tether, Processor, Sender, Stream
 class Upper:
 
     def __init__(self, args):
-        bind_address = "//%s:%s" % (args.host, args.port)
-        self.tether = Tether(args.directory, args.address, bind_address)
-        self.host = args.host
+        svc_host = Address(args.address).host
+        announce_address = "//" + (args.ann_host or args.host or svc_host) + \
+                           ":" + (args.ann_port or args.port)
+        self.tether = Tether(args.directory, args.address, announce_address)
+        self.host = args.host or svc_host
         self.port = args.port
         self.sender = Sender(args.forward)
 
@@ -27,10 +30,14 @@ class Upper:
             event.message.body = event.message.body.upper()
         self.sender.send(event.message)
 
+logging.basicConfig(level=logging.DEBUG)
+
 parser = ArgumentParser(prog="upper")
-parser.add_argument("-d", "--directory", default="//localhost/directory", help="datawire directory")
-parser.add_argument("-n", "--host", default="localhost", help="hostName binding")
+parser.add_argument("-d", "--directory", help="datawire directory")
+parser.add_argument("-n", "--host", help="hostName binding")
 parser.add_argument("-p", "--port", default="5678", help="port binding")
+parser.add_argument("--ann-host", help="announced hostname (EC2)")
+parser.add_argument("--ann-port", help="announced port (EC2)")
 parser.add_argument("address", help="service address")
 parser.add_argument("forward", help="forwarding address")
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import logging
 from argparse import ArgumentParser
 from proton.reactor import Reactor
 from datawire import Address, Tether, Processor
@@ -8,10 +9,12 @@ class Printer:
 
     def __init__(self, args):
         # Create a tether to the datawire directory that routes
-        # connections made to args.address to args.physical
-        bind_address = "//" + args.host + ":" + args.port
-        self.tether = Tether(args.directory, args.address, bind_address)
-        self.host = args.host
+        # connections made to args.address to args.ann_host/port
+        svc_host = Address(args.address).host
+        announce_address = "//" + (args.ann_host or args.host or svc_host) + \
+                           ":" + (args.ann_port or args.port)
+        self.tether = Tether(args.directory, args.address, announce_address)
+        self.host = args.host or svc_host
         self.port = args.port
 
     def on_reactor_init(self, event):
@@ -24,10 +27,14 @@ class Printer:
     def on_message(self, event):
         print event.message
 
+logging.basicConfig(level=logging.DEBUG)
+
 parser = ArgumentParser(prog="printer")
-parser.add_argument("-d", "--directory", default="//localhost/directory", help="datawire directory")
-parser.add_argument("-n", "--host", default="localhost", help="hostName binding")
+parser.add_argument("-d", "--directory", help="datawire directory")
+parser.add_argument("-n", "--host", help="hostName binding")
 parser.add_argument("-p", "--port", default="5678", help="port binding")
+parser.add_argument("--ann-host", help="announced hostname (EC2)")
+parser.add_argument("--ann-port", help="announced port (EC2)")
 parser.add_argument("address", help="service address")
 
 Reactor(Printer(parser.parse_args())).run()
