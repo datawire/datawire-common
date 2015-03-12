@@ -359,18 +359,22 @@ full directory address (including the ``//`` prefix and the
 
   may% dw -d //sapphire/directory route list
   
-Separate bind and announce addresses
-====================================
+Network Bindings
+================
 
-Under some circumstances, it may be necessary for a microservice to bind to
-one IP address and port while remote processes must connect to a different IP
-address and port to reach it.
+In some environments, a microservice may need to bind to one IP
+address and port, while remote processes must connect to a different
+IP address and port to reach the microservice. Datawire supports these
+scenarios by enabling you to set separate ``bind`` and ``announce``
+addresses. By default, Datawire assumes that you want to set the
+``bind`` address, and sets the ``announce`` address to be the
+same. If you wish to set them differently, you can.
 
 For the directory::
 
   directory -n bind_host -p bind_port -a //external_host
 
-This example uses all of the host, port, and address command line options::
+The example microservices also support this, e.g.,::
 
   examples/printer -n bind_host -p bind_port --ann-host external_host --ann-port external_port -d //external_host/directory //external_host/display
 
