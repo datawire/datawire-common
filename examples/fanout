@@ -35,7 +35,7 @@ class Fanout:
         for sender in self.senders:
             sender.start(event.reactor)
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 
 parser = ArgumentParser(prog="fanout")
 parser.add_argument("-d", "--directory", help="datawire directory")

@@ -33,7 +33,7 @@ class Bridge:
         for sender in self.senders:
             sender.start(event.reactor)
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 
 parser = ArgumentParser(prog="bridge")
 parser.add_argument("-s", "--sources", nargs='+', required=True, help="source addresses")
