@@ -99,9 +99,10 @@ work for ``send`` is again done in ``on_reactor_init``:
    :language: python
    :pyobject: Client.on_reactor_init
 
-.. note:: Messages are sent by default on port 5672 (the IANA assigned
-	  port for AMQP). Make sure you don't have a firewall
-	  filtering port 5672, or none of these examples will work.
+.. note:: This tutorial uses several different ports, beginning with
+          port 5672 (the IANA assigned port for AMQP), and going
+          up 5682. Make sure you don't filter ports 5672 through 5682,
+          or these examples will not work.
 
 Directory
 =========
