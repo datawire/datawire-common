@@ -101,7 +101,7 @@ work for ``send`` is again done in ``on_reactor_init``:
 
 .. note:: This tutorial uses several different ports, beginning with
           port 5672 (the IANA assigned port for AMQP), and going
-          up 5682. Make sure you don't filter ports 5672 through 5682,
+          up 5684. Make sure you don't filter ports 5672 through 5684,
           or these examples will not work.
 
 Directory
@@ -337,14 +337,14 @@ For the following example, consider a network with two hosts, sapphire and
 may. Launch the directory and the display service on sapphire (in separate
 terminals)::
 
-  sapphire$ ./directory --host sapphire
+  sapphire$ directory --host sapphire
 
   sapphire$ examples/printer //sapphire/display
 
 Next, launch the directory and the upper service on may (again, in separate
 terminals)::
 
-  may$ ./directory --host may
+  may$ directory --host may
 
   may$ examples/upper //may/upper //sapphire/display
 
@@ -357,8 +357,22 @@ The ``dw`` command line can also query remote directories. Pass in the
 full directory address (including the ``//`` prefix and the
 ``directory`` suffix) to the ``-d`` option::
 
-  may% ./dw -d //sapphire/directory route list
+  may% dw -d //sapphire/directory route list
   
+Separate bind and announce addresses
+====================================
+
+Under some circumstances, it may be necessary for a microservice to bind to
+one IP address and port while remote processes must connect to a different IP
+address and port to reach it.
+
+For the directory::
+
+  directory -n bind_host -p bind_port -a //external_host
+
+This example uses all of the host, port, and address command line options::
+
+  examples/printer -n bind_host -p bind_port --ann-host external_host --ann-port external_port -d //external_host/directory //external_host/display
 
 Bug Reporting and Known Issues
 ==============================
