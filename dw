@@ -87,6 +87,7 @@ class RouteList(Command):
         self.recv.start(event.reactor)
         self.message = Message()
         self.empty = True
+        self.did_connect = False
 
     def on_link_local_open(self, event):
         self.updated = []
@@ -95,6 +96,7 @@ class RouteList(Command):
             self.render()
 
     def on_link_remote_open(self, event):
+        self.did_connect = True
         if self.args.follow:
             self.render()
 
@@ -161,11 +163,10 @@ class RouteList(Command):
 
     def on_reactor_final(self, event):
         if not self.args.follow and self.empty:
-            if self.recv.linked:
+            if self.did_connect:
                 print "(no routes)"
             else:
                 sys.stderr.write("Could not connect to directory %r\n" % self.args.directory)
-                exit(1)
 
 class RouteAddDel(Command):
 
