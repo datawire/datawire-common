@@ -48,6 +48,7 @@ class Linker:
     def __init__(self, *handlers, **kwargs):
         self.handlers = handlers
         self._link = None
+        self.trace = None
 
     def start(self, reactor, link=None, open=True):
         if link is None:
@@ -105,6 +106,8 @@ class Linker:
 
     def on_connection_bound(self, event):
         event.transport.idle_timeout = 60.0
+        if self.trace is not None:
+            event.transport.trace(self.trace)
 
     def on_connection_unbound(self, event):
         if self._link and self._link.connection == event.connection:
