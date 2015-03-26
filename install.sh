@@ -95,7 +95,7 @@ mkdir -p $USER_SITE_DIR
 cd $USER_SITE_DIR
 ln -fs ${WORK_DIR}/${INSTALL_DIR}/lib/cproton.py cproton.py
 ln -fs ${WORK_DIR}/${INSTALL_DIR}/lib/_cproton.so _cproton.so
-ln -fs ${WORK_DIR}/${INSTALL_DIR}/lib/proton proton
+ln -fns ${WORK_DIR}/${INSTALL_DIR}/lib/proton proton
 
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/datawire datawire
 
