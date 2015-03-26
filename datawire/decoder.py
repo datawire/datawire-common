@@ -26,4 +26,5 @@ class Decoder:
                 dlv.update(Delivery.REJECTED)
                 traceback.print_exc()
                 print sys.exc_info()
+            finally:
                 dlv.settle()
