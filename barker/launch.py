@@ -22,6 +22,8 @@ python bizlogic.py
 python submission.py
 python autobark.py 1
 python listen.py ark3
+webui/proxy/proxy.js --thost localhost -p 5673 -t 6050
+webui/proxy/proxy.js --thost localhost -p 5674 -t 5679
 """
 
 def main():
