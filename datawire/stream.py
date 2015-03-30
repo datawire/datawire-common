@@ -55,7 +55,7 @@ class Store:
     def start(self):
         return self.min()
 
-    def put(self, msg, persistent=True):
+    def put(self, msg, persistent=True, address=None):
         self.entries.append(Entry(msg, persistent=persistent))
 
     def max(self):
@@ -120,7 +120,7 @@ class Store:
     def compact(self, tail):
         return []
 
-    def reader(self):
+    def reader(self, address=None):
         reader = Reader(self)
         self.readers.append(reader)
         return reader
@@ -148,6 +148,42 @@ class Reader:
     def close(self):
         self.store.readers.remove(self)
 
+
+class MultiStore:
+
+    def __init__(self):
+        self.stores = {}
+
+    def gc(self):
+        for k in self.stores.keys()[:]:
+            s = self.stores[k]
+            s.gc()
+            if not s.readers and not s.entries:
+                log.debug("removing store for %s", k)
+                del self.stores[k]
+
+    def flush(self):
+        for s in self.stores.values():
+            s.flush()
+
+    def put(self, msg, address=None):
+        if address in self.stores:
+            store = self.stores[address]
+        else:
+            log.debug("adding store for put[%s]", address)
+            store = Store()
+            self.stores[address] = store
+        store.put(msg)
+
+    def reader(self, address):
+        if address in self.stores:
+            store = self.stores[address]
+        else:
+            log.debug("adding store for get[%s]", address)
+            store = Store()
+            self.stores[address] = store
+        return store.reader(address)
+
 class Stream:
 
     def __init__(self, store = None):
@@ -159,10 +195,10 @@ class Stream:
 
     def put(self, msg):
         if isinstance(msg, Message):
-            self.store.put(msg.encode())
+            self.store.put(msg.encode(), address=msg.address)
         else:
             self.message.body = msg
-            self.store.put(self.message.encode())
+            self.store.put(self.message.encode(), address=msg.address)
 
     def close(self):
         self.closed = True
@@ -176,7 +212,7 @@ class Stream:
     def setup(self, event):
         snd = event.sender
         if snd and not hasattr(snd, "reader"):
-            snd.reader = self.store.reader()
+            snd.reader = self.store.reader(snd.remote_source.address or snd.remote_target.address)
             self.outgoing.append(snd)
 
     def on_link_final(self, event):
@@ -213,5 +249,6 @@ class Stream:
         dlv = event.delivery
         if rcv and not dlv.partial:
             msg = rcv.recv(dlv.pending)
-            self.store.put(msg)
+            address = rcv.target.address
+            self.store.put(msg, address=address)
             dlv.settle()
