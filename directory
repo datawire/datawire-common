@@ -10,6 +10,8 @@ from proton import Condition, symbol, Message
 from proton.reactor import Reactor
 from datawire import ancestors, Address, Container, Entry, Store, Stream
 
+log = logging.getLogger(__name__)
+
 _UNSPECIFIED = object()
 
 import sha
@@ -64,7 +66,7 @@ class Routes:
             deltas.append((ha^ht, target))
         deltas.sort()
         result = deltas[0][1]
-        print "choosing %s for %s" % (result, address)
+        log.debug("choosing %s for %s", result, address)
         return result
 
 class Redirector:
