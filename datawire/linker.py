@@ -199,20 +199,26 @@ class Receiver(Linker):
 
 class Tether(Sender):
 
-    def __init__(self, directory, address, target):
+    def __init__(self, directory, address, target, policy=None, host=None, port=None):
         if directory is None:
             directory = "//%s/directory" % Address(address).host
             log.debug("Tether picking default directory %r from in_address %r", directory, address)
         Sender.__init__(self, directory)
         self.address = address
         self.redirect_target = target
+        self.host = host
+        self.port = port
+        self.policy = policy
 
-        if Address(self.address).host != Address(self.redirect_target).host:
+        if self.redirect_target is not None and \
+           Address(self.address).host != Address(self.redirect_target).host:
             log.warning("Service address and announce address hostnames do not match: %s, %s",
                         Address(self.address).host, Address(self.redirect_target).host)
 
     def on_link_local_open(self, event):
         msg = Message()
         msg.properties = {u"opcode": "route"}
-        msg.body = (self.address, (None, None, self.redirect_target), None)
+        msg.body = (self.address, (self.host, self.port, self.redirect_target), None)
+        if self.policy:
+            msg.body += (self.policy,)
         msg.send(event.link)

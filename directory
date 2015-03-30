@@ -12,10 +12,20 @@ from datawire import ancestors, Address, Container, Entry, Store, Stream
 
 _UNSPECIFIED = object()
 
+import sha
+
+def digest(st):
+    result = 0
+    for b in sha.new(st).digest():
+        result = result << 8
+        result += ord(b)
+    return result
+
 class Routes:
 
     def __init__(self, *targets):
         self.targets = list(targets)
+        self.policy = "random"
         self.on_updated = lambda: None
 
     def add(self, target, owner=None):
@@ -37,11 +47,25 @@ class Routes:
         self.targets = []
         self.on_updated()
 
-    def choose(self):
+    def choose(self, address):
         if self.targets:
-            return random.choice(self.targets)[0]
+            return getattr(self, "choose_%s" % self.policy)(address)
         else:
             return None
+
+    def choose_random(self, address):
+        return random.choice(self.targets)[0]
+
+    def choose_consistent(self, address):
+        ha = digest(address)
+        deltas = []
+        for target, owner in self.targets:
+            ht = digest(":".join(map(str, target)))
+            deltas.append((ha^ht, target))
+        deltas.sort()
+        result = deltas[0][1]
+        print "choosing %s for %s" % (result, address)
+        return result
 
 class Redirector:
 
@@ -52,7 +76,7 @@ class Redirector:
     def __getitem__(self, address):
         for prefix in ancestors(address):
             if prefix in self.tree:
-                return self.tree[prefix].choose()
+                return self.tree[prefix].choose(address)
         return None
 
     def __contains__(self, address):
@@ -68,6 +92,7 @@ class Redirector:
             routes.on_updated = updated
             self.tree[address] = routes
         routes.add(target, owner=owner)
+        return routes
 
     def remove(self, address=_UNSPECIFIED, target=_UNSPECIFIED, owner=_UNSPECIFIED):
         if address is _UNSPECIFIED:
@@ -160,9 +185,11 @@ class Directory(Stream):
         if self.message.properties and "opcode" in self.message.properties:
             opcode = self.message.properties["opcode"]
             if opcode == "route":
-                address, target, owner = self.message.body
+                address, target, owner = self.message.body[:3]
                 if owner is None: owner = event.link
-                self.redirector.add(address, target, owner)
+                routes = self.redirector.add(address, target, owner)
+                if len(self.message.body) > 3:
+                    routes.policy = self.message.body[3]
             elif opcode == "unroute":
                 address, target, owner = self.message.body
                 kwargs = {}

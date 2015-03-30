@@ -114,7 +114,7 @@ class RouteList(Command):
 
     def format_route(self, route):
         (host, port, target), owner = route
-        result = target
+        result = target or ""
         if port:
             result += " on %s:%s" % (host, port)
         elif host:
