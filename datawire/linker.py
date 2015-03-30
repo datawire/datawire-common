@@ -199,7 +199,7 @@ class Receiver(Linker):
 
 class Tether(Sender):
 
-    def __init__(self, directory, address, target, policy=None, host=None, port=None):
+    def __init__(self, directory, address, target, host=None, port=None, policy=None):
         if directory is None:
             directory = "//%s/directory" % Address(address).host
             log.debug("Tether picking default directory %r from in_address %r", directory, address)

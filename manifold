@@ -11,9 +11,9 @@ class Manifold:
     def __init__(self, args):
         svc_host = Address(args.address).host
         self.tether = Tether(args.directory, args.address, None,
-                             policy="consistent",
                              host=args.ann_host or args.host or svc_host,
-                             port=args.ann_port or args.port)
+                             port=args.ann_port or args.port,
+                             policy="consistent")
         self.host = args.host or svc_host
         self.port = args.port
         self.stream = Stream(MultiStore())
