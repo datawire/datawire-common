@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+
+import logging, sys
+from argparse import ArgumentParser
+from proton.reactor import Reactor
+from datawire import Address, Tether, Stream
+from datawire.stream import MultiStore
+
+class Manifold:
+
+    def __init__(self, args):
+        svc_host = Address(args.address).host
+        self.tether = Tether(args.directory, args.address, None,
+                             policy="consistent",
+                             host=args.ann_host or args.host or svc_host,
+                             port=args.ann_port or args.port)
+        self.host = args.host or svc_host
+        self.port = args.port
+        self.stream = Stream(MultiStore())
+        self.handlers = [self.stream]
+
+    def on_reactor_init(self, event):
+        event.reactor.acceptor(self.host, self.port)
+        self.tether.start(event.reactor)
+
+    def on_transport_closed(self, event):
+        event.connection.free()
+
+parser = ArgumentParser(prog="manifold")
+parser.add_argument("-d", "--directory", help="datawire directory")
+parser.add_argument("-n", "--host", help="hostName binding")
+parser.add_argument("-p", "--port", default="5678", help="port binding")
+parser.add_argument("--ann-host", help="announced hostname (EC2)")
+parser.add_argument("--ann-port", help="announced port (EC2)")
+parser.add_argument("-l", "--level", default="warn", help="logging level")
+parser.add_argument("-o", "--output", help="file for log output")
+parser.add_argument("address", help="service address")
+
+args = parser.parse_args()
+level = getattr(logging, args.level.upper())
+if args.output:
+    logging.basicConfig(filename=args.output, level=level)
+else:
+    logging.basicConfig(stream=sys.stderr, level=level)
+
+Reactor(Manifold(args)).run()
