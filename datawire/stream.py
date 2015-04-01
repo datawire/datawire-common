@@ -170,17 +170,24 @@ class MultiStore:
         if address in self.stores:
             store = self.stores[address]
         else:
-            log.debug("adding store for put[%s]", address)
-            store = Store()
+            log.debug("resolving (put) %s", address)
+            store = self.resolve(address)
+            if store is None:
+                return
             self.stores[address] = store
         store.put(msg)
+
+    def resolve(self, address):
+        return Store()
 
     def reader(self, address):
         if address in self.stores:
             store = self.stores[address]
         else:
-            log.debug("adding store for get[%s]", address)
-            store = Store()
+            log.debug("resolving (get) %s", address)
+            store = self.resolve(address)
+            if store is None:
+                return None
             self.stores[address] = store
         return store.reader(address)
 
@@ -212,7 +219,8 @@ class Stream:
     def setup(self, event):
         snd = event.sender
         if snd and not hasattr(snd, "reader"):
-            snd.reader = self.store.reader(snd.remote_source.address or snd.remote_target.address)
+            snd.reader = self.store.reader(snd.remote_source.address or snd.source.address or
+                                           snd.remote_target.address or snd.target.address)
             self.outgoing.append(snd)
 
     def on_link_final(self, event):
