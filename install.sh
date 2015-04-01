@@ -48,7 +48,7 @@ USER_SITE_DIR=$(python -m site --user-site)
 
 echo "Downloading Qpid Proton ..."
 # GitHub does a redirect from the download URL, so we use the -L option
-curl --progress-bar --fail -L "$PROTON_URL" -o proton.zip
+wget -nv "$PROTON_URL" -O proton.zip
 unzip proton.zip -d "$TEMP_DIR" >> $INSTALL_LOG
 echo "Configuring Qpid Proton ..."
 
@@ -78,7 +78,7 @@ make install >> $INSTALL_LOG
 
 echo "Installing Datawire ..."
 cd ${WORK_DIR}/${TEMP_DIR}
-curl --progress-bar --fail "$DW_URL" -o dw.tar.gz
+wget -nv "$DW_URL" -O dw.tar.gz
 tar -xzf dw.tar.gz
 cd $INSTALL_DIR
 mv examples ${WORK_DIR}/${INSTALL_DIR}

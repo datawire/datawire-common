@@ -12,18 +12,18 @@ Install
 Datawire installs on Linux, and requires a basic toolchain to
 install. On a yum-based system, install the following packages::
 
-  yum install gcc libuuid-devel openssl-devel swig python-devel unzip tar make patch cmake
+  yum install gcc libuuid-devel openssl-devel swig python-devel unzip tar make patch cmake wget
  
 On an apt-based system, update your system with ``apt-get``, and then
 install the following packages::
 
   apt-get update
-  apt-get install curl gcc uuid-dev libssl-dev swig python-dev unzip make patch cmake
+  apt-get install wget gcc uuid-dev libssl-dev swig python-dev unzip make patch cmake
 
 Once you've satisfied the necessary dependencies, install the latest
 version of Datawire::
 
-  curl http://www.datawire.io/install.sh | /bin/sh
+  wget -O - https://www.datawire.io/install.sh | /bin/sh
 
 This will install into the datawire-|version| directory all Datawire
 components, including the microserver, command line interface,
