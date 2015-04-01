@@ -381,15 +381,10 @@ The example microservices also support this, e.g.,::
 Bug Reporting and Known Issues
 ==============================
 
-This is the |version| release. While our underlying libraries have been used
-in numerous production scenarios, the full integrated Datawire
-infrastructure has not. We expect that as more users use Datawire,
-more bugs will be identified.
-
-This release has one known issue, where ``send`` will occasionally
-hang when sending messages to an address in the ``directory``. We do
-not have a consistent reproducer, and are currently investigating the
-root cause.
+This is the |version| release. While our underlying libraries have
+been used in numerous production scenarios, the full integrated
+Datawire infrastructure has not. We expect that as more users use
+Datawire, more bugs will be identified.
 
 If you run into issues, please contact us at
 support@datawire.io. Beside a bug report and reproducer (if
