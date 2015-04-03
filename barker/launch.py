@@ -14,15 +14,12 @@ def launch(command):
 
 commands = """
 ../directory
-python distribution.py -u ark3
-python distribution.py -u rhs
-python distribution.py -u rdl
-python distribution.py
+../manifold //localhost/inbox --history 25 --port 5681
 python bizlogic.py
-python submission.py
+../manifold //localhost/outbox --push //localhost/bizlogic --port 5679
 python autobark.py 1
 python listen.py ark3
-webui/proxy/proxy.js --thost localhost -p 5673 -t 6050
+webui/proxy/proxy.js --thost localhost -p 5673 -t 5681
 webui/proxy/proxy.js --thost localhost -p 5674 -t 5679
 """
 
