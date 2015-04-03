@@ -69,7 +69,7 @@ parser.add_argument("-l", "--level", default="warn", help="logging level")
 parser.add_argument("-o", "--output", help="file for log output")
 parser.add_argument("address", help="service address")
 parser.add_argument("--push", help="push address")
-parser.add_argument("--history", default=0, help="per address history")
+parser.add_argument("--history", type=int, default=0, help="per address history")
 
 args = parser.parse_args()
 level = getattr(logging, args.level.upper())
