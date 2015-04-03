@@ -1,7 +1,11 @@
 # Central storage for Doggy
 
-import cPickle, os, random, time
+import cPickle, os, sys, random, time, logging
 from collections import namedtuple
+
+logging.basicConfig(level=logging.INFO, datefmt="%H%M%S",
+                    format="%(asctime)s " + sys.argv[0].replace(".py", "") + " %(name)s %(levelname)s %(message)s")
+log = logging.getLogger(__name__)
 
 def dump_data(filename, data):
     tempname = filename + ".temp"
