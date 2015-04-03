@@ -4,24 +4,26 @@
 - Displays latest barks
 """
 
+import logging
 from argparse import ArgumentParser
 
 from proton.reactor import Reactor
 from datawire import Receiver, Processor
 
 import common
+log = logging.getLogger(__name__)
 
 class GetBarks(object):
 
     def __init__(self, user):
+        self.user = user
         self.receiver = Receiver("//localhost/inbox/%s" % user, Processor(self))
 
     def on_reactor_init(self, event):
         self.receiver.start(event.reactor)
 
     def on_message(self, event):
-        print "Received", event.message.body
-
+        log.info("(for %s) %s", self.user, event.message.body)
 
 def main():
     parser = ArgumentParser(prog="listen")
