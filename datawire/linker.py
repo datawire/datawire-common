@@ -222,3 +222,41 @@ class Tether(Sender):
         if self.policy:
             msg.body += (self.policy,)
         msg.send(event.link)
+
+def _key(target, handlers, kwargs):
+    items = kwargs.items()
+    items.sort()
+    return target, handlers, tuple(items)
+
+class Linker:
+
+    def __init__(self):
+        self.senders = {}
+        self.reactor = None
+        self.started = False
+
+    def start(self, reactor):
+        self.reactor = reactor
+        for snd in self.senders.values():
+            snd.start(reactor)
+        self.started = True
+
+    def stop(self, reactor):
+        for snd in self.senders.values():
+            snd.stop(reactor)
+        self.started = False
+
+    def sender(self, target, *handlers, **kwargs):
+        key = _key(target, handlers, kwargs)
+        if key in self.senders:
+            snd = self.senders[key]
+        else:
+            snd = Sender(target, *handlers, **kwargs)
+            self.senders[key] = snd
+            if self.started:
+                snd.start(self.reactor)
+        return snd
+
+    def close(self):
+        for snd in self.senders.values():
+            snd.close()

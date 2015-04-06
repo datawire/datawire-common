@@ -7,7 +7,7 @@ _logging.getLogger("datawire").addHandler(_logging.NullHandler())
 
 from .address import Address
 from .container import ancestors, Container
-from .linker import Sender, Receiver, Tether
+from .linker import Linker, Sender, Receiver, Tether
 from .stream import Entry, Store, Stream
 from .decoder import Decoder
 from .processor import Processor
