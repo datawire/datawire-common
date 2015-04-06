@@ -43,7 +43,7 @@ def redirect(link, original):
 
 DRAINED = EventType("drained")
 
-class Linker:
+class Link:
 
     def __init__(self, *handlers, **kwargs):
         self.handlers = handlers
@@ -130,10 +130,10 @@ class Linker:
         conn.hostname = self.network()
         return conn.session()
 
-class Sender(Linker):
+class Sender(Link):
 
     def __init__(self, target, *handlers, **kwargs):
-        Linker.__init__(self, *handlers)
+        Link.__init__(self, *handlers)
         self.target = target
         self.source = kwargs.pop("source", None)
         self.__message = Message()
@@ -153,7 +153,7 @@ class Sender(Linker):
 
     def on_link_flow(self, event):
         self.__pump(event.link)
-        Linker.on_link_flow(self, event)
+        Link.on_link_flow(self, event)
 
     def __pump(self, link):
         while self.__buffer and link.credit:
@@ -176,10 +176,10 @@ class Sender(Linker):
     def close(self):
         self.__closed = True
 
-class Receiver(Linker):
+class Receiver(Link):
 
     def __init__(self, source, *handlers, **kwargs):
-        Linker.__init__(self, *handlers)
+        Link.__init__(self, *handlers)
         self.source = source
         self.target = kwargs.pop("target", None)
         self.drain = kwargs.pop("drain", None)
