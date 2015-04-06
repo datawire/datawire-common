@@ -7,7 +7,7 @@
 """
 
 from proton.reactor import Reactor
-from datawire import Sender, Tether, Processor
+from datawire import Linker, Sender, Tether, Processor
 
 import common
 
@@ -20,11 +20,13 @@ class BizLogic(object):
 
         self.users = {}
         self.user_reread_period = 30  # seconds
+        self.linker = Linker()
 
     def on_reactor_init(self, event):
         event.reactor.acceptor(self.host, self.port, Processor(self))
         self.tether.start(event.reactor)
         event.reactor.schedule(0, self)
+        self.linker.start(event.reactor)
 
     def on_timer_task(self, event):
         self.users = common.load_data("users.pickle")
@@ -38,10 +40,8 @@ class BizLogic(object):
         followers = user.getFollowers(self.users)
         targets = set(mentions + followers)
         for target in targets:
-            sender = Sender("//localhost/inbox/%s" % target)
-            sender.start(event.reactor)
+            sender = self.linker.sender("//localhost/inbox/%s" % target)
             sender.send(event.message.body)
-            sender.close()
 
 
 def main():

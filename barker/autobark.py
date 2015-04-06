@@ -12,7 +12,7 @@ import time, random
 from argparse import ArgumentParser
 
 from proton.reactor import Reactor
-from datawire import Sender
+from datawire import Linker
 
 import common
 
@@ -23,6 +23,7 @@ class AutoBark(object):
         self.last_user_reread = 0
         self.user_reread_period = 30  # seconds
         self.bark_period = 1.0 / rate  # seconds
+        self.linker = Linker()
 
     def make_random_bark(self):
         while True:
@@ -39,6 +40,7 @@ class AutoBark(object):
 
     def on_reactor_init(self, event):
         event.reactor.schedule(0, self)
+        self.linker.start(event.reactor)
 
     def on_timer_task(self, event):
         now = time.time()
@@ -47,10 +49,8 @@ class AutoBark(object):
             self.last_user_reread = now
 
         message = self.make_random_bark()
-        sender = Sender("//localhost/outbox/%s" % message.user)
-        sender.start(event.reactor)
+        sender = self.linker.sender("//localhost/outbox/%s" % message.user)
         sender.send(tuple(message))
-        sender.close()
 
         event.reactor.schedule(self.bark_period, self)
 
