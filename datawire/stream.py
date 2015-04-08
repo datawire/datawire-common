@@ -105,17 +105,19 @@ class Store:
             serial = min(r.serial, serial)
 
         if serial == self.lastgc:
-            return
+            return 0
 
         if self.serial < serial:
             delta = serial - self.serial
             tail = self.compact(self.entries[:delta])
             self.entries[:delta] = tail
-            self.serial += delta - len(tail)
+            reclaimed = delta - len(tail)
+            self.serial += reclaimed
             if self.db:
-                self._update(delta - len(tail), len(tail))
+                self._update(reclaimed, len(tail))
 
         self.lastgc = serial
+        return reclaimed
 
     def compact(self, tail):
         return []
@@ -153,11 +155,12 @@ class MultiStore:
 
     def __init__(self):
         self.stores = {}
+        self.size = 0
 
     def gc(self):
         for k in self.stores.keys()[:]:
             s = self.stores[k]
-            s.gc()
+            self.size -= s.gc()
             if not s.readers and not s.entries:
                 log.debug("removing store for %s", k)
                 del self.stores[k]
@@ -176,6 +179,7 @@ class MultiStore:
                 return
             self.stores[address] = store
         store.put(msg)
+        self.size += 1
 
     def resolve(self, address):
         return Store()
