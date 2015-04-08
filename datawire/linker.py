@@ -199,16 +199,24 @@ class Receiver(Link):
 
 class Tether(Sender):
 
-    def __init__(self, directory, address, target, host=None, port=None, policy=None):
+    def __init__(self, directory, address, target, host=None, port=None, policy=None, agent_type=None):
         if directory is None:
-            directory = "//%s/directory" % Address(address).host
+            directory = u"//%s/directory" % Address(address).host
             log.debug("Tether picking default directory %r from in_address %r", directory, address)
+        else:
+            directory = unicode(directory)
         Sender.__init__(self, directory)
-        self.address = address
+        self.directory = directory
+        self.address = unicode(address)
         self.redirect_target = target
         self.host = host
         self.port = port
         self.policy = policy
+        self.agent_type = unicode(agent_type)
+        if agent_type:
+            self.agent = u"//%s/agents/%s-%s" % (Address(self.directory).host, self.host, self.port)
+        else:
+            self.agent = None
 
         if self.redirect_target is not None and \
            Address(self.address).host != Address(self.redirect_target).host:
@@ -222,6 +230,9 @@ class Tether(Sender):
         if self.policy:
             msg.body += (self.policy,)
         msg.send(event.link)
+        if self.agent:
+            msg.body = (self.agent, (self.host, self.port, None), None)
+            msg.send(event.link)
 
 def _key(target, handlers, kwargs):
     items = kwargs.items()
