@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+# Copyright (C) k736, inc. All Rights Reserved.
+# Unauthorized copying or redistribution of this file is strictly prohibited.
+
+import logging, pprint, sys
+from argparse import ArgumentParser
+from proton.reactor import Reactor
+from datawire import Processor, Receiver
+
+class Client:
+
+    def __init__(self, args):
+        self.receiver = Receiver(args.address, Processor(self))
+
+    def on_reactor_init(self, event):
+        self.receiver.start(event.reactor)
+
+    def on_message(self, event):
+        items = event.message.body.items()
+        items.sort()
+        width = 0
+        for k, v in items:
+            width = max(len(k), width)
+        sys.stdout.write("%c[2J%c[;H" % (27, 27))
+        for k, v in items:
+            print "%*s:" % (width, k),
+            print pprint.pformat(v).replace("\n", "\n%*s" % (width+2, ""))
+
+logging.basicConfig(level=logging.WARNING)
+
+parser = ArgumentParser(prog="trace")
+parser.add_argument("address", help="source address")
+
+Reactor(Client(parser.parse_args())).run()
