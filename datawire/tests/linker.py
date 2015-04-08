@@ -1,62 +1,11 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
-from proton import EventType, Message
+from proton import Message
 from proton.reactor import Reactor
-from proton.handlers import CHandshaker
-from datawire import Linker, Processor, Receiver, Sender, Stream
+from datawire import Linker, Processor, Receiver, Sampler, Sender, Stream
 
-class Sink(Processor):
-
-    def __init__(self):
-        Processor.__init__(self)
-        self.messages = []
-
-    def on_message(self, event):
-        msg = event.message
-        self.messages.append(msg.body)
-
-PORT = 5678
-
-OPENED = EventType("opened")
-CLOSED = EventType("closed")
-
-class Closer:
-
-    def __init__(self, delegate, closer):
-        self.delegate = delegate
-        self.closer = closer
-
-    def on_connection_bound(self, event):
-        event.dispatch(self.delegate)
-        event.dispatch(self.closer, OPENED)
-
-    def on_connection_unbound(self, event):
-        event.dispatch(self.delegate)
-        event.dispatch(self.closer, CLOSED)
-
-    def on_unhandled(self, name, event):
-        event.dispatch(self.delegate)
-
-class Server:
-
-    def __init__(self, delegate):
-        self.delegate = delegate
-        self.acceptor = None
-        self.opened = 0
-        self.closed = 0
-        self.max_connections = None
-
-    def on_opened(self, event):
-        self.opened += 1
-
-    def on_closed(self, event):
-        self.closed += 1
-        if self.max_connections is not None and self.closed >= self.max_connections:
-            self.acceptor.close()
-
-    def on_reactor_init(self, event):
-        self.acceptor = event.reactor.acceptor("localhost", PORT, Closer(self.delegate, self))
+from .common import *
 
 class SinkTest:
 
@@ -74,11 +23,35 @@ class SinkTest:
             snd.send("test-%s" % i)
         snd.close()
         self.reactor.run()
+        assert len(self.sink.messages) == count
         for i in range(count):
             assert self.sink.messages[i] == "test-%s" % i, self.sink.messages[i]
 
     def testSender4K(self):
         self.testSender(4*1024)
+
+    def testSampler(self, count=1, frequency=10):
+        self.server.max_connections = 1
+        oself = self
+        class Gen:
+            def __init__(self):
+                self.sent = 0
+
+            def on_sample(self, event):
+                event.link.send(Message("test-%s" % self.sent))
+                self.sent += 1
+                if self.sent >= count:
+                    event.link.close()
+        snd = Sender("//localhost:%s" % PORT, Sampler(Gen(), frequency))
+        self.reactor.handler.add(snd)
+        snd.start(self.reactor)
+        self.reactor.run()
+        assert len(self.sink.messages) == count, len(self.sink.messages)
+        for i in range(count):
+            assert self.sink.messages[i] == "test-%s" % i
+
+    def testSampler100M100F(self):
+        self.testSampler(100, 100)
 
     def testLinker(self, address_count=1, message_count=1):
         self.server.max_connections = address_count
@@ -100,6 +73,7 @@ class SinkTest:
             for j in range(message_count):
                 assert self.sink.messages[idx] == "test-%s-%s" % (i, j)
                 idx += 1
+        assert len(self.sink.messages) == address_count*message_count
 
     def testLinker2A1M(self):
         self.testLinker(2, 1)
@@ -128,27 +102,6 @@ class SinkTest:
     def testLinker16A16M(self):
         self.testLinker(16, 16)
 
-
-class Source:
-
-    def __init__(self, template="test-%s", start=0, limit=None, window=1024):
-        self.template = template
-        self.count = start
-        self.limit = limit
-        self.window = window
-        self.message = Message()
-        self.handlers = [CHandshaker()]
-
-    def on_link_flow(self, event):
-        if event.sender:
-            self.pump(event.sender)
-
-    def pump(self, snd):
-        while self.count != self.limit and snd.credit > 0 and snd.queued < self.window:
-            self.message.body = self.template % self.count
-            dlv = snd.send(self.message)
-            dlv.settle()
-            self.count += 1
 
 class SourceTest:
 

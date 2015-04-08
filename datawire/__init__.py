@@ -6,8 +6,10 @@ import logging as _logging
 _logging.getLogger("datawire").addHandler(_logging.NullHandler())
 
 from .address import Address
+from .agent import Agent
 from .container import ancestors, Container
 from .linker import Linker, Sender, Receiver, Tether
 from .stream import Entry, Store, Stream
 from .decoder import Decoder
 from .processor import Processor
+from .sampler import Sampler
