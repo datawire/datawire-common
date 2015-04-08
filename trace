@@ -19,9 +19,7 @@ class Client:
     def on_message(self, event):
         items = event.message.body.items()
         items.sort()
-        width = 0
-        for k, v in items:
-            width = max(len(k), width)
+        width = max([len(k) for k, v in items])
         sys.stdout.write("%c[2J%c[;H" % (27, 27))
         for k, v in items:
             print "%*s:" % (width, k),
