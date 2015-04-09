@@ -4,7 +4,7 @@
 - Displays latest barks
 """
 
-import logging
+import logging, datetime
 from argparse import ArgumentParser
 
 from proton.reactor import Reactor
@@ -18,12 +18,17 @@ class GetBarks(object):
     def __init__(self, user):
         self.user = user
         self.receiver = Receiver("//localhost/inbox/%s" % user, Processor(self))
+        self.width = 10
 
     def on_reactor_init(self, event):
         self.receiver.start(event.reactor)
 
     def on_message(self, event):
-        log.info("(for %s) %s", self.user, event.message.body)
+        sender, content, message_id = event.message.body
+        self.width = max(self.width, len(sender))
+        print datetime.datetime.now().strftime("%H:%M:%S"), \
+              self.user, "<--", "%%%ds:" % self.width % sender, \
+              content
 
 def main():
     parser = ArgumentParser(prog="listen")
