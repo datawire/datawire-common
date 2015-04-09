@@ -68,7 +68,7 @@ class Manifold:
                              u"pid": self.pid,
                              u"rusage": rusage,
                              u"times": os.times(),
-                             u"command": map(unicode, self.process.cmdline),
+                             u"command": map(unicode, [sys.executable] + sys.argv),
                              u"num_fds": self.process.get_num_fds(),
                              u"size": self.stream.store.size}
         event.link.send(self.message).settle()
