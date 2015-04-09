@@ -115,6 +115,8 @@ class Store:
             self.serial += reclaimed
             if self.db:
                 self._update(reclaimed, len(tail))
+        else:
+            reclaimed = 0
 
         self.lastgc = serial
         return reclaimed
@@ -209,7 +211,7 @@ class Stream:
             self.store.put(msg.encode(), address=msg.address)
         else:
             self.message.body = msg
-            self.store.put(self.message.encode(), address=msg.address)
+            self.store.put(self.message.encode())
 
     def close(self):
         self.closed = True
