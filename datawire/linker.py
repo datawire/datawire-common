@@ -115,7 +115,8 @@ class Link:
             self.start(event.reactor, open=False)
             class Open:
                 def on_timer_task(_self, event):
-                    self._link.connection.open()
+                    if self._link:
+                        self._link.connection.open()
             event.reactor.schedule(1, Open())
 
     def on_transport_error(self, event):
