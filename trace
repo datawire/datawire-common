@@ -5,22 +5,55 @@
 
 import logging, pprint, sys
 from argparse import ArgumentParser
+from collections import OrderedDict
 from proton.reactor import Reactor
 from datawire import Processor, Receiver
 
 class Client:
 
     def __init__(self, args):
-        self.receiver = Receiver(args.address, Processor(self))
+        if args.directory:
+            self.directory = Receiver(args.directory, Processor(self))
+        else:
+            self.directory = None
+
+        self.receivers = [Receiver(a, Processor(self)) for a in args.address]
+        self.stats = OrderedDict()
 
     def on_reactor_init(self, event):
-        self.receiver.start(event.reactor)
+        if self.directory:
+            self.directory.start(event.reactor)
+        for rcv in self.receivers:
+            rcv.start(event.reactor)
+
+    def add_routes(self, event):
+        address = event.message.body[0]
+        if "/agents/" in address:
+            rcv = Receiver(address, Processor(self))
+            self.receivers.append(rcv)
+            rcv.start(event.reactor)
 
     def on_message(self, event):
-        items = event.message.body.items()
+        if event.message.subject == "routes":
+            self.add_routes(event)
+        else:
+            body = event.message.body
+            self.stats[body["agent"]] = body
+            self.render()
+
+    def render(self):
+        self.clear()
+        for stat in self.stats.values():
+            print "="*60
+            self.render_stats(stat)
+
+    def clear(self):
+        sys.stdout.write("%c[2J%c[;H" % (27, 27))
+
+    def render_stats(self, stats):
+        items = stats.items()
         items.sort()
         width = max([len(k) for k, v in items])
-        sys.stdout.write("%c[2J%c[;H" % (27, 27))
         for k, v in items:
             print "%*s:" % (width, k),
             print pprint.pformat(v).replace("\n", "\n%*s" % (width+2, ""))
@@ -28,6 +61,7 @@ class Client:
 logging.basicConfig(level=logging.WARNING)
 
 parser = ArgumentParser(prog="trace")
-parser.add_argument("address", help="source address")
+parser.add_argument('-d', '--directory', help="directoyr")
+parser.add_argument("address", nargs='*', help="source addresses")
 
 Reactor(Client(parser.parse_args())).run()
