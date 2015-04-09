@@ -27,11 +27,20 @@ class Client:
             rcv.start(event.reactor)
 
     def add_routes(self, event):
-        address = event.message.body[0]
+        print event.message.body
+        address, routes = event.message.body
         if "/agents/" in address:
-            rcv = Receiver(address, Processor(self))
-            self.receivers.append(rcv)
-            rcv.start(event.reactor)
+            if routes:
+                rcv = Receiver(address, Processor(self))
+                self.receivers.append(rcv)
+                rcv.start(event.reactor)
+            else:
+                for rcv in self.receivers:
+                    if rcv.source == address:
+                        self.receivers.remove(rcv)
+                        rcv.stop(event.reactor)
+                        del self.stats[address]
+                        break
 
     def on_message(self, event):
         if event.message.subject == "routes":
