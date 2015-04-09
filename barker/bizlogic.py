@@ -38,7 +38,7 @@ class BizLogic(object):
         mentions = [word[1:] for word in words if word.startswith("@")]
         user = self.users[message.user]
         followers = user.getFollowers(self.users)
-        targets = set(mentions + followers)
+        targets = set(mentions + followers + [message.user])
         for target in targets:
             sender = self.linker.sender("//localhost/inbox/%s" % target)
             sender.send(event.message.body)
