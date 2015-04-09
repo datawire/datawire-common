@@ -1,10 +1,12 @@
-// Datawire chat
+// Barker UI
+/* global proton */
 
 var ractive;
 var message = new proton.Message();
 var messenger = new proton.Messenger();
 
 function sendMessage(address, content) {
+    "use strict";
     message.clear();
     message.setAddress("amqp://localhost:5674/" + address);
     message.body = content;
@@ -13,10 +15,12 @@ function sendMessage(address, content) {
 }
 
 function errorHandler(error) {
+    "use strict";
     console.log("Received error " + error);
 }
 
 function pumpData() {
+    "use strict";
     while (messenger.incoming()) {
         var t = messenger.get(message, true);  // true means turn binaries into strings
 
@@ -47,6 +51,7 @@ function pumpData() {
 }
 
 function sendNewBark() {
+    "use strict";
     var sender = "ark3";
     var content = $("#noises").val();
 
@@ -64,6 +69,7 @@ function sendNewBark() {
 }
 
 function onSubscription(subscription) {
+    "use strict";
     console.log("OnSubscription:");
     console.log(subscription);
     messenger.recv();
