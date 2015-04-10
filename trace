@@ -27,7 +27,6 @@ class Client:
             rcv.start(event.reactor)
 
     def add_routes(self, event):
-        print event.message.body
         address, routes = event.message.body
         if "/agents/" in address:
             if routes:
