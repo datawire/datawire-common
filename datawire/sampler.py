@@ -7,7 +7,7 @@ SAMPLE = EventType("sample")
 
 class Sampler:
 
-    def __init__(self, delegate=None, frequency=10):
+    def __init__(self, delegate=None, frequency=1):
         if delegate is None:
             self.__delegate = self
         else:
