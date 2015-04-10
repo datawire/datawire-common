@@ -4,7 +4,7 @@ from time import sleep
 
 commands = """
 python monitor.py
-../barker/webui/proxy/proxy.js --thost ::1 -p 5700 -t 6000
+../barker/webui/proxy/proxy.js --thost localhost -p 5700 -t 6000
 """
 
 def launch(command):
