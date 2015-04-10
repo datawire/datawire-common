@@ -1,7 +1,7 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited. 
 
-import sqlite3, logging
+import sqlite3, logging, time
 from proton import Message, Endpoint
 from proton.reactor import Reactor
 from proton.handlers import CFlowController, CHandshaker
@@ -14,6 +14,7 @@ class Entry:
         self.message = msg
         self.persistent = persistent
         self.deleted = deleted
+        self.timestamp = time.time()
 
 class Store:
 
@@ -32,6 +33,7 @@ class Store:
         self.entries = []
         self.readers = []
         self.lastgc = 0
+        self.last_idle = 0
         if self.db:
             self._recover()
 
@@ -110,8 +112,9 @@ class Store:
         if self.serial < serial:
             delta = serial - self.serial
             tail = self.compact(self.entries[:delta])
-            self.entries[:delta] = tail
             reclaimed = delta - len(tail)
+            self.last_idle = time.time() - self.entries[reclaimed - 1].timestamp
+            self.entries[:delta] = tail
             self.serial += reclaimed
             if self.db:
                 self._update(reclaimed, len(tail))
@@ -158,11 +161,13 @@ class MultiStore:
     def __init__(self):
         self.stores = {}
         self.size = 0
+        self.last_idle = 0
 
     def gc(self):
         for k in self.stores.keys()[:]:
             s = self.stores[k]
             self.size -= s.gc()
+            self.last_idle = s.last_idle
             if not s.readers and not s.entries:
                 log.debug("removing store for %s", k)
                 del self.stores[k]

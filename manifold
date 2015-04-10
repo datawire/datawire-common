@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-import logging, os, psutil, resource, sys, time
+import logging, sys
 from argparse import ArgumentParser
-from proton import Message, timestamp, symbol
+from proton import Message
 from proton.reactor import Reactor
 from datawire import Address, Agent, Container, Tether, Stream, Sender
 from datawire.stream import MultiStore, Store
@@ -45,33 +45,13 @@ class Manifold:
         self.push = args.push
         self.senders = {}
         self.container = Container(self.stream)
-        self.container[self.tether.agent] = Agent(self)
-        self.message = Message()
-        self.pid = os.getpid()
-        self.process = psutil.Process(self.pid)
+        self.container[self.tether.agent] = Agent(self.tether, self)
         self.handlers = [self.container]
 
-    def on_sample(self, event):
-        tstamp = timestamp(time.time())
-        rusage = {}
-        ru = resource.getrusage(resource.RUSAGE_SELF)
-        for attr in (u'ru_idrss', u'ru_inblock', u'ru_isrss', u'ru_ixrss',
-                     u'ru_majflt', u'ru_maxrss', u'ru_minflt', u'ru_msgrcv',
-                     u'ru_msgsnd', u'ru_nivcsw', u'ru_nsignals', u'ru_nswap',
-                     u'ru_nvcsw', u'ru_oublock', u'ru_stime', u'ru_utime'):
-            if hasattr(ru, attr):
-                rusage[attr] = getattr(ru, attr)
-        self.message.body = {u"address": self.tether.address,
-                             u"agent": self.tether.agent,
-                             u"type": self.tether.agent_type,
-                             u"timestamp": tstamp,
-                             u"pid": self.pid,
-                             u"rusage": rusage,
-                             u"times": os.times(),
-                             u"command": map(unicode, [sys.executable] + sys.argv),
-                             u"num_fds": self.process.get_num_fds(),
-                             u"size": self.stream.store.size}
-        event.link.send(self.message).settle()
+    def sample(self, stats):
+        stats[u"manifold_messages"] = self.stream.store.size
+        stats[u"manifold_streams"] = len(self.stream.store.stores)
+        stats[u"manifold_last_idle"] = int(self.stream.store.last_idle*1000)
 
     def on_create(self, address):
         if self.push and address not in self.senders:
