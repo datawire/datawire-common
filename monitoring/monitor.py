@@ -20,7 +20,10 @@ class HistoryStore(Store):
         self.size = size
 
     def compact(self, tail):
-        return tail[len(tail)-self.size:]
+        if len(tail) < self.size:
+            return tail
+        else:
+            return tail[len(tail)-self.size:]
 
 
 class Monitor(object):
@@ -65,7 +68,7 @@ class Monitor(object):
         if self.statMessages:
             self.stream.put(self.statMessages)
             self.statMessages = []
-        event.reactor.schedule(0.25, self)
+        event.reactor.schedule(1, self)
 
     def old_on_timer_task(self, event):
         now = timestamp(time.time() * 1000)
