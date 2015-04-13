@@ -67,7 +67,7 @@ class AutoBark(object):
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument("rate", type=int, help="Message per second")
+    parser.add_argument("rate", type=float, help="Message per second")
     args = parser.parse_args()
 
     Reactor(AutoBark(args.rate)).run()
