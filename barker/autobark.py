@@ -20,6 +20,12 @@ class AutoBark(object):
 
     def __init__(self, rate):
         self.users = {}
+        try:
+            self.quotes = open("quotes.txt").read().split("\n")
+        except IOError:
+            self.quotes = [
+            """"On the Internet, everybody knows you're a dog." --Oscar Wilde"""
+            ]
         self.last_user_reread = 0
         self.user_reread_period = 30  # seconds
         self.bark_period = 1.0 / rate  # seconds
@@ -31,12 +37,16 @@ class AutoBark(object):
             user = self.users[username]
             if user.autobark:
                 break
-        words = [random.choice(["woof", "arf", "ruff", "yap"]) for idx in range(random.randint(3, 8))]
-        if random.random() > 0.75:
-            words.append("@" + random.choice(user.follows))  # one can always dream
         if random.random() > 0.9:
-            words.append("#subwoofer")
-        return common.Message(username, " ".join(words))
+            messageText = random.choice(self.quotes)
+        else:
+            words = [random.choice(["woof", "arf", "ruff", "yap"]) for idx in range(random.randint(3, 8))]
+            if random.random() > 0.75:
+                words.append("@" + random.choice(user.follows))  # one can always dream
+            if random.random() > 0.9:
+                words.append("#subwoofer")
+            messageText = " ".join(words)
+        return common.Message(username, messageText)
 
     def on_reactor_init(self, event):
         event.reactor.schedule(0, self)
