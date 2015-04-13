@@ -4,7 +4,8 @@ import logging, sys
 from argparse import ArgumentParser
 from proton import Message
 from proton.reactor import Reactor
-from datawire import Address, Agent, Container, Tether, Stream, Sender
+from datawire import Address, Agent, Container, Tether, Stream, Sender, \
+    Receiver, Processor
 from datawire.stream import MultiStore, Store
 
 log = logging.getLogger(__name__)
@@ -47,6 +48,7 @@ class Manifold:
         self.stream = Stream(ManiStore(args.history, self.on_create))
         self.push = args.push
         self.senders = {}
+        self.directory = Receiver(self.tether.directory, Processor(self))
         self.container = Container(self.stream)
         self.container[self.tether.agent] = Agent(self.tether, self)
         self.handlers = [self.container]
@@ -74,6 +76,14 @@ class Manifold:
         self.reactor = event.reactor
         event.reactor.acceptor(self.host, self.port)
         self.tether.start(event.reactor)
+        self.directory.start(event.reactor)
+
+    def on_message(self, event):
+        address, routes = event.message.body
+        if (address == self.tether.address or address.startswith(self.tether.address + "/")):
+            self.stream.relink()
+        elif self.push and (address == self.push or address.startswith(self.push + "/")):
+            self.stream.relink(receiver=False)
 
 parser = ArgumentParser(prog="manifold")
 parser.add_argument("-d", "--directory", help="datawire directory")
