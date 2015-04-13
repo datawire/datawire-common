@@ -14,8 +14,10 @@ def launch(command):
 
 commands = """
 ../directory
-../manifold //localhost/inbox --history 25 --port 5681
-python bizlogic.py
+../manifold //localhost/inbox --history 25 --port 5820
+python bizlogic.py --port 5680
+#python bizlogic.py --port 5681
+#python bizlogic.py --port 5682
 ../manifold //localhost/outbox --push //localhost/bizlogic --port 5800
 ../manifold //localhost/outbox --push //localhost/bizlogic --port 5801
 ../manifold //localhost/outbox --push //localhost/bizlogic --port 5802
@@ -25,7 +27,7 @@ python autobark.py 5
 python autobark.py 5
 python autobark.py 5
 python listen.py ark3
-webui/proxy/proxy.js --thost localhost -p 5673 -t 5681
+webui/proxy/proxy.js --thost localhost -p 5673 -t 5820
 webui/proxy/proxy.js --thost localhost -p 5674 -t 5800
 """
 
