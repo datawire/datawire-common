@@ -34,6 +34,7 @@ class Store:
         self.readers = []
         self.lastgc = 0
         self.last_idle = 0
+        self.max_idle = 0
         if self.db:
             self._recover()
 
@@ -106,6 +107,10 @@ class Store:
         for r in self.readers:
             serial = min(r.serial, serial)
 
+        now = time.time()
+        if self.entries:
+            self.max_idle = max(now - self.entries[0].timestamp, self.max_idle)
+
         if serial == self.lastgc:
             return 0
 
@@ -113,7 +118,8 @@ class Store:
             delta = serial - self.serial
             tail = self.compact(self.entries[:delta])
             reclaimed = delta - len(tail)
-            self.last_idle = time.time() - self.entries[reclaimed - 1].timestamp
+            self.last_idle = now - self.entries[reclaimed - 1].timestamp
+            self.max_idle = max(self.last_idle, self.max_idle)
             self.entries[:delta] = tail
             self.serial += reclaimed
             if self.db:
@@ -129,6 +135,7 @@ class Store:
 
     def reader(self, address=None):
         reader = Reader(self)
+        reader.address = address
         self.readers.append(reader)
         return reader
 
@@ -162,12 +169,14 @@ class MultiStore:
         self.stores = {}
         self.size = 0
         self.last_idle = 0
+        self.max_idle = 0
 
     def gc(self):
         for k in self.stores.keys()[:]:
             s = self.stores[k]
             self.size -= s.gc()
             self.last_idle = s.last_idle
+            self.max_idle = max(self.max_idle, s.max_idle)
             if not s.readers and not s.entries:
                 log.debug("removing store for %s", k)
                 del self.stores[k]
@@ -255,8 +264,10 @@ class Stream:
                 snd.close()
 
     def pump(self):
+        self.queued = 0
         for snd in self.outgoing:
             self.pump_sender(snd)
+            self.queued += snd.queued
         self.store.gc()
         self.store.flush()
 

@@ -52,9 +52,16 @@ class Manifold:
         self.handlers = [self.container]
 
     def sample(self, stats):
-        stats[u"manifold_messages"] = self.stream.store.size
+        stats[u"manifold_messages"] = self.stream.store.size + self.stream.queued
+        stats[u"manifold_queued"] = self.stream.queued
         stats[u"manifold_streams"] = len(self.stream.store.stores)
+        if self.stream.store.stores:
+            depth = max([len(s.entries) for s in self.stream.store.stores.values()])
+        else:
+            depth = 0
+        stats[u"manifold_depth"] = depth
         stats[u"manifold_last_idle"] = int(self.stream.store.last_idle*1000)
+        stats[u"manifold_max_idle"] = int(self.stream.store.max_idle*1000)
 
     def on_create(self, address):
         if self.push and address not in self.senders:
@@ -67,7 +74,6 @@ class Manifold:
         self.reactor = event.reactor
         event.reactor.acceptor(self.host, self.port)
         self.tether.start(event.reactor)
-
 
 parser = ArgumentParser(prog="manifold")
 parser.add_argument("-d", "--directory", help="datawire directory")
