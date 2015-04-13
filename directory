@@ -58,6 +58,9 @@ class Routes:
     def choose_random(self, address):
         return random.choice(self.targets)[0]
 
+    def choose_ordered(self, address):
+        return self.targets[0][0]
+
     def choose_consistent(self, address):
         ha = digest(address)
         deltas = []
