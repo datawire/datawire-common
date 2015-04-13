@@ -13,11 +13,12 @@ import common
 
 class BizLogic(object):
 
-    def __init__(self):
-        self.host = "localhost"
-        self.port = 5680
+    def __init__(self, args):
+        self.host = args.host
+        self.port = args.port
         self.tether = Tether(None, "//%s/bizlogic" % self.host, None,
-                             host=self.host, port=self.port, agent_type="bizlogic")
+                             host=self.host, port=self.port,
+                             agent_type="bizlogic", policy="ordered")
 
         self.users = {}
         self.user_reread_period = 30  # seconds
@@ -48,8 +49,15 @@ class BizLogic(object):
             sender.send(event.message.body)
 
 
+from argparse import ArgumentParser
+
 def main():
-    Reactor(BizLogic()).run()
+    parser = ArgumentParser()
+    parser.add_argument("-n", "--host", default="localhost", help="network hostname")
+    parser.add_argument("-p", "--port", default="5680", help="network port")
+    args = parser.parse_args()
+
+    Reactor(BizLogic(args)).run()
 
 if __name__ == "__main__":
     main()
