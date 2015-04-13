@@ -88,7 +88,8 @@ class Link:
         if link == self._link and not link.state & Endpoint.REMOTE_CLOSED:
             link.session.close()
             link.connection.close()
-            self._link = None
+            if not (hasattr(self._link, "_relink") and self._link._relink):
+                self._link = None
 
     def on_link_remote_close(self, event):
         link = event.link
@@ -111,7 +112,11 @@ class Link:
 
     def on_connection_unbound(self, event):
         if self._link and self._link.connection == event.connection:
-            log.info("reconnecting... to %s", self.network())
+            if hasattr(self._link, "_relink") and self._link._relink:
+                relink = " (relink)"
+            else:
+                relink = ""
+            log.info("reconnecting... to %s%s", self.network(), relink)
             self.start(event.reactor, open=False)
             class Open:
                 def on_timer_task(_self, event):

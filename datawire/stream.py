@@ -216,6 +216,7 @@ class Stream:
     def __init__(self, store = None):
         self.store = store or Store()
         self.handlers = [CFlowController(), CHandshaker()]
+        self.incoming = []
         self.outgoing = []
         self.message = Message()
         self.closed = False
@@ -242,11 +243,15 @@ class Stream:
             snd.reader = self.store.reader(snd.remote_source.address or snd.source.address or
                                            snd.remote_target.address or snd.target.address)
             self.outgoing.append(snd)
+        elif event.receiver and event.receiver not in self.incoming:
+            self.incoming.append(event.receiver)
 
     def on_link_final(self, event):
         if event.sender:
             event.sender.reader.close()
             self.outgoing.remove(event.sender)
+        else:
+            self.incoming.remove(event.receiver)
 
     def on_link_flow(self, event):
         if event.sender:
@@ -282,3 +287,14 @@ class Stream:
             address = rcv.target.address
             self.store.put(msg, address=address)
             dlv.settle()
+
+    def relink(self, sender=True, receiver=True):
+        log.info("relinking stream: sender=%s, receiver=%s", sender, receiver)
+        if sender:
+            for l in self.outgoing:
+                l._relink = True
+                l.close()
+        if receiver:
+            for l in self.incoming:
+                l._relink = True
+                l.close()
