@@ -131,9 +131,7 @@ updateCharts();
 function getServiceName(content) {
     "use strict";
     var name = content.address.substring(12, 99);
-    if (content.type === "manifold") {
-        name += content.agent.substring(28, 99);
-    }
+    name += content.agent.substring(28, 99);
     return name;
 }
 
