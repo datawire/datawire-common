@@ -2,8 +2,11 @@
 /* global proton */
 
 var seriesMap = {};             // name -> series object
-var svcToColor = {};            // service/agent name -> color
-var svcCounter = 0;
+var svcToColor = {              // service/agent name -> color
+    "bizlogic-5680": 0,
+    "bizlogic-5681": 1,
+    "bizlogic-5682": 2
+};
 
 var minTime, maxTime;           // Keep track of chart bounds
 
@@ -148,7 +151,7 @@ function getName(content, field) {
     return getServiceName(content) + " " + fieldNameMap[field];
 }
 
-function cross(ctx, x, y, radius, shadow) {
+function cross(ctx, x, y, radius) {  // fifth argument would be shadow
     "use strict";
     var size = radius * Math.sqrt(Math.PI) / 2;
     ctx.moveTo(x - size, y - size);
@@ -165,8 +168,7 @@ function addDataPoint(content, field, seriesList) {
         var serviceName = getServiceName(content);
         var color = svcToColor[serviceName];
         if (!color && color !== 0) {
-            color = svcCounter;
-            svcCounter += 1;
+            color = _.size(svcToColor);
             svcToColor[serviceName] = color;
         }
         series = {
