@@ -327,31 +327,36 @@ processes, or displays any of this data.
 Using Multiple Hosts
 ====================
 
-The localhost-only scenarios shown above can easily be modified to support
-running microservices on multiple hosts. The key point to remember is that
-any host running a microservice (printer, upper, lower, fanout) must also
-run a directory. The non-service examples (send and bridge) do not need to
-run on a host that is running a directory.
+The localhost-only scenarios shown above can easily be modified to
+support running microservices on multiple hosts.
 
-For the following example, consider a network with two hosts, sapphire and
-may. Launch the directory and the display service on sapphire (in separate
-terminals)::
+While it is possible to run multiple directories, one per host, the
+recommended configuration is to use one directory per site. Choose a
+host to serve as the site directory host and specify that hostname in
+the service address of every service. Note that the example services
+bind to the service address hostname by default, so you will need to
+specify the correct bind hostname explicitly.
+
+For the following example, consider a network with two hosts, sapphire
+and may. Launch the directory and the display service on sapphire (in
+separate terminals)::
 
   sapphire$ directory --host sapphire
 
   sapphire$ examples/printer //sapphire/display
 
-Next, launch the directory and the upper service on may (again, in separate
-terminals)::
+Next, launch the upper service on may::
 
-  may$ directory --host may
+  may$ examples/upper --host may //sapphire/upper //sapphire/display
 
-  may$ examples/upper //may/upper //sapphire/display
+Note that the upper service's address is on the directory host
+(sapphire) but it must bind to the host on which it is running (may).
 
-Now we can use the multi-host message pipeline from any machine, with the
-ultimate results being displayed by the display service on sapphire::
+Now we can use the multi-host message pipeline from any machine, with
+the ultimate results being displayed by the display service on
+sapphire::
 
-  anyHost$ examples/send //may/upper
+  anyHost$ examples/send //sapphire/upper
 
 The ``dw`` command line can also query remote directories. Pass in the
 full directory address (including the ``//`` prefix and the
