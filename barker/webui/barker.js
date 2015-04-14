@@ -1,9 +1,10 @@
 // Barker UI
 /* global proton */
 
-var ractive;
 var message = new proton.Message();
 var messenger = new proton.Messenger();
+
+var myUsername = "ark3";
 
 function sendMessage(address, content) {
     "use strict";
@@ -31,9 +32,14 @@ function pumpData() {
         var sender = message.body[0];
         var content = message.body[1];
         var messageId = message.body[2];
+        var dClass = "message";
 
-        var rendering = ("<h4>" + sender + " <small>(" + messageId + ")</small></h4>" +
-                        "<p>" + content + "</p>");
+        if (sender === myUsername) {
+            dClass += " mine bg-success";
+        }
+
+        var rendering = ("<div class=\"" + dClass + "\"><h4>" + sender + " <small>(" + messageId + ")</small></h4>" +
+                        "<p>" + content + "</p></div>");
 
         $("#stream").prepend(rendering);
 
@@ -52,7 +58,6 @@ function pumpData() {
 
 function sendNewBark() {
     "use strict";
-    var sender = "ark3";
     var content = $("#noises").val();
 
     var timeStamp = Math.round(Number(new Date()) / 10.0);
@@ -61,9 +66,11 @@ function sendNewBark() {
 
     console.log(messageId);
 
-    var body = [new proton.Data.Binary(sender), new proton.Data.Binary(content), new proton.Data.Binary(messageId)];
+    var body = [new proton.Data.Binary(myUsername),
+                new proton.Data.Binary(content),
+                new proton.Data.Binary(messageId)];
 
-    sendMessage("//localhost/outbox/ark3", body);
+    sendMessage("//localhost/outbox/" + myUsername, body);
 
     $("#noises").val("");
 }
@@ -80,4 +87,4 @@ messenger.on("error", errorHandler);
 messenger.on("subscription", onSubscription);
 messenger.start();
 
-messenger.subscribe("amqp://localhost:5673/" + "//localhost/inbox/ark3")
+messenger.subscribe("amqp://localhost:5673/" + "//localhost/inbox/" + myUsername);
