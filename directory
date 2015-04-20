@@ -87,11 +87,13 @@ class Redirector:
     def __contains__(self, address):
         return address in self.tree
 
-    def add(self, address, target, owner=None):
+    def add(self, address, target, owner=None, policy=None):
         if address in self.tree:
             routes = self.tree[address]
         else:
             routes = Routes()
+            if policy:
+                routes.policy = policy
             def updated():
                 self.on_updated(address, routes)
             routes.on_updated = updated
@@ -141,6 +143,7 @@ class RouteStore(Store):
         self.message.subject = "routes"
 
     def update(self, address, routes, put=True):
+        self.message.properties = {u"policy": routes.policy}
         self.message.body = (address, map(lambda t: (t[0], str(t[1])), routes.targets))
         msg = self.message.encode()
         if routes.targets:
@@ -192,9 +195,11 @@ class Directory(Stream):
             if opcode == "route":
                 address, target, owner = self.message.body[:3]
                 if owner is None: owner = event.link
-                routes = self.redirector.add(address, target, owner)
                 if len(self.message.body) > 3:
-                    routes.policy = self.message.body[3]
+                    policy = self.message.body[3]
+                else:
+                    policy = None
+                self.redirector.add(address, target, owner, policy)
             elif opcode == "unroute":
                 address, target, owner = self.message.body
                 kwargs = {}
