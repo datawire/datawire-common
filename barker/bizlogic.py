@@ -9,7 +9,7 @@
 from proton.reactor import Reactor
 from datawire import Agent, Container, Linker, Sender, Tether, Processor
 
-import common
+import common, time
 
 class BizLogic(object):
 
