@@ -103,8 +103,8 @@ class RouteList(Command):
     def render(self):
         sys.stdout.write(CLS)
         self.empty = True
-        for address, routes in self.routes.items():
-            self.render_routes(address, routes)
+        for address, (routes, policy) in self.routes.items():
+            self.render_routes(address, routes, policy)
         if self.empty:
             if self.recv.linked:
                 print "(no routes)"
@@ -119,12 +119,13 @@ class RouteList(Command):
             result += " on %s:%s" % (host, port)
         elif host:
             result += " on %s" % host
-        result += " (%s)" % owner
+        # displaying the owner clutters things for the demo, so remove it for now
+        # result += " (%s)" % owner
         return result
 
-    def render_routes(self, address, routes):
+    def render_routes(self, address, routes, policy):
         self.empty = False
-        line = "%s -> %s" % (address, "; ".join(map(self.format_route, routes)) or "(deleted)")
+        line = "%s -> (%s) %s" % (address, policy, "; ".join(map(self.format_route, routes)) or "(deleted)")
         if address in self.updated:
             print ansi(RED, line)
         else:
@@ -134,7 +135,7 @@ class RouteList(Command):
         task = event.context
         if self.updated != task.updated: return
         self.updated.remove(task.address)
-        if task.address not in self.updated and not self.routes[task.address]:
+        if task.address not in self.updated and not self.routes[task.address][0]:
             del self.routes[task.address]
         self.render()
 
@@ -148,15 +149,16 @@ class RouteList(Command):
         if msg.subject == "routes":
             address = msg.body[0]
             routes = msg.body[1]
+            policy = msg.properties["policy"]
             if self.args.follow:
                 self.updated.append(address)
                 task = event.reactor.schedule(delay, self)
                 task.updated = self.updated
                 task.address = address
-                self.routes[address] = routes
+                self.routes[address] = (routes, policy)
                 self.render()
             else:
-                self.render_routes(address, routes)
+                self.render_routes(address, routes, policy)
 
     def on_drained(self, event):
         self.recv.stop(event.reactor)
