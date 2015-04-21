@@ -79,11 +79,17 @@ class Manifold:
         self.directory.start(event.reactor)
 
     def on_message(self, event):
+        props = event.message.properties or {}
+        policy = props.get("policy", None)
         address, routes = event.message.body
         if (address == self.tether.address or address.startswith(self.tether.address + "/")):
             self.stream.relink()
         elif self.push and (address == self.push or address.startswith(self.push + "/")):
-            self.stream.relink(receiver=False)
+            if policy == "ordered" and routes:
+                host, port, raddr = routes[0][0]
+                self.stream.relink(receiver=False, host=host, port=port, address=raddr or address)
+            else:
+                self.stream.relink(receiver=False)
 
 parser = ArgumentParser(prog="manifold")
 parser.add_argument("-d", "--directory", help="datawire directory")

@@ -288,13 +288,30 @@ class Stream:
             self.store.put(msg, address=address)
             dlv.settle()
 
-    def relink(self, sender=True, receiver=True):
+    def _matches(self, host, port, address, link):
+        if host is None:
+            return False
+        else:
+            if link.is_sender:
+                terminus = link.target
+            else:
+                terminus = link.source
+            return (link.connection.hostname == "%s:%s" % (host, port) and
+                    terminus.address == address)
+
+    def relink(self, sender=True, receiver=True, host=None, port=None, address=None):
         log.info("relinking stream: sender=%s, receiver=%s", sender, receiver)
         if sender:
             for l in self.outgoing:
-                l._relink = True
-                l.close()
+                if self._matches(host, port, address, l):
+                    log.info("omitting spurious relink")
+                else:
+                    l._relink = True
+                    l.close()
         if receiver:
             for l in self.incoming:
-                l._relink = True
-                l.close()
+                if self._matches(host, port, address, l):
+                    log.info("omitting spurious relink")
+                else:
+                    l._relink = True
+                    l.close()
