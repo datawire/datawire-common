@@ -101,9 +101,12 @@ class Link:
             log.debug("redirecting to %s", rlink)
             self.start(event.reactor, rlink)
         elif link.remote_condition:
-            log.info("on_link_remote_close: %s", link.remote_condition)
-            if link == self._link:
-                self._link = None
+            if link.remote_condition.name == "datawire:link:unavailable":
+                log.debug("target address unavailable")
+            else:
+                log.info("on_link_remote_close: %s", link.remote_condition)
+                if link == self._link:
+                    self._link = None
 
     def on_connection_bound(self, event):
         event.transport.idle_timeout = 60.0
