@@ -3,7 +3,6 @@
 
 __author__    = "datawire.io <hello@datawire.io>"
 __copyright__ = "Copyright (C) 2015 k736, inc."
-__license__   = "Apache v2.0"
 __version__   = "0.2"
 
 # So logging doesn't emit "No handlers could be found for logger" message.
