@@ -12,7 +12,7 @@ from collections import OrderedDict
 from proton.reactor import Reactor
 from proton.handlers import CFlowController
 from proton import Message
-from datawire import Stream, Sender, Receiver
+from datawire import Stream, Sender, Receiver, __version__
 
 CONFIG = os.path.expanduser("~/.datawire/config")
 
@@ -195,6 +195,7 @@ def main():
                         epilog='Visit http://www.datawire.io/docs for details on how to use Datawire.')
     dw.add_argument('-d', '--directory', default=config.get('global', 'directory'),
                     help='directory address (e.g., //hostname/directory)')
+    dw.add_argument("-V", "--version", action="version", version="%(prog)s " + __version__)
     cmds = dw.add_subparsers()
 
     # config subcommands

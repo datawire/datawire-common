@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Datawire installation script
-RELEASE="0.1"
+RELEASE="0.2"
 WORK_DIR=$PWD
 
 # Check OS
@@ -43,7 +43,7 @@ mkdir "$TEMP_DIR"
 PROTON_BRANCH="0.9-datawire-1"
 PROTON_URL="https://github.com/datawire/qpid-proton/archive/${PROTON_BRANCH}.zip"
 PROTON_DIR="qpid-proton-${PROTON_BRANCH}"
-DW_URL="http://www.datawire.io/datawire-0.1.tar.gz"
+DW_URL="http://www.datawire.io/datawire-${RELEASE}.tar.gz"
 USER_SITE_DIR=$(python -m site --user-site)
 
 echo "Downloading Qpid Proton ..."

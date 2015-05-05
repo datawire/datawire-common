@@ -1,6 +1,11 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
+__author__    = "datawire.io <hello@datawire.io>"
+__copyright__ = "Copyright (C) 2015 k736, inc."
+__license__   = "Apache v2.0"
+__version__   = "0.2"
+
 # So logging doesn't emit "No handlers could be found for logger" message.
 import logging as _logging
 _logging.getLogger("datawire").addHandler(_logging.NullHandler())
