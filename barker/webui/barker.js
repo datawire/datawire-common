@@ -1,5 +1,5 @@
 // Barker UI
-/* global proton */
+/* global proton, barker_host */
 
 var message = new proton.Message();
 var messenger = new proton.Messenger();
@@ -9,7 +9,7 @@ var myUsername = "ark3";
 function sendMessage(address, content) {
     "use strict";
     message.clear();
-    message.setAddress("amqp://localhost:5674/" + address);
+    message.setAddress("amqp://" + barker_host + ":5674/" + address);
     message.body = content;
     messenger.put(message);
     messenger.send();
@@ -70,7 +70,7 @@ function sendNewBark() {
                 new proton.Data.Binary(content),
                 new proton.Data.Binary(messageId)];
 
-    sendMessage("//localhost/outbox/" + myUsername, body);
+    sendMessage("//" + barker_host + "/outbox/" + myUsername, body);
 
     $("#noises").val("");
 }
@@ -87,4 +87,4 @@ messenger.on("error", errorHandler);
 messenger.on("subscription", onSubscription);
 messenger.start();
 
-messenger.subscribe("amqp://localhost:5673/" + "//localhost/inbox/" + myUsername);
+messenger.subscribe("amqp://" + barker_host + ":5673/" + "//" + barker_host + "/inbox/" + myUsername);

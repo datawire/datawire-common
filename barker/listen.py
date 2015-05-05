@@ -15,9 +15,9 @@ log = logging.getLogger(__name__)
 
 class GetBarks(object):
 
-    def __init__(self, user):
+    def __init__(self, user, hostname):
         self.user = user
-        self.receiver = Receiver("//localhost/inbox/%s" % user, Processor(self))
+        self.receiver = Receiver("//%s/inbox/%s" % (hostname, user), Processor(self))
         self.width = 10
 
     def on_reactor_init(self, event):
@@ -33,12 +33,13 @@ class GetBarks(object):
 def main():
     parser = ArgumentParser(prog="listen")
     parser.add_argument("user")
+    parser.add_argument("-n", "--host", default="localhost", help="hostname of inboxes")
     args = parser.parse_args()
 
     users = common.load_data("users.pickle")
 
     assert args.user in users
-    Reactor(GetBarks(args.user)).run()
+    Reactor(GetBarks(args.user, args.host)).run()
 
 
 if __name__ == "__main__":

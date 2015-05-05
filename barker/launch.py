@@ -1,47 +1,63 @@
 import os, signal
+from argparse import ArgumentParser
 from subprocess import Popen
 from time import sleep
 
 import common
 
-pids = []
-
-def launch(command):
-    pid = Popen(command.split()).pid
-    print "[%5d] %s" % (pid, command)
-    pids.append(pid)
-    sleep(0.3)
-
 commands = """
-../directory
-../manifold //localhost/inbox --history 25 --port 5820
-python bizlogic.py --port 5680
-#python bizlogic.py --port 5681
-#python bizlogic.py --port 5682
-../manifold //localhost/outbox --push //localhost/bizlogic --port 5800
-../manifold //localhost/outbox --push //localhost/bizlogic --port 5801
-../manifold //localhost/outbox --push //localhost/bizlogic --port 5802
-python autobark.py 5
-python autobark.py 5
-python autobark.py 5
-python autobark.py 5
-python autobark.py 5
-python listen.py ark3
-webui/proxy/proxy.js --thost localhost -p 5673 -t 5820
-webui/proxy/proxy.js --thost localhost -p 5674 -t 5800
+directory --host %(hostname)s
+manifold //%(hostname)s/inbox --history 25 --port 5820
+python bizlogic.py --host %(hostname)s --port 5680
+#python bizlogic.py --host %(hostname)s --port 5681
+#python bizlogic.py --host %(hostname)s --port 5682
+manifold //%(hostname)s/outbox --push //%(hostname)s/bizlogic --port 5800
+manifold //%(hostname)s/outbox --push //%(hostname)s/bizlogic --port 5801
+manifold //%(hostname)s/outbox --push //%(hostname)s/bizlogic --port 5802
+python autobark.py 5 --host %(hostname)s
+python autobark.py 5 --host %(hostname)s
+python autobark.py 5 --host %(hostname)s
+python autobark.py 5 --host %(hostname)s
+python autobark.py 5 --host %(hostname)s
+python listen.py ark3 --host %(hostname)s
+webui/proxy/proxy.js --thost %(hostname)s -p 5673 -t 5820
+webui/proxy/proxy.js --thost %(hostname)s -p 5674 -t 5800
 """
 
+def launch(command):
+    try:
+        pid = Popen(command.split()).pid
+    except OSError as exc:
+        print "Failed to launch %r" % command
+        print " (%s)" % exc
+        print "Are your shell PATH and PYTHONPATH variables set for Datawire?"
+        exit(1)
+    print "[%5d] %s" % (pid, command)
+    sleep(0.3)
+    return pid
+
 def main():
+    parser = ArgumentParser()
+    parser.add_argument("-n", "--host", default="127.0.0.1", help="network hostname")
+    args = parser.parse_args()
+
+    params = dict(hostname=args.host)
+
     try:
         open("users.pickle")
     except IOError:
         common.make_users("users.pickle", 100)
 
-    for command in commands.split("\n"):
-        if command and not command.strip().startswith("#"):
-            launch(command.strip())
+    with open("webui/barker_host.js", "wb") as jsfile:
+        jsfile.write("""barker_host = "%(hostname)s";\n""" % params)
+
+    pids = []
     try:
-        sleep(100000)
+        for command in (commands % params).split("\n"):
+            if command and not command.strip().startswith("#"):
+                pids.append(launch(command.strip()))
+        while True:
+            sleep(100000)
     finally:
         for pid in pids:
             os.kill(pid, signal.SIGTERM)

@@ -18,7 +18,7 @@ import common
 
 class AutoBark(object):
 
-    def __init__(self, rate):
+    def __init__(self, rate, hostname):
         self.users = {}
         try:
             self.quotes = open("quotes.txt").read().split("\n")
@@ -30,6 +30,7 @@ class AutoBark(object):
         self.user_reread_period = 30  # seconds
         self.bark_period = 1.0 / rate  # seconds
         self.linker = Linker()
+        self.hostname = hostname
 
     def make_random_bark(self):
         while True:
@@ -59,7 +60,7 @@ class AutoBark(object):
             self.last_user_reread = now
 
         message = self.make_random_bark()
-        sender = self.linker.sender("//localhost/outbox/%s" % message.user)
+        sender = self.linker.sender("//%s/outbox/%s" % (self.hostname, message.user))
         sender.send(tuple(message))
 
         event.reactor.schedule(self.bark_period, self)
@@ -68,9 +69,10 @@ class AutoBark(object):
 def main():
     parser = ArgumentParser()
     parser.add_argument("rate", type=float, help="Message per second")
+    parser.add_argument("-n", "--host", default="localhost", help="hostname of outboxes")
     args = parser.parse_args()
 
-    Reactor(AutoBark(args.rate)).run()
+    Reactor(AutoBark(args.rate, args.host)).run()
 
 if __name__ == "__main__":
     main()

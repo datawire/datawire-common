@@ -45,7 +45,7 @@ class BizLogic(object):
         followers = user.getFollowers(self.users)
         targets = set(mentions + followers + [message.user])
         for target in targets:
-            sender = self.linker.sender("//localhost/inbox/%s" % target)
+            sender = self.linker.sender("//%s/inbox/%s" % (self.host, target))
             sender.send(event.message.body)
 
 
