@@ -1,6 +1,7 @@
 # Provides monitoring data to the JS Monitoring UI (or whomever else)
 
 import sys, logging, time, random
+from argparse import ArgumentParser
 
 from proton import timestamp
 from proton.reactor import Reactor
@@ -28,12 +29,12 @@ class HistoryStore(Store):
 
 class Monitor(object):
 
-    def __init__(self):
-        self.host = "localhost"
-        self.port = 6000
-        self.tether = Tether(None, "//localhost/monitor", "//%s:%s" % (self.host, self.port))
+    def __init__(self, args):
+        self.host = args.host
+        self.port = args.port
+        self.tether = Tether(None, "//%s/monitor" % self.host, "//%s:%s" % (self.host, self.port))
         self.stream = Stream(HistoryStore(100))
-        self.directory = Receiver("//localhost/directory", Processor(self))
+        self.directory = Receiver("//%s/directory" % self.host, Processor(self))
         self.receivers = []
         self.handlers = [self.stream]
         self.statMessages = []
@@ -73,7 +74,7 @@ class Monitor(object):
     def old_on_timer_task(self, event):
         now = timestamp(time.time() * 1000)
         addresses = [u"bizlogic"] + 10 * [u"inbox"] + 5 * [u"outbox"]
-        sources = [(u"//localhost/" + address, u"//localhost/agents/localhost-%d" % (5000+idx))
+        sources = [(u"//%s/%s" % (self.host, address), u"//%s/agents/%s-%d" % (self.host, self.host, 5000+idx))
                    for idx, address in enumerate(addresses)]
 
         random.shuffle(sources)
@@ -120,7 +121,12 @@ class Monitor(object):
 
 
 def main():
-    Reactor(Monitor()).run()
+    parser = ArgumentParser()
+    parser.add_argument("-n", "--host", default="localhost", help="network hostname")
+    parser.add_argument("-p", "--port", default="6000", help="network port")
+    args = parser.parse_args()
+
+    Reactor(Monitor(args)).run()
 
 
 if __name__ == "__main__":

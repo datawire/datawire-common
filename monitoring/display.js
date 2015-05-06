@@ -1,5 +1,5 @@
 // Monitoring Console
-/* global proton */
+/* global proton, monitor_host */
 
 var seriesMap = {};             // name -> series object
 var svcToColor = {              // service/agent name -> color
@@ -133,8 +133,9 @@ updateCharts();
 
 function getServiceName(content) {
     "use strict";
-    var name = content.address.substring(12, 99);
-    name += content.agent.substring(28, 99);
+    var hLen = monitor_host.length;
+    var name = content.address.substring(hLen + 3, 99);     // Skip "//hostname/"
+    name += content.agent.substring(hLen + hLen + 10, 99);  // Skip "//hostname/agents/hostname"
     return name;
 }
 
@@ -245,4 +246,4 @@ messenger.on("error", errorHandler);
 messenger.on("subscription", onSubscription);
 messenger.start();
 
-messenger.subscribe("amqp://localhost:5700/" + "//localhost/monitor");
+messenger.subscribe("amqp://" + monitor_host + ":5700/" + "//" + monitor_host + "/monitor");
