@@ -1,5 +1,10 @@
 *.pyc
 *.*~
 *~
+*.class
 build
-source/tags
+tags
+.DS_Store
+*_host.js
+barker/users.pickle
+barker/webui/proxy/node_modules
