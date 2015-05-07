@@ -300,18 +300,18 @@ class Stream:
                     terminus.address == address)
 
     def relink(self, sender=True, receiver=True, host=None, port=None, address=None):
-        log.info("relinking stream: sender=%s, receiver=%s", sender, receiver)
+        log.debug("relinking stream: sender=%s, receiver=%s", sender, receiver)
         if sender:
             for l in self.outgoing:
                 if self._matches(host, port, address, l):
-                    log.info("omitting spurious relink")
+                    log.debug("omitting spurious relink")
                 else:
                     l._relink = True
                     l.close()
         if receiver:
             for l in self.incoming:
                 if self._matches(host, port, address, l):
-                    log.info("omitting spurious relink")
+                    log.debug("omitting spurious relink")
                 else:
                     l._relink = True
                     l.close()
