@@ -17,7 +17,7 @@ class Client:
         # buffered messages have been sent
         self.sender.close()
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
 parser = ArgumentParser(prog="send")
 parser.add_argument("address", help="target address")

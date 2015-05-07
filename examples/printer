@@ -27,7 +27,7 @@ class Printer:
     def on_message(self, event):
         print event.message
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
 parser = ArgumentParser(prog="printer")
 parser.add_argument("-d", "--directory", help="datawire directory")

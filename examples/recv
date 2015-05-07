@@ -20,7 +20,7 @@ class Service:
     def on_message(self, event):
         print event.message
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
 parser = ArgumentParser(prog="recv")
 parser.add_argument("-n", "--host", default="localhost", help="hostName binding")

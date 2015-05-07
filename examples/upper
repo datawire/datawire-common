@@ -30,7 +30,7 @@ class Upper:
             event.message.body = event.message.body.upper()
         self.sender.send(event.message)
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
 parser = ArgumentParser(prog="upper")
 parser.add_argument("-d", "--directory", help="datawire directory")

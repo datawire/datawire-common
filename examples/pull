@@ -16,7 +16,7 @@ class Client:
     def on_message(self, event):
         print event.message
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
 parser = ArgumentParser(prog="pull")
 parser.add_argument("address", help="source address")
