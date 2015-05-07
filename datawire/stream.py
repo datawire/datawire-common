@@ -1,5 +1,5 @@
 # Copyright (C) k736, inc. All Rights Reserved.
-# Unauthorized copying or redistribution of this file is strictly prohibited. 
+# Unauthorized copying or redistribution of this file is strictly prohibited.
 
 import sqlite3, logging, time
 from proton import Message, Endpoint
