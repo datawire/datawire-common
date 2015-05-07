@@ -102,9 +102,9 @@ class Link:
             self.start(event.reactor, rlink)
         elif link.remote_condition:
             if link.remote_condition.name == "datawire:link:unavailable":
-                log.debug("target address unavailable")
+                log.info("target address unavailable")
             else:
-                log.info("on_link_remote_close: %s", link.remote_condition)
+                log.warning("unexpected remote close condition: %s", link.remote_condition)
                 if link == self._link:
                     self._link = None
 
@@ -226,11 +226,6 @@ class Tether(Sender):
             self.agent = u"//%s/agents/%s-%s" % (Address(self.directory).host, self.host, self.port)
         else:
             self.agent = None
-
-        if self.redirect_target is not None and \
-           Address(self.address).host != Address(self.redirect_target).host:
-            log.warning("Service address and announce address hostnames do not match: %s, %s",
-                        Address(self.address).host, Address(self.redirect_target).host)
 
     def on_link_local_open(self, event):
         msg = Message()
