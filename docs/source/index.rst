@@ -12,4 +12,5 @@ datawire.io Documentation
    introduction
    architecture
    tutorial/intro_datawire.rst
+   tutorial/barker.rst
    reactor/intro_reactor

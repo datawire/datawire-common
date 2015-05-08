@@ -304,7 +304,14 @@ uses a ``Stream`` to simplify part of the code.
 .. literalinclude:: ../../../examples/fanout
    :language: python
    :pyobject: Fanout
-  
+
+
+Manifold
+========
+
+The manifold is a ARK3.
+
+	      
 Working with Datawire
 =====================
 
