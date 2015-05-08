@@ -64,6 +64,29 @@ In the outbox, we use a round robin algorithm that distributes
 connections between different instances of the outbox. In the
 bizlogic, we use a failover algorithm.
 
+To demonstrate the failover algorithm, copy the ``launch.py`` script
+to ``launch-no-bizlogic.py`` and comment out the bizlogic command.
+Then, run the following commands::
+
+  python launch-no-bizlogic.py &
+  python bizlogic.py --host 127.0.0.1 --port 5680 &
+  python bizlogic.py --host 127.0.0.1 --port 5681 &
+
+Substitute a different hostname for 127.0.0.1 if you are not running
+on localhost. Then, start the monitoring::
+
+  cd monitoring
+  python launch.py
+
+Load the monitoring UI in your browser. Barks will be routed through
+the bizlogic on 5680. If you kill the first bizlogic process, barks
+will be routed to the second bizlogic on 5681. You'll see a small,
+temporary increase in queue depth when you kill the first bizlogic
+process as the failover occurs. If you kill the second bizlogic,
+you'll see the queue depth will increase indefinitely. Starting a new
+instance of the bizlogic will start queue processing again.
+  
+
 UI and Monitoring
 =================
 
@@ -73,12 +96,3 @@ Barker UI, as well as the monitoring dashboards.
 
 The ``proton.js`` library should be considered experimental, as the
 Python reactive API is not yet implemented in ``proton.js``.
-
-
-
-
-
-
-
-
-
