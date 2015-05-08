@@ -11,7 +11,8 @@ Barker Quickstart
 Barker includes a launch script that will start all the Barker
 microservices::
 
-  python barker/launch.py
+  cd barker
+  python launch.py
 
 Visit barker/webui/index.html in your browser to see the Barker
 UI. You'll see a set of barks continuously scroll by; these are
@@ -21,7 +22,8 @@ type a bark into the UI, and you'll see it appear in set of barks.
 Barker also includes a basic monitoring setup. You can start the
 monitoring with the monitoring launch script::
 
-  python monitoring/launch.py
+  cd monitoring
+  python launch.py
 
 Visit monitoring/index.html in your browser, and you'll see two
 real time graphs giving visibility into the state of the system.
@@ -36,33 +38,31 @@ design is also very generalizable to other types of processing
 problems, and resembles the `LMAX architecture
 <http://martinfowler.com/articles/lmax.html>`_.
 
+.. image:: barker-arch.png
+   :width: 100%
 
-
-outbox -> bizlogic -> inbox -> client
-
-
+ARK3, please put poignant and insightful commentary here.
+	   
 Barker Slow Start
 =================
 
 Now that you have a grasp of the Barker archtiecture, let's go through
 Barker in more detail. The launch script starts a number of different
 microservices locally, each operating a different host port. The main
-services that are started are the following:
+services are the following:
 
-* directory, which provides service location
+* directory, which provides service location functionality
 * a manifold that functions as the "inbox"
 * an instance of business logic
 * three manifold instances that function as the "outbox"
 * five autobark instances that simulate multiple tweeters
 
+We've instantiated different numbers of microservices to demonstrate
+several different routing algorithms.
 
-
-
-- bizlogic failover
-
-
-
-
+In the outbox, we use a round robin algorithm that distributes
+connections between different instances of the outbox. In the
+bizlogic, we use a failover algorithm.
 
 UI and Monitoring
 =================
