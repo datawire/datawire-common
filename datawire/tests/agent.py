@@ -10,7 +10,12 @@ from common import *
 class AgentTest:
 
     def __init__(self):
-        self.agent = Agent(self)
+        class FakeTether:
+            def __init__(self):
+                self.address = None
+                self.agent = None
+                self.agent_type = None
+        self.agent = Agent(FakeTether(), self)
         self.server = Server(self.agent)
         self.reactor = Reactor(self.server)
         self.samples = 0
@@ -18,8 +23,8 @@ class AgentTest:
     def teardown(self):
         self.server.acceptor.close()
 
-    def on_sample(self, event):
-        event.link.send(Message("sample-%s" % self.samples))
+    def sample(self, stats):
+        stats["samples"] = self.samples
         self.samples += 1
 
     def testAgent(self, count=1, frequency=10):
@@ -29,7 +34,7 @@ class AgentTest:
             def __init__(self):
                 self.received = 0
             def on_message(self, event):
-                assert event.message.body == "sample-%s" % self.received, (event.message.body, self.received)
+                assert event.message.body["samples"] == self.received, (event.message.body, self.received)
                 self.received += 1
                 if self.received == count:
                     rcv.stop(event.reactor)
