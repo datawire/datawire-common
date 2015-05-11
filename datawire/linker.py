@@ -134,7 +134,10 @@ class Link:
 
     def on_transport_error(self, event):
         cond = event.transport.condition
-        log.error("transport error %s: %s", cond.name, cond.description)
+        if cond.name == "amqp:resource-limit-exceeded" and cond.description == "local-idle-timeout expired":
+            log.debug("transport error %s: %s", cond.name, cond.description)
+        else:
+            log.error("transport error %s: %s", cond.name, cond.description)
 
     def on_transport_closed(self, event):
         event.connection.free()
