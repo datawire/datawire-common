@@ -15,6 +15,9 @@ class AgentTest:
         self.reactor = Reactor(self.server)
         self.samples = 0
 
+    def teardown(self):
+        self.server.acceptor.close()
+
     def on_sample(self, event):
         event.link.send(Message("sample-%s" % self.samples))
         self.samples += 1
