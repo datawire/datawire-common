@@ -108,8 +108,13 @@ class Link:
                 if link == self._link:
                     self._link = None
 
+    def log_proton_output(self, transport, output):
+        # str(transport) looks like "<proton.Transport 0x104186e50 ~ 0x7fd3d0ceec70>"
+        log.warning("PROTON:%s", output)
+
     def on_connection_bound(self, event):
         event.transport.idle_timeout = 60.0
+        event.transport.tracer = self.log_proton_output
         if self.trace is not None:
             event.transport.trace(self.trace)
 
