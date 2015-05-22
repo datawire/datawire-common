@@ -114,15 +114,16 @@ pygments_style = 'sphinx'
 if better_theme:
     html_theme_path = [better_theme_path]
     html_theme = 'better'
+    html_theme_options = {
+        'linktotheme': False,
+    }
 else:
     html_theme = 'haiku'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    'linktotheme': False,
-}
+#html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
