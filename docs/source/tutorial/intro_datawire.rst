@@ -13,7 +13,7 @@ Datawire installs on Linux, and requires a basic toolchain to
 install. On a yum-based system, install the following packages::
 
   yum install gcc libuuid-devel openssl-devel swig python-devel unzip tar make patch cmake wget
- 
+
 On an apt-based system, update your system with ``apt-get``, and then
 install the following packages::
 
@@ -309,9 +309,99 @@ uses a ``Stream`` to simplify part of the code.
 Manifold
 ========
 
-The manifold is a ARK3.
+The ``manifold`` command line tool allows you to add queues and topics
+to your message processing topologies. The following examples assume
+that there is a directory running as ``//localhost/directory``.
 
-	      
+Let's start by setting up a ``manifold`` as a queue that pushes messages
+to a familiar destination service::
+
+  manifold -p 5800 //localhost/manifold --push //localhost/display
+
+Now we can queue up some messages::
+
+  examples/send //localhost/manifold
+  examples/send //localhost/manifold
+  examples/send //localhost/manifold
+
+As the ultimate target does not exist, the manifold stores the messages
+for eventual delivery. Let's create that target service now::
+
+  examples/printer //localhost/display
+
+You should see the three messages appear. The manifold automatically
+noticed its push target is available and proceeded to dequeue and push
+messages.
+
+The manifold does not have to push messages to a target service. It can
+serve as an intermediary from which other services may pull messages.
+Let's take a quick look at the ``pull`` example, which we'll use here,
+to see that it's analogous to ``printer`` and ``send``.
+
+.. literalinclude:: ../../../examples/pull
+   :language: python
+
+Now that we have a straightforward way to pull messages, kill the
+``manifold`` from the prior example to try the following::
+
+  manifold -p 5800 //localhost/manifold
+
+This instance of the manifold does not push anywhere. Queue up some
+messages as before and then pull from the queue::
+
+  examples/send //localhost/manifold
+  examples/send //localhost/manifold
+  examples/send //localhost/manifold
+
+  examples/pull //localhost/manifold
+
+You should see... nothing! In this example, the ``pull`` command is a
+"late joiner." As the manifold did not know about this subscriber when
+it received the three messages, it immediately decided that it is done
+with those messages and discarded them. If you submit further messages
+now, the ``pull`` command will receive them as expected.
+
+The manifold can keep a history of messages flowing through it. Restart
+the ``manifold`` as follows::
+
+  manifold -p 5800 //localhost/manifold --history 20
+
+This instance of the manifold remembers the last 20 messages. Now if you
+repeat the queue-and-pull from above, you will see three messages appear
+as expected.
+
+The manifold performs fanout as well, automatically serving as a topic
+if there is more than one recipient. If you run a second ``pull`` in
+another window, you will see that it too receives your three initial
+messages, or whatever the last 20 messages were. Then if you submit
+further messages into the manifold, both ``pull`` commands will receive
+them. The manifold allows any number of recipients to receive submitted
+messages by pulling or by being pushed to via the ``--push`` option as
+above.
+
+Our examples so far have used the manifold as a single queue/topic
+serving at the address ``//localhost//manifold``. In fact, the manifold
+offers an arbitrary set of queues/topics within the namespace starting
+with the above address. Submitting a message to a sub-address of the
+manifold implicitly creates a new queue/topic for that address. Targets
+of the ``--push`` manifold option will receive all messages submitted to
+the manifold, but the ``pull`` command can subscribe to a sub-address to
+receive only those messages. Here is an example with two sub-addresses::
+
+  examples/send //localhost/manifold/first
+  examples/send //localhost/manifold/first
+
+  examples/send //localhost/manifold/second
+
+  examples/pull //localhost/manifold/first
+
+  examples/pull //localhost/manifold/second
+
+The first pull will see two messages; the second will see one. The
+manifold maintains ``first`` and ``second`` as two distinct
+queues/topics.
+
+
 Working with Datawire
 =====================
 
@@ -363,14 +453,14 @@ Now we can use the multi-host message pipeline from any machine, with
 the ultimate results being displayed by the display service on
 sapphire::
 
-  anyHost$ examples/send //sapphire/upper
+  anyhost$ examples/send //sapphire/upper
 
 The ``dw`` command line can also query remote directories. Pass in the
 full directory address (including the ``//`` prefix and the
 ``directory`` suffix) to the ``-d`` option::
 
-  may% dw -d //sapphire/directory route list
-  
+  may$ dw -d //sapphire/directory route list
+
 Network Bindings
 ================
 
@@ -405,7 +495,7 @@ type::
 
   export PN_TRACE_FRM=1
 
-and rerun the commands. To turn off tracing, set ``PN_TRACE_FRM=0``.  
+and rerun the commands. To turn off tracing, set ``PN_TRACE_FRM=0``.
 
 Next Steps
 ==========
