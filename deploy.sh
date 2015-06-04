@@ -1,11 +1,16 @@
 #/bin/sh
 
+VERSION=0.2
+TARGET=/var/www/html
+
+mkdir -p $TARGET
+
 python setup.py sdist
-cp -f dist/datawire-0.1.tar.gz /var/www/html/
-cp -f install.sh /var/www/html/
+cp -f dist/datawire-${VERSION}.tar.gz ${TARGET}/
+cp -f install.sh ${TARGET}/
 
 cd docs
 make html
-rm -rf /var/www/html/docs
-mkdir /var/www/html/docs
-mv build/html/* /var/www/html/docs/
+rm -rf ${TARGET}/docs
+mkdir ${TARGET}/docs
+mv build/html/* ${TARGET}/docs/
