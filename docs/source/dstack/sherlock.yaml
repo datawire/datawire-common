@@ -2,18 +2,19 @@
 directories:
   host: directory1.internal.example.com
   port: 2341
-services: 
+http_proxy:
+  port: 3219
+  frontend: mode http
+microservices:
   barker_bizlogic:
-    default_services:
-      name: "default_bizlogic"
-      host: "barker.internal.example.com"
-      port: 5432
-    microservices:
-      name: "barker_bizlogic"
-    haproxy:
-      port: 3219
-      server_options: "check inter 2000 rise 3 fall 2"
-      frontend: mode tcp
-      backend: mode tcp
+    url: "barker.internal"
+    default_host: "barker.internal.example.com"
+    default_port: 5000
+  mongodb:
+    url: "mongodb"
+    mode: tcp
+    proxy_port: 3220
+    default_host: "mongodb.internal.example.com"
+    default_port: 5000
 
 

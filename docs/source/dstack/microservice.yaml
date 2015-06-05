@@ -1,6 +1,8 @@
 ---
-microservice: barker_bizlogic
-version: 2 (or should we call it "secondary"?)
+microservice: barker
+url: barker.internal
+
+
 host: 1.2.3.4
 port: 8080
 checks:
