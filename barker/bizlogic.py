@@ -1,15 +1,7 @@
-# Bizlogic
-
-"""
-  - Receives barks (//host/bizlogic)
-  - Rereads user and hashtag database periodically
-  - Pushes to relevant users inboxes (//host/inbox/user)
-"""
-
 from proton.reactor import Reactor
-from datawire import Agent, Container, Linker, Sender, Tether, Processor
+from datawire import Agent, Container, Linker, Tether, Processor
 
-import common, time
+import common
 
 class BizLogic(object):
 
@@ -38,12 +30,12 @@ class BizLogic(object):
         event.reactor.schedule(self.user_reread_period, self)
 
     def on_message(self, event):
-        message = common.Message(*event.message.body)
-        words = message.content.split()
+        bark = common.Bark(*event.message.body)
+        words = bark.content.split()
         mentions = [word[1:] for word in words if word.startswith("@")]
-        user = self.users[message.user]
+        user = self.users[bark.user]
         followers = user.getFollowers(self.users)
-        targets = set(mentions + followers + [message.user])
+        targets = set(mentions + followers + [bark.user])
         for target in targets:
             sender = self.linker.sender("//%s/inbox/%s" % (self.host, target))
             sender.send(event.message.body)

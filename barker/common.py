@@ -1,5 +1,3 @@
-# Central storage for Doggy
-
 import cPickle, os, sys, random, time, logging
 from collections import namedtuple
 
@@ -53,8 +51,8 @@ def make_users(filename, count):
     dump_data(filename, users)
 
 
-_Message = namedtuple("Message", "user content id")
-def Message(user, content, id=None):
+_Bark = namedtuple("Bark", "user content id")
+def Bark(user, content, id=None):
     if id is None:
         id = "msg%04x%010x" % (os.getpid(), time.time() * 100)
-    return _Message(user, content, id)
+    return _Bark(user, content, id)

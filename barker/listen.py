@@ -1,9 +1,3 @@
-"""
-- Theoretically performs auth via the user db
-- Connects to the output side of distribution (//host/inbox/user)
-- Displays latest barks
-"""
-
 import logging, datetime
 from argparse import ArgumentParser
 
