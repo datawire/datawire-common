@@ -69,7 +69,7 @@ class AutoBark(object):
 def main():
     parser = ArgumentParser()
     parser.add_argument("rate", type=float, help="Message per second")
-    parser.add_argument("-n", "--host", default="localhost", help="hostname of outboxes")
+    parser.add_argument("-n", "--host", default="127.0.0.1", help="hostname of outboxes")
     args = parser.parse_args()
 
     Reactor(AutoBark(args.rate, args.host)).run()

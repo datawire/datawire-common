@@ -28,7 +28,7 @@ def main():
     parser = ArgumentParser(prog="bark")
     parser.add_argument("user")
     parser.add_argument("message", nargs="+")
-    parser.add_argument("-n", "--host", default="localhost", help="hostname of outboxes")
+    parser.add_argument("-n", "--host", default="127.0.0.1", help="hostname of outboxes")
     args = parser.parse_args()
 
     users = common.load_data("users.pickle")

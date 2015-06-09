@@ -122,7 +122,7 @@ class Monitor(object):
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument("-n", "--host", default="localhost", help="network hostname")
+    parser.add_argument("-n", "--host", default="127.0.0.1", help="network hostname")
     parser.add_argument("-p", "--port", default="6000", help="network port")
     args = parser.parse_args()
 

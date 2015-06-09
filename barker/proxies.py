@@ -13,9 +13,9 @@ def launch(command):
     sleep(0.3)
 
 commands = """
-webui/proxy/proxy.js --thost localhost -p 5673 -t 5820
-webui/proxy/proxy.js --thost localhost -p 5674 -t 5800
-webui/proxy/proxy.js --thost localhost -p 5700 -t 6000
+webui/proxy/proxy.js --thost 127.0.0.1 -p 5673 -t 5820
+webui/proxy/proxy.js --thost 127.0.0.1 -p 5674 -t 5800
+webui/proxy/proxy.js --thost 127.0.0.1 -p 5700 -t 6000
 """
 
 def main():
