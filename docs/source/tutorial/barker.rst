@@ -58,9 +58,10 @@ architecture resembles the `LMAX architecture
 The nature of the microservices comprising Barker was influenced by this
 `article about Twitter scalability
 <http://highscalability.com/blog/2013/7/8/the-architecture-twitter-uses-to-deal-with-150m-active-users.html>`_.
-Twtiter refers to new messages entering the system as residing in the
+Twitter refers to new messages entering the system as residing in the
 users' outboxes; messages awaiting retrieval for consumption reside in
-users' inboxes. The clients that submit and retrieve messages can be
+users' inboxes. With the inbox/outbox manifolds keeping track of all the
+messages in play, the clients that submit and retrieve messages can be
 simple and stateless, like the Barker Web UI. The business logic in the
 middle only has to determine which inboxes each message needs to reach.
 
@@ -97,13 +98,13 @@ to ``launch-no-bizlogic.py`` and comment out the bizlogic command.
 Then, run the following commands::
 
   python launch-no-bizlogic.py &
-  python bizlogic.py --host 127.0.0.1 --port 5680 &
-  python bizlogic.py --host 127.0.0.1 --port 5681 &
+  python bizlogic.py --port 5680 &
+  python bizlogic.py --port 5681 &
 
 Then, start the monitoring::
 
   cd monitoring
-  python launch.py
+  python launch.py &
 
 Load the monitoring UI in your browser. Barks will be routed through
 the bizlogic on 5680. If you kill the first bizlogic process, barks
@@ -149,6 +150,6 @@ complication: DNS resolution sometimes works differently across the
 different pieces (the Python/Datawire code, the browser, and the proxy).
 In particular, we have noticed that the hostname ``localhost`` can
 resolve to two different addresses on machines with IPV6 enabled (i.e.
-most modern systems). To avoid this problem, the default hostname on
-both launch.py scripts is ``127.0.0.1``. Please keep this in mind if you
-pass a hostname to the launchers.
+most modern systems). To avoid this problem, the default hostname for
+Barker and the Monitoring Dashboard is ``127.0.0.1``. Please keep this
+issue in mind if you pass a hostname to the launchers.
