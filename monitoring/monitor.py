@@ -71,54 +71,6 @@ class Monitor(object):
             self.statMessages = []
         event.reactor.schedule(1, self)
 
-    def old_on_timer_task(self, event):
-        now = timestamp(time.time() * 1000)
-        addresses = [u"bizlogic"] + 10 * [u"inbox"] + 5 * [u"outbox"]
-        sources = [(u"//%s/%s" % (self.host, address), u"//%s/agents/%s-%d" % (self.host, self.host, 5000+idx))
-                   for idx, address in enumerate(addresses)]
-
-        random.shuffle(sources)
-        stat_names_summed = u"manifold_messages manifold_streams".split()
-        stat_names_averaged = u"manifold_last_idle incoming_rate outgoing_rate".split()
-        stat_names = stat_names_summed + stat_names_averaged
-
-        message = []
-        aggCounts = {u"inbox": 0, u"outbox": 0}
-        for address, agent in sources:
-            content = {
-                u"timestamp": now,
-                u"address": address,
-                u"agent": agent
-            }
-            for stat_name in stat_names:
-                content[stat_name] = random.random() * 100
-            message.append(content)
-            for name in aggCounts:
-                if name in address:
-                    aggCounts[name] += 1
-                    break
-
-        aggContents = {key: {} for key in aggCounts}
-        for content in message:
-            for name in aggContents:
-                if name in content[u"address"]:
-                    aggContent = aggContents[name]
-                    if not aggContent:
-                        aggContent.update(content)
-                        aggContent[u"agent"] = u"all"
-                    else:
-                        for stat_name in stat_names:
-                            aggContent[stat_name] += content[stat_name]
-
-        for name, aggContent in aggContents.items():
-            for stat_name in stat_names_averaged:
-                aggContent[stat_name] /= aggCounts[name]
-            message.append(aggContent)
-
-
-        self.stream.put(message)
-        event.reactor.schedule(1, self)
-
 
 def main():
     parser = ArgumentParser()
