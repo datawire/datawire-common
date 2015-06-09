@@ -7,13 +7,13 @@ import common
 
 commands = """
 directory --host %(hostname)s
-manifold //%(hostname)s/inbox --history 25 --port 5820
+manifold //%(hostname)s/inbox --port 5820 --history 25
 python bizlogic.py --host %(hostname)s --port 5680
 #python bizlogic.py --host %(hostname)s --port 5681
 #python bizlogic.py --host %(hostname)s --port 5682
-manifold //%(hostname)s/outbox --push //%(hostname)s/bizlogic --port 5800
-manifold //%(hostname)s/outbox --push //%(hostname)s/bizlogic --port 5801
-manifold //%(hostname)s/outbox --push //%(hostname)s/bizlogic --port 5802
+manifold //%(hostname)s/outbox --port 5800 --push //%(hostname)s/bizlogic
+manifold //%(hostname)s/outbox --port 5801 --push //%(hostname)s/bizlogic
+manifold //%(hostname)s/outbox --port 5802 --push //%(hostname)s/bizlogic
 python autobark.py 5 --host %(hostname)s
 python autobark.py 5 --host %(hostname)s
 python autobark.py 5 --host %(hostname)s
