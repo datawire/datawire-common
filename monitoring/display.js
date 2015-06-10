@@ -198,14 +198,17 @@ function processMessage(message) {
             continue;
         }
 
-        if (content.address.indexOf("outbox") >= 0) {
-            addDataPoint(content, "manifold_messages", chart1Series);
-            addDataPoint(content, "outgoing_rate", chart2Series);
-            addDataPoint(content, "incoming_rate", chart2Series);
-        } else if (content.address.indexOf("bizlogic") >= 0) {
-            addDataPoint(content, "outgoing_rate", chart2Series);
-            addDataPoint(content, "incoming_rate", chart2Series);
+        if (content.address.indexOf("inbox") >= 0) {
+            // Hack to skip Barker Inbox Manifold; it throws off the scales!
+            continue;
         }
+
+        if ("manifold_messages" in content) {
+            addDataPoint(content, "manifold_messages", chart1Series);
+        }
+
+        addDataPoint(content, "outgoing_rate", chart2Series);
+        addDataPoint(content, "incoming_rate", chart2Series);
     }
 }
 
