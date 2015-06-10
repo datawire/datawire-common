@@ -151,37 +151,73 @@ manifold pushing messages to the business logic service::
 Manifolds use routing based on consistent hashing, so multiple manifolds
 on the same base service address receive messages based on the portion
 of the address following the base address, which in this case is the
-username. In other words, barks for a given user will always be sent to
-the same outbox manifold regardless of how they are submitted.
+username of the outbox. In other words, barks for a given user will
+always be sent to the same outbox manifold regardless of how they are
+submitted.
 
 Each manifold is configured to push messages to the business logic,
 which is the core user-implemented service in Barker. In ``bizlogic.py``
 you can see a service that is much like a combination of the ``printer``
-example and the ``send`` example. It acts on received messages in
+example and the ``send`` example: it acts on received messages in
 ``on_message``, creating and then using a ``Sender`` to send messages
 onward after the appropriate processing is complete.
 
-Let's look at the constructor. The business logic's tether specifies the
-*ordered* routing policy, which tells the directory to route messages to
-the oldest running process serving on that address, effectively
-implementing automatic failover as demonstrated above. The handler is a
-Datawire ``Container`` that includes the business logic class instance
-as well as a Datawire ``Agent`` that enables monitoring, which is
-covered in the next section.
+Let's look at the constructor:
 
 .. literalinclude:: ../../../barker/bizlogic.py
    :language: python
    :pyobject: BizLogic.__init__
 
-``on_message`` talk through the business logic.
+The business logic's tether specifies the *ordered* routing policy,
+which tells the directory to route messages to the oldest running
+process serving on that address, effectively implementing automatic
+failover as demonstrated above. The handler is a Datawire ``Container``
+that includes the business logic class instance as well as a Datawire
+``Agent``. The agent enables monitoring instances of the business logic
+service; monitoring is covered in the next section.
+
+The purpose of this service is to consider each bark, determine which
+users need to see it, and forward (copies of) it to the associated
+inboxes. This actual business logic is expressed in ``on_message``.
 
 .. literalinclude:: ../../../barker/bizlogic.py
    :language: python
    :pyobject: BizLogic.on_message
 
-inbox manifold
+An instance of ``Bark`` is constructed using the message body, which is
+a tuple of the sender's username, the bark content, and the bark's ID.
+The code looks for mentions in the bark's textual content, e.g., @Fido.
+The final set of target users is the union of every user following the
+sender, every user mentioned in the message, and the sender. The code
+creates a ``Sender`` for each unique target user's inbox (at address
+``//``\ *hostname*\ ``/inbox/``\ *username*\ ``/``) and sends a copy of
+the message it received.
 
-listen.py and a bit more JS
+The manifold holding recipients' inboxes queues up messages for Barker
+clients to receive immediately or retrieve in the future. The manifold
+keeps a history of the last 25 barks received, as specified in the
+command line invocation::
+
+  manifold //%(hostname)s/inbox --port 5820 --history 25
+
+This bark history allows clients to present some barks to the user
+immediately. A more powerful system would keep an archive of every bark
+and allow clients to scroll back into the past or search the archive,
+but Barker addresses the common case of a user wanting to catch up on
+recent barks and watch new barks come in live.
+
+The command line Barker client, ``listen.py``, is completely analogous
+to the ``pull`` example. The ``on_message`` code processes barks and
+displays them with a bit of formatting:
+
+.. literalinclude:: ../../../barker/listen.py
+   :language: python
+   :pyobject: GetBarks.on_message
+
+The JavaScript equivalent for the web UI is implemented in
+``webui/barker.js`` in the function ``pumpData``. The only interesting
+difference is that the JS code performs a sender check so it can
+highlight barks sent by the user viewing the incoming stream of barks.
 
 
 Monitoring
