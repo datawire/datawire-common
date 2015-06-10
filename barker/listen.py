@@ -18,11 +18,11 @@ class GetBarks(object):
         self.receiver.start(event.reactor)
 
     def on_message(self, event):
-        sender, content, message_id = event.message.body
-        self.width = max(self.width, len(sender))
+        bark = common.Bark(*event.message.body)
+        self.width = max(self.width, len(bark.user))
         print datetime.datetime.now().strftime("%H:%M:%S"), \
-              self.user, "<--", "%%%ds:" % self.width % sender, \
-              content
+              self.user, "<--", "%%%ds:" % self.width % bark.user, \
+              bark.content
 
 def main():
     parser = ArgumentParser(prog="listen")
