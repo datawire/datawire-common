@@ -220,18 +220,73 @@ difference is that the JS code performs a sender check so it can
 highlight barks sent by the user viewing the incoming stream of barks.
 
 
-Monitoring
-==========
+Monitoring and Agents
+=====================
 
-Agents
+The Datawire Monitoring Dashboard presents realtime information about
+the state of the microservices in your system. This information is
+collected by a Datawire Agent running in the services being monitored.
+In our Barker example, the ``bizlogic.py`` service includes the agent.
+The ``manifold`` also includes an agent, and manifolds report some
+additional information. A service does not have to include an agent; the
+tutorial examples do not.
 
-General data collected
+Let's examine the information that the agent provides. Start up Barker
+and the Monitoring Dashboard as above, then take a look at the running
+services by querying the directory::
 
-Manifold-specific data
+  $ dw -d //127.0.0.1/directory route list
+  //127.0.0.1/inbox -> (consistent)  on 127.0.0.1:5820
+  //127.0.0.1/agents/127.0.0.1-5820 -> (random)  on 127.0.0.1:5820
+  //127.0.0.1/bizlogic -> (ordered)  on 127.0.0.1:5680
+  //127.0.0.1/agents/127.0.0.1-5680 -> (random)  on 127.0.0.1:5680
+  //127.0.0.1/outbox -> (consistent)  on 127.0.0.1:5800;  on 127.0.0.1:5801;  on 127.0.0.1:5802
+  //127.0.0.1/agents/127.0.0.1-5800 -> (random)  on 127.0.0.1:5800
+  //127.0.0.1/agents/127.0.0.1-5801 -> (random)  on 127.0.0.1:5801
+  //127.0.0.1/agents/127.0.0.1-5802 -> (random)  on 127.0.0.1:5802
+  //127.0.0.1/monitor -> (random) //127.0.0.1:6000
 
-trace command line tool
+You'll notice that each running service process has a corresponding
+agent service endpoint under ``//``\ *hostname*\ ``/agents/``. An
+exception is the ``monitor`` service, which provides the backend for the
+Monitoring Dashboard. We can pull messages from one of the agent service
+addresses to see what that agent is reporting::
 
-Monitoring Dashboard again
+  $ examples/pull //127.0.0.1/agents/127.0.0.1-5680
+  Message{body={"incoming_count"=10800, "outgoing_count"=402210, "timestamp"=1433963124427, "pid"=29521, "agent"="//127.0.0.1/agents/127.0.0.1-5680", "times"=[97.64, 13.74, 0, 0, 1.43396e+09], "incoming_rate_lib"=0, "outgoing_count_lib"=1617, "command"=["/usr/bin/python", "bizlogic.py", "--host", "127.0.0.1", "--port", "5680"], "outgoing_rate"=353.897, "incoming_count_lib"=0, "address"="//127.0.0.1/bizlogic", "outgoing_rate_lib"=4.27526, "num_fds"=214, "type"="bizlogic", "rusage"={"ru_nvcsw"=97, "ru_utime"=97.6445, "ru_majflt"=0, "ru_isrss"=0, "ru_nsignals"=0, "ru_nivcsw"=126537, "ru_msgsnd"=410917, "ru_stime"=13.7415, "ru_ixrss"=0, "ru_inblock"=0, "ru_idrss"=0, "ru_maxrss"=27000832, "ru_msgrcv"=408022, "ru_nswap"=0, "ru_oublock"=1, "ru_minflt"=7665}, "incoming_rate"=9.50058}}
+  Message{body={"incoming_count"=10810, "outgoing_count"=402569, "timestamp"=1433963125433, "pid"=29521, "agent"="//127.0.0.1/agents/127.0.0.1-5680", "times"=[97.72, 13.75, 0, 0, 1.43396e+09], "incoming_rate_lib"=0, "outgoing_count_lib"=1621, "command"=["/usr/bin/python", "bizlogic.py", "--host", "127.0.0.1", "--port", "5680"], "outgoing_rate"=341.823, "incoming_count_lib"=0, "address"="//127.0.0.1/bizlogic", "outgoing_rate_lib"=4.26687, "num_fds"=214, "type"="bizlogic", "rusage"={"ru_nvcsw"=97, "ru_utime"=97.727, "ru_majflt"=0, "ru_isrss"=0, "ru_nsignals"=0, "ru_nivcsw"=126620, "ru_msgsnd"=411274, "ru_stime"=13.7536, "ru_ixrss"=0, "ru_inblock"=0, "ru_idrss"=0, "ru_maxrss"=27000832, "ru_msgrcv"=408377, "ru_nswap"=0, "ru_oublock"=1, "ru_minflt"=7665}, "incoming_rate"=9.48193}}
+  Message{body={"incoming_count"=10820, "outgoing_count"=402967, "timestamp"=1433963126434, "pid"=29521, "agent"="//127.0.0.1/agents/127.0.0.1-5680", "times"=[97.82, 13.76, 0, 0, 1.43396e+09], "incoming_rate_lib"=0, "outgoing_count_lib"=1625, "command"=["/usr/bin/python", "bizlogic.py", "--host", "127.0.0.1", "--port", "5680"], "outgoing_rate"=358.639, "incoming_count_lib"=0, "address"="//127.0.0.1/bizlogic", "outgoing_rate_lib"=4.26387, "num_fds"=214, "type"="bizlogic", "rusage"={"ru_nvcsw"=97, "ru_utime"=97.8211, "ru_majflt"=0, "ru_isrss"=0, "ru_nsignals"=0, "ru_nivcsw"=126738, "ru_msgsnd"=411687, "ru_stime"=13.7664, "ru_ixrss"=0, "ru_inblock"=0, "ru_idrss"=0, "ru_maxrss"=27000832, "ru_msgrcv"=408787, "ru_nswap"=0, "ru_oublock"=1, "ru_minflt"=7665}, "incoming_rate"=9.47527}}
+  ^C
+
+The output is a map of string keys to values updating roughly once per
+second. The ``command`` entry shows this agent is associated with
+``bizlogic.py``; the ``address`` entry contains the service address of
+this process. There are a number of other keys that convey basic process
+information and statistics pulled from the underlying operating system.
+The most noteworthy messaging-specific keys are ``incoming_rate`` and
+``outgoing_rate``, which convey (in messages per second) the rate of
+message flow through the service over the last ten seconds.
+
+Manifolds have some additional fields. Noteworthy are
+``manifold_messages``, which is the total number of messages being
+tracked by the manifold at that moment, ``manifold_streams``, which is
+the number of distinct service addresses currently holding messages or
+with an active subscriber, and ``manifold_depth``, which is the maximum
+depth of any individual service address at that moment.
+
+The Monitoring Dashboard web-based UI uses the ``monitoring/monitor.py``
+service as its back-end. The monitor service subscribes to the directory
+to be aware of running agents. It then subscribes to every agent and
+collects their reports. Once per second, it pushes a message onto its
+internal stream containing a list of those agent messages.
+
+If you pull from the monitor, you will see those combined report
+messages. The web UI does essentially the same thing. It pulls from the
+monitor and receives one message per second containing a collection of
+reports from all known agents. It then plots message rates for all
+services on the lower chart and all manifold sizes on the upper chart.
+Note that at present the UI explicitly skips Barker's inbox manifold(s)
+to keep the graph y-axis scales manageable.
 
 
 .. _websockets-notes:
