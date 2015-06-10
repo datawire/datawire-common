@@ -69,7 +69,7 @@ class Client:
 logging.basicConfig(level=logging.WARNING)
 
 parser = ArgumentParser(prog="trace")
-parser.add_argument('-d', '--directory', help="directoyr")
+parser.add_argument('-d', '--directory', help="directory")
 parser.add_argument("address", nargs='*', help="source addresses")
 
 Reactor(Client(parser.parse_args())).run()
