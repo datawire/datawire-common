@@ -114,6 +114,89 @@ process as the failover occurs. If you kill the second bizlogic,
 you'll see the queue depth will increase indefinitely. Starting a new
 instance of the bizlogic will start queue processing again.
 
+Services and Other Components
+=============================
+
+Let's follow the path of a single bark through the system. The
+``bark.py`` command line utility lets you submit barks manually.
+
+.. literalinclude:: ../../../barker/bark.py
+   :language: python
+   :pyobject: PutBark
+
+An instance of the ``Bark`` class contains the username of the sender,
+the content being sent, and the bark's unique ID, which in this case is
+computed implicitly by the ``Bark`` constructor. The ``Sender`` link is
+constructed to point to the outbox of the current user. The bark is sent
+as a Python tuple, which Datawire and the underlying Proton Library can
+convert to a corresponding AMQP type. The rest of the code is identical
+to the ``send`` example.
+
+The ``autobark.py`` utility submits barks the same way, creating random
+barks and sending them (as Python tuples) on a regular basis in the
+``on_timer_task`` event handler. The web UI's mechanism for sending
+barks, implemented in ``webui/barker.js`` in the function
+``sendNewBark``, does the same thing.
+
+In each case, the new bark finds its way to the submitting user's
+outbox, which is a manifold located at the service address ``//``\
+*hostname*\ ``/outbox/``\ *username*\ ``/``. The Barker launch script
+launches three manifolds to serve as all the outboxes, with each
+manifold pushing messages to the business logic service::
+
+  manifold //%(hostname)s/outbox --port 5800 --push //%(hostname)s/bizlogic
+  manifold //%(hostname)s/outbox --port 5801 --push //%(hostname)s/bizlogic
+  manifold //%(hostname)s/outbox --port 5802 --push //%(hostname)s/bizlogic
+
+Manifolds use routing based on consistent hashing, so multiple manifolds
+on the same base service address receive messages based on the portion
+of the address following the base address, which in this case is the
+username. In other words, barks for a given user will always be sent to
+the same outbox manifold regardless of how they are submitted.
+
+Each manifold is configured to push messages to the business logic,
+which is the core user-implemented service in Barker. In ``bizlogic.py``
+you can see a service that is much like a combination of the ``printer``
+example and the ``send`` example. It acts on received messages in
+``on_message``, creating and then using a ``Sender`` to send messages
+onward after the appropriate processing is complete.
+
+Let's look at the constructor. The business logic's tether specifies the
+*ordered* routing policy, which tells the directory to route messages to
+the oldest running process serving on that address, effectively
+implementing automatic failover as demonstrated above. The handler is a
+Datawire ``Container`` that includes the business logic class instance
+as well as a Datawire ``Agent`` that enables monitoring, which is
+covered in the next section.
+
+.. literalinclude:: ../../../barker/bizlogic.py
+   :language: python
+   :pyobject: BizLogic.__init__
+
+``on_message`` talk through the business logic.
+
+.. literalinclude:: ../../../barker/bizlogic.py
+   :language: python
+   :pyobject: BizLogic.on_message
+
+inbox manifold
+
+listen.py and a bit more JS
+
+
+Monitoring
+==========
+
+Agents
+
+General data collected
+
+Manifold-specific data
+
+trace command line tool
+
+Monitoring Dashboard again
+
 
 .. _websockets-notes:
 
