@@ -1,7 +1,7 @@
 .. _barker_tutorial:
 
 Introduction to Barker
-#####################
+######################
 
 Barker is a set of microservices that mimics sending a tweet ("bark")
 to a set of followers. Barker is intended to illustrate how to design
@@ -10,8 +10,9 @@ and connect a set of microservices using Datawire.
 Barker Quickstart
 =================
 
-Barker includes a launch script that will start all the Barker
-microservices::
+In Barker, each microservice is implemented as an independent Python
+program.  Barker includes a launch script that will start all the
+Barker microservices::
 
   cd barker
   python launch.py
@@ -325,7 +326,7 @@ Use of a web browser and the WebSocket Proxy can add an unexpected
 complication: DNS resolution sometimes works differently across the
 different pieces (the Python/Datawire code, the browser, and the proxy).
 In particular, we have noticed that the hostname ``localhost`` can
-resolve to two different addresses on machines with IPV6 enabled (i.e.
+resolve to two different addresses on machines with IPV6 enabled (i.e.,
 most modern systems). To avoid this problem, the default hostname for
 Barker and the Monitoring Dashboard is ``127.0.0.1``. Please keep this
 issue in mind if you pass a hostname to the launchers.

@@ -309,9 +309,10 @@ uses a ``Stream`` to simplify part of the code.
 Manifold
 ========
 
-The ``manifold`` command line tool allows you to add queues and topics
-to your message processing topologies. The following examples assume
-that there is a directory running as ``//localhost/directory``.
+One of the services that Datawire provides is the ``manifold``, which
+allows you to easily add queues and topics to your message processing
+topologies. The following examples assume that there is a directory
+running as ``//localhost/directory``.
 
 Let's start by setting up a ``manifold`` as a queue that pushes messages
 to a familiar destination service::
