@@ -3,10 +3,15 @@
 Overview
 ########
 
+Microservices need to send data back and forth to each other. Because
+microservice instances tend to be elastic, hard-coding in physical
+addresses for a given microservice address does not work. Instead, a
+*service discovery* framework can map between logical names and
+physical addresses.
+
+
 dstack consists of two components, a monitoring agent, Watson, and a routing
 agent, Sherlock. dtack depends on haproxy.
-
-
 
 Install
 =======
@@ -33,15 +38,18 @@ to all the microservice configuration files on a given server.
 Each microservice has its own configuration file.
 
 #. Install Watson, and edit the watson.yaml file.
-   * The watson.yaml file contains a list of directories to subscribe
-     to, as well as a list of all the microservice configuration files
-     on a given server.
+   * The watson.yaml file contains a list of Directories to connect
+     to
+   * It also contains a list of all the config files for the
+     microservices on a server
+   * By convention, we put the microservices config files in /etc/datawire.d/
 
 #. Configure your microservice configuration file.
+   * Add the URL suffix that will route to the microservice, e.g.,
+     barker.internal.
    * Health checks
 
 #. Start Watson.
-
 
 Connecting microservices
 ========================
@@ -53,17 +61,54 @@ can deploy multiple microservices on a single server).
 
 #. Configure the sherlock.yaml file.
    * The sherlock.yaml file contains a list of directories to
-   subscribe to.
-   * Also create a mapping between a local port and the services you
-     want to connect to (e.g., the foo microservice)
+     subscribe to.
 
 #. Start Sherlock.
 
-#. Update your code to talk to your local port, instead of the
-   service. Restart your service if necessary for the changes to take
-   effect.
-   
-#. Everything should work exactly as before.   
+#. Update the URLs that you use in your code to route through
+   Sherlock. In a Sherlock URL, the domain should be the local
+   Sherlock address and port. By default, Sherlock routes HTTP through
+   port 5432, giving a domain of ``localhost:5432``. The Sherlock URL
+   path is the name of the specific microservice that you want to
+   access. 
+
+   When specifying the URL, the domain should be the local Sherlock
+   address, which,
+
+
+    By default, Sherlock routes HTTP through port 5432. This
+   can be changed in the sherlock.yaml file.
+
+   For example, http://barker.internal.example.com should be
+   remapped to "localhost:5432/barker.internal".
+
+#. Everything should work exactly as before. Connections will be
+   automatically routed to the microservice that is registered (by
+   Watson) as barker.internal.
+
+Create routes
+=============
+
+The directory lets you manage routes. So, let's start by adding a new
+HTTP route.
+
+#. dw route add //monolith //barker.internal 30%
+
+   or do we do something like this
+
+   dw route add //barker.internal //instance2 30%
+
+
+
+   microservice advertises itself as "barker"
+   it also needs a host
+   you need to figure out the default mapping between barker and host
+
+
+   default is
+     - 100% goes to host
+     - then if you have a second host, you round robin
+     - but then how do you not add a host to the pool for canary etc?
 
 
 Upgrade microservice
@@ -79,3 +124,7 @@ Upgrade microservice
 
 #. The directory will automatically route the remaining traffic to the
    primary instance(s).
+
+Load balance microservice
+=========================
+
