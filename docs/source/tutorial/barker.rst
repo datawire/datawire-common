@@ -1,5 +1,7 @@
-Barker
-######
+.. _barker_tutorial:
+
+Introduction to Barker
+#####################
 
 Barker is a set of microservices that mimics sending a tweet ("bark")
 to a set of followers. Barker is intended to illustrate how to design
