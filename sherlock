@@ -1,0 +1,86 @@
+"""
+Sherlock
+
+- Subscribe to the directory
+- Track routes that target HTTP
+- Keep an HAProxy config file updated with tracked routes
+"""
+
+from argparse import ArgumentParser
+from urlparse import urlparse
+
+from proton.reactor import Reactor
+from datawire import Processor, Receiver
+
+confBase = """
+global
+    daemon
+    maxconn 256
+
+defaults
+    mode http
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+
+frontend http-in
+    bind *:8000
+""".split("\n")
+
+
+class Sherlock(object):
+
+    def __init__(self, args):
+        self.receiver = Receiver(args.directory, Processor(self))
+        self.routeMap = {}  # address -> [ url, url, ... ], policy
+
+    def on_reactor_init(self, event):
+        self.receiver.start(event.reactor)
+
+    def on_message(self, event):
+        if event.message.subject != "routes":
+            return
+        msg = event.message
+        address = msg.body[0]
+        routes = msg.body[1]
+        policy = msg.properties["policy"]
+        self.routeMap[address] = [target
+                                  for (host, port, target), owner in routes
+                                  if target and target.upper().startswith("HTTP")], \
+                                 policy
+        #print address, self.routeMap[address]
+        self.render()
+
+    def render(self):
+        head = []
+        frontends = []
+        backends = []
+        for address, (routes, policy) in sorted(self.routeMap.items()):
+            head.append("# %s -> (%s) %s" % (address, policy, "; ".join(sorted(routes))))
+            urlObj = urlparse(address)
+            backend = "BE" + urlObj.path.replace("/", "_")
+            pred = "IS" + urlObj.path.replace("/", "_")
+            frontends.append("    acl %s path_beg %s" % (pred, urlObj.path))
+            frontends.append("    use_backend %s if %s\n" % (backend, pred))
+            backends.append("backend %s" % backend)
+            for url in sorted(routes):
+                urlObj = urlparse(url)
+                host = urlObj.hostname
+                port = urlObj.port or 80
+                name = "%s_%s" % (host, port)
+                backends.append("    server %s %s:%s maxconn 32" % (name, host, port))
+        print "\n".join(head + confBase + frontends + backends)
+        print "------"
+        print
+
+
+def main():
+    parser = ArgumentParser()
+    parser.add_argument("-d", "--directory", default="//localhost/directory")
+    args = parser.parse_args()
+
+    Reactor(Sherlock(args)).run()
+
+
+if __name__ == "__main__":
+    main()
