@@ -8,5 +8,5 @@ setup(name='datawire',
       url='http://www.datawire.io',
       py_modules=['common', 'service'],
       packages=['datawire'],
-      scripts=['directory', 'dw', 'splitter', 'arc']
+      scripts=['directory', 'dw', 'splitter', 'arc', 'manifold']
       )
