@@ -89,7 +89,6 @@ cp -r * ${WORK_DIR}/${INSTALL_DIR}/lib
 # Install Datawire
 cd ${WORK_DIR}/${INSTALL_DIR}/bin
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/dw dw
-ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/splitter splitter
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/directory directory
 ln -s ${WORK_DIR}/${INSTALL_DIR}/lib/manifold manifold
 
