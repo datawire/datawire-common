@@ -12,13 +12,13 @@ Install
 Datawire installs on Linux, and requires a basic toolchain to
 install. On a yum-based system, install the following packages::
 
-  yum install gcc libuuid-devel openssl-devel swig python-devel unzip tar make patch cmake wget
+  sudo yum install gcc libuuid-devel openssl-devel swig python-devel python-psutil unzip tar make patch cmake wget
 
 On an apt-based system, update your system with ``apt-get``, and then
 install the following packages::
 
-  apt-get update
-  apt-get install wget gcc uuid-dev libssl-dev swig python-dev unzip make patch cmake
+  sudo apt-get update
+  sudo apt-get install wget gcc uuid-dev libssl-dev swig python-dev python-psutil unzip make patch cmake
 
 Once you've satisfied the necessary dependencies, install the latest
 version of Datawire::
@@ -91,9 +91,10 @@ different terminal window, type::
 
   examples/send //localhost:5678
 
-You'll see a "Hello, World" message appear on STDOUT. This creates a
-direct peer-to-peer connection for sending a message. The bulk of the
-work for ``send`` is again done in ``on_reactor_init``:
+You'll see a "Hello, World" message appear on STDOUT in the ``recv``
+window. This creates a direct peer-to-peer connection for sending a
+message. The bulk of the work for ``send`` is again done in
+``on_reactor_init``:
 
 .. literalinclude:: ../../../examples/send
    :language: python
@@ -226,7 +227,7 @@ Now, we can send a message to ``upper`` in the sender window::
 
 We'll see that the original receiver receives a capitalized
 message. We've just created a simple message processing pipeline. You
-can also bypass the pipeine by sending a message directly to
+can also bypass the pipeline by sending a message directly to
 ``//localhost/printer``. In this way, we've set up a processing
 pipeline that is transparent to the receiver.
 
@@ -257,8 +258,10 @@ a new instance of the ``upper`` service::
   examples/lower --port 5681 //localhost/printer //localhost/display &
   examples/upper --port 5682 //localhost/printer //localhost/display &
 
-Finally, let's terminate the current ``printer`` service (Ctrl-C), and
-restart it on a new address::
+You will see some messages saying ``target address unavailable``
+referring to the fact that ``//localhost/display`` does not exist. Let's
+terminate the current ``printer`` service (Ctrl-C), and restart it on
+that new address::
 
   examples/printer --port 5678 //localhost/display
 
@@ -292,9 +295,9 @@ the command window)::
   examples/printer --port 5683 //localhost/display2
   examples/fanout --port 5684 //localhost/fan //localhost/display //localhost/display2
 
-Here, we're registering an address of ``localhost/fan`` and telling
-``fanout`` to send any messages it receives to ``localhost/display``
-and ``localhost/display2``. Now, run ``send`` again::
+Here, we're registering an address of ``//localhost/fan`` and telling
+``fanout`` to send any messages it receives to ``//localhost/display``
+and ``//localhost/display2``. Now, run ``send`` again::
 
   examples/send //localhost/fan
 
@@ -312,7 +315,8 @@ Manifold
 One of the services that Datawire provides is the ``manifold``, which
 allows you to easily add queues and topics to your message processing
 topologies. The following examples assume that there is a directory
-running as ``//localhost/directory``.
+running as ``//localhost/directory`` and have killed everything from the
+prior examples.
 
 Let's start by setting up a ``manifold`` as a queue that pushes messages
 to a familiar destination service::
