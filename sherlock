@@ -13,6 +13,7 @@ Sherlock
 
 from argparse import ArgumentParser
 from urlparse import urlparse
+from time import time, ctime
 
 from proton.reactor import Reactor
 from datawire import Processor, Receiver
@@ -29,8 +30,7 @@ defaults
     timeout server 50000ms
 
 frontend http-in
-    bind *:8000
-""".split("\n")
+    bind *:8000""".split("\n")
 
 
 class Sherlock(object):
@@ -38,6 +38,11 @@ class Sherlock(object):
     def __init__(self, args):
         self.receiver = Receiver(args.directory, Processor(self))
         self.routeMap = {}  # address -> [ url, url, ... ], policy
+
+        self.updated = True
+        self.lastChangeTime = 0
+        self.debounceInterval = 2  # seconds
+        self.lastConfig = None
 
     def on_reactor_init(self, event):
         self.receiver.start(event.reactor)
@@ -54,7 +59,20 @@ class Sherlock(object):
                                   if target and target.upper().startswith("HTTP")], \
                                  policy
         #print address, self.routeMap[address]
-        self.render()
+        self.updated = True
+        self.lastChangeTime = time()
+        event.reactor.schedule(self.debounceInterval, self)
+
+    def on_timer_task(self, event):
+        if not self.updated:
+            return
+
+        now = time()
+        if self.lastChangeTime - now < self.debounceInterval:
+            event.reactor.schedule(self.debounceInterval, self)
+
+        self.updated = False
+        self.pokeHAProxy()
 
     def render(self):
         head = []
@@ -65,18 +83,29 @@ class Sherlock(object):
             urlObj = urlparse(address)
             backend = "BE" + urlObj.path.replace("/", "_")
             pred = "IS" + urlObj.path.replace("/", "_")
-            frontends.append("    acl %s path_beg %s" % (pred, urlObj.path))
-            frontends.append("    use_backend %s if %s\n" % (backend, pred))
-            backends.append("backend %s" % backend)
+            frontends.append("\n    acl %s path_beg %s" % (pred, urlObj.path))
+            frontends.append("    use_backend %s if %s" % (backend, pred))
+            backends.append("\nbackend %s" % backend)
             for url in sorted(routes):
                 urlObj = urlparse(url)
                 host = urlObj.hostname
                 port = urlObj.port or 80
                 name = "%s_%s" % (host, port)
                 backends.append("    server %s %s:%s maxconn 32" % (name, host, port))
-        print "\n".join(head + confBase + frontends + backends)
-        print "------"
-        print
+        return "\n".join(head + confBase + frontends + backends)
+
+    def pokeHAProxy(self):
+        cfgData = self.render()
+        if cfgData != self.lastConfig:
+            self.lastConfig = cfgData
+            filename = "ha-%s.conf" % hex(int(time()))
+            with open(filename, "wb") as outf:
+                outf.write("# Last update %s\n" % ctime())
+                outf.write(cfgData)
+                outf.write("\n")
+            print "Wrote new configuration file to", filename, "at", ctime()
+        else:
+            print "Duplicate output suppressed at", ctime()
 
 
 def main():
