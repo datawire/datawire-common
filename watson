@@ -26,7 +26,7 @@ class LivenessByHTTPGet(object):
         if self.url.startswith("file:/"):
             self.okay.add(None)
         else:
-            self.url += "/live"
+            self.url += "/liveness_check"
 
     def __call__(self):
         try:
