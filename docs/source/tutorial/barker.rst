@@ -7,6 +7,24 @@ Barker is a set of microservices that mimics sending a tweet ("bark")
 to a set of followers. Barker is intended to illustrate how to design
 and connect a set of microservices using Datawire.
 
+Barker needs some additional software not covered in the install section
+above. The Barker Web UI and the Monitoring Dashboard use a NodeJS-based
+websockets proxy. You will need to install NodeJS and NPM. Packages
+named ``nodejs`` and ``npm`` should be available in your Linux package
+management system. When installed, the commands::
+
+  node -v
+  npm -v
+
+must succeed. If you find that the Node executable is installed as
+``nodejs``, a package called ``nodejs-legacy`` may help.
+
+Once those commands succeed, you can complete the setup with::
+
+  cd barker/webui/proxy
+  npm install ws
+  cd ../..
+
 Barker Quickstart
 =================
 
