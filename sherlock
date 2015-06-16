@@ -14,6 +14,7 @@ Sherlock
 from argparse import ArgumentParser
 from urlparse import urlparse
 from time import time, ctime
+from subprocess import Popen
 
 from proton.reactor import Reactor
 from datawire import Processor, Receiver
@@ -104,6 +105,16 @@ class Sherlock(object):
                 outf.write(cfgData)
                 outf.write("\n")
             print "Wrote new configuration file to", filename, "at", ctime()
+            try:
+                command = "haproxy -f %s -p haproxy.pid -sf %s" % (filename, open("haproxy.pid").read())
+            except IOError:
+                command = "haproxy -f %s -p haproxy.pid" % filename
+            try:
+                Popen(command.split())
+                print "Launched %s" % command
+            except OSError as exc:
+                print "Failed to launch %r" % command
+                print " (%s)" % exc
         else:
             print "Duplicate output suppressed at", ctime()
 
