@@ -46,6 +46,8 @@ class Watson(object):
         self.testingPeriod = args.period
         self.testLiveness = testLiveness
 
+        self.url = args.url
+
     def on_reactor_init(self, event):
         event.reactor.schedule(0, self)
 
@@ -54,14 +56,14 @@ class Watson(object):
             # Alive
             if self.tether is None:
                 # Just came to life
-                print "DEAD->LIVE"
+                print self.url, "DEAD->LIVE"
                 self.tether = Tether(*self.tetherArgs)
                 self.tether.start(event.reactor)
         else:
             # Dead
             if self.tether is not None:
                 # Just died
-                print "LIVE->DEAD"
+                print self.url, "LIVE->DEAD"
                 self.tether.stop(event.reactor)
                 self.tether = None
         event.reactor.schedule(self.testingPeriod, self)
