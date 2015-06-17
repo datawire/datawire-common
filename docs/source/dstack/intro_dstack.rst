@@ -1,6 +1,81 @@
 .. _dstack:
 
 Overview
+- directory
+- use watson to offer services w/ liveness check, server role
+- use sherlock to access services, client role
+- reasonable for a microservice to have both roles
+- set up for examples, all under .example.com domain
+  - services.example.com for the core datawire infrastructure like the directory
+  - vm123.example.com etc for microservices
+  - main.example.com for legacy monolith
+  - emitter service doesn't consume any services
+  - monolith consumes, isn't a service
+  - (transform service consumes emitter, produces for clients)
+  - Web services can be consumed via any web client:
+    - curl http://vm101.example.com/emitter
+    - lynx -dump http://vm101.example.com/emitter
+    - w3m -dump http://vm101.example.com/emitter
+    - wget -O - http://vm101.example.com/emitter
+
+Directory
+- Install on services.example.com: yum and apt-get examples
+- Example launch line: directory -n services -a //services/directory
+
+Watson
+- Emitter service instances run on vm101 - vm110 (curl http://vm101/emitter)
+- Install watson on those machines: yum and apt-get examples
+- Launch watson for emitter on vm101
+  watson -d //services/directory //services/emitter http://vm101/emitter 3
+- Launch watson for emitter on vm102
+  watson -d //services/directory //services/emitter http://vm102/emitter 3
+- (etc)
+- Use ``dw -d //services/directory route list`` to show what happens (?)
+- Watson will track the liveness of its service instance
+  http://vm101/emitter/liveness_check
+  and notify the directory appropriately.
+
+Sherlock
+- monolith or some other client runs on main.example.com
+- Install sherlock on client: yum and apt-get examples
+  - should install haproxy automatically
+- Launch sherlock for main.example.com
+  - sherlock -d //services/directory
+  - just sherlock if directory is set by config
+    - dw config stuff?
+    - some config file in /etc or whatever?
+  - launched automatically, service sherlock restart, etc?
+- demonstrate access to emitter via haproxy (run on main.example.com)
+  curl http://localhost:8000/emitter/
+- explain that the monolith can access it the same way
+- By going through haproxy, each instance of emitter is accessed in round robin fashion
+- If a service instance drops out, watson notifies the directory, which allows sherlock
+  to update the haproxy configuration and keep requests flowing through the remaining
+  instances. When that instance comes back, sherlock again makes the appropriate
+  adjustments to haproxy.
+
+Incremental Upgrade Rollout
+- Also known as canary testing http://martinfowler.com/bliki/CanaryRelease.html
+- explain what it means
+- explain how to do it for emitter
+- problems? Just kill the instance running the new version
+
+Beyond
+- Describe transform service
+  - runs on vm201-vm210
+  - consumes emitter, provides a result of its own
+- Install sherlock and watson
+- Run sherlock so it can consume emitter
+  sherlock -d //services/directory
+- Run watson so it is registered as a service
+  watson -d //services/directory //services/transform http://vm201/transform 3
+- Access via haproxy
+  curl http://localhost:8000/transform
+  (same way from clients)
+- Microservice pipeline!
+
+
+Overview
 ########
 
 Microservices need to send data back and forth to each other. Because
