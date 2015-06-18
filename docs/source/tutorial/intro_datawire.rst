@@ -250,7 +250,7 @@ this::
   def on_message(self, event):
       if hasattr(event.message.body, "lower"):
           event.message.body = event.message.body.lower()
-      self.stream.put(event.message)
+      self.sender.send(event.message)
 
 Let's start the ``lower`` service on the printer's address, along with
 a new instance of the ``upper`` service::
