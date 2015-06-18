@@ -1,58 +1,208 @@
 .. _dstack:
 
-Overview
-- directory
-- use watson to offer services w/ liveness check, server role
-- use sherlock to access services, client role
-- reasonable for a microservice to have both roles
-- set up for examples, all under .example.com domain
-  - services.example.com for the core datawire infrastructure like the directory
-  - vm123.example.com etc for microservices
-  - main.example.com for legacy monolith
-  - emitter service doesn't consume any services
-  - monolith consumes, isn't a service
-  - (transform service consumes emitter, produces for clients)
-  - Web services can be consumed via any web client:
-    - curl http://vm101.example.com/emitter
-    - lynx -dump http://vm101.example.com/emitter
-    - w3m -dump http://vm101.example.com/emitter
-    - wget -O - http://vm101.example.com/emitter
+Baker
+#####
+
+Baker is a service discovery and routing system, designed to simplify
+deploying microservices.
+
+Why use Baker?
+==============
+
+Suppose you have two services, A and B, that communicate with each
+other. For reliability, imagine that A and B are deployed on four
+separate instances, A1-A4 and B1-B4 for availability and scalability.
+
+Baker solves several problems:
+
+#. Service discovery. Requests from A to B automatically locate an
+   available server instance running the B service.
+#. Load balancing. Requests from A to B are automatically distributed
+   between all available instances of B.
+#. Upgrades and testing. New versions of a microservice can be
+   easily introduced by adding a new server instance to the service
+   pool. Load will be distributed to the new version, and old
+   instances can be turned off as new ones are introduced to the pool.
+
+Deploying Baker
+===============
+
+Baker deploys as separate processes next to your application. You then
+update your application to talk to Baker, instead of directly to another
+application. This approach means that Baker can integrate with any
+application architecture, written in any language.
+
+Design and Architecture
+=======================
+
+Baker is patterned after `AirBnb's SmartStack
+<http://nerds.airbnb.com/smartstack-service-discovery-cloud/>`_ which
+is an excellent piece of software and design. The aforereferenced
+blog post gives a terrific overview of the different approaches to
+service discovery and routing, which we generally agree with (hence,
+our adoption of the overall approach).
+
+Baker does make several different design decisions than SmartStack.
+
+#. Baker isolates its use of HAProxy from the user. We did this
+   because HAProxy supports HTTP and TCP, but does not natively
+   support other protocols. In particular, HAProxy does not support
+   any async messaging protocols, which are important for certain use
+   cases in microservics.
+#. Baker uses the Datawire Directory service instead of
+   Zookeeper. Zookeeper provides a strongly consistent model; the
+   Directory service focuses on availability. This also simplifies
+   Baker deployment.
+#. Need more items ...
+#. ... to qualify as "several."
+#. Maybe change to "a few" or "a couple" or similar?
+
+That having been said, the basics are very similar. Baker's Sherlock
+facilitates the service client role in a microservices architecture. It
+is analogous to SmartStack's Synapse; it keeps a local HAProxy instance
+updated with all live services in the Directory. Baker's Watson keeps
+the Directory aware of the liveness of its associated service, much like
+SmartStack's Nerve, thereby facilitating the service role.
+
+In summary, any running instance that *consumes* services will use
+Sherlock, running locally on the same server, VM, or container, to find
+and access those services transparently. Any running instance that
+*offers* services will use Watson to advertise those services to the
+network. It is, of course, reasonable for one service to use another;
+that instance will simply have both Sherlock and Watson running
+alongside on the same server/VM/container.
+
+Section Title FIXME
+===================
+
+The following instructions explain how to set up and utilize Baker in a
+typical environment. For simplicity, the examples assume a set of named
+servers, VMs, or containers set up under the domain ``example.com``.
+Some pieces of the system may want to run on stable resources; these are
+presented as named machines, e.g., ``database.example.com``. Other
+pieces will likely be deployed, upgraded, removed, etc. on an ongoing
+basis; these would run on elastically-deployed resources named something
+like ``vm123.example.com``.
+
+The example services themselves use HTTP to communicate, typically
+running in an application server like Tomcat. An example service called
+``emitter`` running on the host ``vm678.example.com`` could be accessed
+at the URL ``http://vm678/emitter``. Any HTTP client would suffice. The
+command line examples will use ``curl`` but each of the following is
+roughly equivalent::
+
+  curl http://vm678/emitter
+  lynx -dump http://vm678/emitter
+  w3m -dump http://vm678/emitter
+  wget -O - http://vm678/emitter
 
 Directory
-- Install on services.example.com: yum and apt-get examples
-- Example launch line: directory -n services -a //services/directory
+=========
+
+The Datawire Directory service is at the core of Baker. It should run on
+a stable, reliable system that experiences relatively few interruptions.
+We will install it on ``services.example.com``::
+
+  $ ssh services.example.com
+
+  services $ sudo yum install datawire-directory
+       (or)
+  services $ sudo apt-get install datawire-directory
+
+  services $ directory -n services -a //services/directory
+
+**FIXME** *The above is largely nonsense. We need to talk about
+configuration. Something like:* Edit ``/etc/datawire.d/directory``, set
+the ``hostname`` field to ``services`` and the ``address`` field to
+``//services/directory``. Then use ``sudo svc datawire-directory
+restart`` to get things running.
+
+In practice, the Directory service is able to recover from server
+restarts quickly and efficiently. The other components in Baker are
+designed to handle a brief interruption of Directory service
+availability without any trouble. **FIXME** *Brief?*
 
 Watson
-- Emitter service instances run on vm101 - vm110 (curl http://vm101/emitter)
-- Install watson on those machines: yum and apt-get examples
-- Launch watson for emitter on vm101
-  watson -d //services/directory //services/emitter http://vm101/emitter 3
-- Launch watson for emitter on vm102
-  watson -d //services/directory //services/emitter http://vm102/emitter 3
-- (etc)
-- Use ``dw -d //services/directory route list`` to show what happens (?)
-- Watson will track the liveness of its service instance
-  http://vm101/emitter/liveness_check
-  and notify the directory appropriately.
+======
+
+Let's consider a service called ``emitter``, instances of which run on
+some varying set of resources, such as ``vm101.example.com`` through
+``vm120.example.com``. In other words, it is possible to reach an instance of ``emitter`` as follows::
+
+  curl http://vm109/emitter
+
+The ``emitter`` service does not utilize any other services in the
+example.com network, but is used by other parts of the system. As part
+of deploying ``emitter``, you would deploy Watson as well::
+
+  $ ssh vm101.example.com
+
+  vm101 $ sudo yum install datawire-watson
+    (or)
+  vm101 $ sudo apt-get install datawire-watson
+
+  vm101 $ watson -d //services/directory //services/emitter http://vm101/emitter 3
+
+The options given to Watson indicate that the service is available on
+the URL ``http://vm101/emitter``, that it should be checked for liveness
+every three seconds, and that it should be advertised as ``emitter`` on
+the Directory that handles the ``//services`` namespace.
+
+Other resources also offering instances of ``emitter`` would configured
+slightly differently::
+
+  vm113 $ watson -d //services/directory //services/emitter http://vm113/emitter 3
+
+Each instance of Watson advertises the same service name to the same
+directory, but tracks a distinct instance of the service itself. This
+particular Watson will access the URL
+``http://vm113/emitter/liveness_check`` every three seconds to determine
+the status of this instance of ``emitter`` and will update the Directory
+as needed.
+
+**FIXME** Mention ``dw -d //services/directory route list`` or not?
 
 Sherlock
-- monolith or some other client runs on main.example.com
-- Install sherlock on client: yum and apt-get examples
-  - should install haproxy automatically
-- Launch sherlock for main.example.com
-  - sherlock -d //services/directory
-  - just sherlock if directory is set by config
-    - dw config stuff?
-    - some config file in /etc or whatever?
-  - launched automatically, service sherlock restart, etc?
-- demonstrate access to emitter via haproxy (run on main.example.com)
-  curl http://localhost:8000/emitter/
-- explain that the monolith can access it the same way
-- By going through haproxy, each instance of emitter is accessed in round robin fashion
-- If a service instance drops out, watson notifies the directory, which allows sherlock
-  to update the haproxy configuration and keep requests flowing through the remaining
-  instances. When that instance comes back, sherlock again makes the appropriate
-  adjustments to haproxy.
+========
+
+Software that needs to use a service will use Sherlock to find and
+access an instance of that service transparently. Such software might be
+as simple as a command line HTTP tool like ``curl``, or it might be a
+large, complicated system that needs access to dozens of services to
+perform the core operations of the business. Let's consider as our
+example service client a piece of software called ``core-business`` that
+runs on ``main.example.com``. It uses ``emitter`` and other services,
+but is not a service itself.
+
+Set up Sherlock on ``main.example.com``::
+
+  $ ssh main.example.com
+
+  main $ sudo yum install datawire-sherlock
+   (or)
+  main $ sudo apt-get install datawire-sherlock
+
+  main $ sherlock -d //services/directory
+
+Now processes on ``main.example.com`` can access services by name
+without needing to know where instances of the service are running::
+
+  main $ curl http://localhost:8000/emitter
+
+The ``core-business`` program would work the same way, connecting to
+port 8000 on the local machine and allowing HAProxy to handle the
+details of reaching the correct destination.
+
+By going through HAProxy, each live instance of ``emitter`` is accessed
+in round-robin fashion. If an instance drops out, e.g., for maintenance,
+Watson notifies the directory, which allows Sherlock to update the
+HAProxy configuration and keep requests flowing through the remaining
+instances. When that instance comes back, Sherlock again makes the
+appropriate adjustments to haproxy. New instances get added to the pool
+automatically in much the same way.
+
+- set up for examples, all under .example.com domain
+  - (transform service consumes emitter, produces for clients)
 
 Incremental Upgrade Rollout
 - Also known as canary testing http://martinfowler.com/bliki/CanaryRelease.html
