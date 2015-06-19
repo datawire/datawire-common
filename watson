@@ -12,6 +12,7 @@ Watson
 
 import urllib2
 from argparse import ArgumentParser
+from ConfigParser import SafeConfigParser as ConfigParser
 
 from proton.reactor import Reactor
 
@@ -70,12 +71,27 @@ class Watson(object):
 
 
 def main():
-    parser = ArgumentParser()
-    parser.add_argument("-d", "--directory", default="//localhost/directory")
-    parser.add_argument("address", help="service address")
-    parser.add_argument("url", help="service URL (target)")
-    parser.add_argument("period", type=int, help="seconds between liveness checks")
-    args = parser.parse_args()
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument("-c", "--config", help="read from config file (no other args)", metavar="FILE")
+    args, remaining_argv = parser.parse_known_args()
+
+    if args.config:
+        if remaining_argv:
+            parser.error("config file, if included, must be the only argument")
+            return  # Unreachable
+        config = ConfigParser()
+        config.read(args.config)
+        args.directory = config.get("Watson", "directory")
+        args.address = config.get("Watson", "address")
+        args.url = config.get("Watson", "url")
+        args.period = config.getint("Watson", "period")
+    else:
+        parser = ArgumentParser(parents=[parser])
+        parser.add_argument("-d", "--directory", default="//localhost/directory")
+        parser.add_argument("address", help="service address")
+        parser.add_argument("url", help="service URL (target)")
+        parser.add_argument("period", type=int, help="seconds between liveness checks")
+        args = parser.parse_args()
 
     checker = LivenessByHTTPGet(args.url)
 
