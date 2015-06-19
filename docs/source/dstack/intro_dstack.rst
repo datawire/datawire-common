@@ -53,7 +53,7 @@ Baker does make several different design decisions than SmartStack.
    Zookeeper. Zookeeper provides a strongly consistent model; the
    Directory service focuses on availability. This also simplifies
    Baker deployment.
-#. Need more items ...
+#. **FIXME** Need more items ...
 #. ... to qualify as "several."
 #. Maybe change to "a few" or "a couple" or similar?
 
@@ -132,8 +132,10 @@ some varying set of resources, such as ``vm101.example.com`` through
   curl http://vm109/emitter
 
 The ``emitter`` service does not utilize any other services in the
-example.com network, but is used by other parts of the system. As part
-of deploying ``emitter``, you would deploy Watson as well::
+example.com network; it is used by other parts of the system to access a
+resource (static data, computation, credit card validation, etc.) To
+enable other parts of the system to use ``emitter``, deploy Watson as
+part of the process of deploying ``emitter``::
 
   $ ssh vm101.example.com
 
@@ -201,28 +203,81 @@ instances. When that instance comes back, Sherlock again makes the
 appropriate adjustments to haproxy. New instances get added to the pool
 automatically in much the same way.
 
-- set up for examples, all under .example.com domain
-  - (transform service consumes emitter, produces for clients)
+More Services
+=============
+
+As your system grows in complexity, your network of microservices will
+grow as well. Some services will be like ``emitter``, offering access to
+a resource but not utilizing any other services in the system. However,
+many services will benefit from using other services too. It is common
+to end up with a network of communicating services. Baker makes it easy
+for microservices to communicate with each other, and other Datawire
+components help to organize, manage, and understand the complicated
+topologies that may arise.
+
+Let's consider a service called ``transform`` that uses the output of
+``emitter`` to produce a different result. For example, if ``emitter``
+is responsible for producing a current weather map for a location, then
+``transform`` could take that image and produce a smaller,
+mobile-friendly version. The ``core-business`` code would access map
+images from ``emitter`` and from ``transform`` in similar ways (via
+Baker), but ``transform`` would also access ``emitter`` directly (again
+via Baker).
+
+Deployment of ``transform`` involves deploying both Sherlock and Watson
+alongside. Sherlock allows ``transform`` to access other services, such
+as ``emitter``, while Watson allows other parts of the system, such as
+``core-business``, to access ``transform``.
+
+**FIXME** Do we really need another set of instructions/examples?
+
+Installation is identical to the above. if ``transform`` runs on
+vm201.example.com through vm220.example.com::
+
+  $ ssh vm201.example.com
+
+  vm201 $ sudo yum install datawire-sherlock datawire-watson
+    (or)
+  vm201 $ sudo apt-get install datawire-sherlock datawire-watson
+
+  vm201 $ sherlock -d //services/directory
+  vm201 $ watson -d //services/directory //services/transform http://vm201/transform 3
+
+Now ``transform`` is accessible from any host running Sherlock, such as
+``main.example.com``::
+
+  main $ curl http://localhost:8000/transform
+
+**FIXME** Say something about microservice pipelines, typical service
+topology, etc.
 
 Incremental Upgrade Rollout
-- Also known as canary testing http://martinfowler.com/bliki/CanaryRelease.html
-- explain what it means
-- explain how to do it for emitter
-- problems? Just kill the instance running the new version
+===========================
 
-Beyond
-- Describe transform service
-  - runs on vm201-vm210
-  - consumes emitter, provides a result of its own
-- Install sherlock and watson
-- Run sherlock so it can consume emitter
-  sherlock -d //services/directory
-- Run watson so it is registered as a service
-  watson -d //services/directory //services/transform http://vm201/transform 3
-- Access via haproxy
-  curl http://localhost:8000/transform
-  (same way from clients)
-- Microservice pipeline!
+Deploying an upgrade of a heavily-used, mission-critical service can be
+a daunting task. Baker enables a staged or incremental upgrade rollout
+process that can avoid much of the risk associated with a hard cutover
+to a new version. This incremental approach is known as *Canary Testing*
+and by a few other names. `Martin Fowler's Bliki entry
+<http://martinfowler.com/bliki/CanaryRelease.html>`_ covers it in
+detail.
+
+Let's say there are twenty instances of ``emitter`` version 1.03 running
+on the ``vm101.example.com`` through ``vm120.example.com``. The new
+``emitter`` version 2.0 has passed all of its testing and is ready to be
+deployed. We can start by bringing down a single ``emitter`` instance,
+say on ``vm103.example.com``, upgrading it, and restarting it. Thanks to
+Baker, clients of ``emitter`` would not experience any downtime during
+the upgrade process.
+
+At this point, one out of every twenty accesses to ``emitter`` will
+reach the version 2.0 instance on ``vm103.example.com``. This is an
+opportunity to monitor the upgraded ``emitter`` in the production
+environment for as long as is desired. If there are any problems, simply
+bring down the version 2.0 instance on ``vm103.example.com`` and Baker
+will take care of keeping things running uninterrupted. If things go
+smoothly, the rest of the ``emitter`` instances can be upgraded
+incrementally in the same way.
 
 
 Overview
