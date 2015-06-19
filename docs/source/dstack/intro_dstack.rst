@@ -48,7 +48,7 @@ Baker does make several different design decisions than SmartStack.
    because HAProxy supports HTTP and TCP, but does not natively
    support other protocols. In particular, HAProxy does not support
    any async messaging protocols, which are important for certain use
-   cases in microservics.
+   cases in microservices.
 #. Baker uses the Datawire Directory service instead of
    Zookeeper. Zookeeper provides a strongly consistent model; the
    Directory service focuses on availability. This also simplifies
@@ -291,7 +291,7 @@ physical addresses.
 
 
 dstack consists of two components, a monitoring agent, Watson, and a routing
-agent, Sherlock. dtack depends on haproxy.
+agent, Sherlock. dstack depends on haproxy.
 
 Install
 =======
@@ -350,7 +350,7 @@ can deploy multiple microservices on a single server).
    Sherlock address and port. By default, Sherlock routes HTTP through
    port 5432, giving a domain of ``localhost:5432``. The Sherlock URL
    path is the name of the specific microservice that you want to
-   access. 
+   access.
 
    When specifying the URL, the domain should be the local Sherlock
    address, which,
@@ -407,4 +407,3 @@ Upgrade microservice
 
 Load balance microservice
 =========================
-
