@@ -1,7 +1,7 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
-import os, psutil, resource, sys, time
+import os, resource, sys, time
 from proton import Message, timestamp
 from proton.handlers import CHandshaker
 from .counts import lib
@@ -29,7 +29,6 @@ class Agent:
         else:
             self.__delegate = delegate
         self.pid = os.getpid()
-        self.process = psutil.Process(self.pid)
         self.incoming = SlidingRate()
         self.outgoing = SlidingRate()
         self.incoming_lib = SlidingRate()
@@ -59,7 +58,6 @@ class Agent:
                   u"rusage": rusage,
                   u"times": os.times(),
                   u"command": map(unicode, [sys.executable] + sys.argv),
-                  u"num_fds": self.process.get_num_fds(),
                   u"incoming_count": app.incoming,
                   u"outgoing_count": app.outgoing,
                   u"incoming_count_lib": lib.incoming,
