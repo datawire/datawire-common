@@ -1,0 +1,11 @@
+[Unit]
+Description=Datawire Directory
+ConditionPathExists=/etc/datawire/directory.conf
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/directory -c /etc/datawire/directory.conf
+Restart=always
+
+[Install]
+WantedBy=default.target
