@@ -1,0 +1,5 @@
+[Watson]
+directory: //hostname-of-directory/directory
+address: //hostname-of-directory/service-name
+url: http://localhost:9000/url/of/service
+period: 3  ; seconds between liveness checks
