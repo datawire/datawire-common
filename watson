@@ -24,10 +24,6 @@ class LivenessByHTTPGet(object):
     def __init__(self, url):
         self.url = url
         self.okay = set([200])
-        if self.url.startswith("file:/"):
-            self.okay.add(None)
-        else:
-            self.url += "/liveness_check"
 
     def __call__(self):
         try:
@@ -89,15 +85,18 @@ def main():
         args.address = config.get("Watson", "address")
         args.url = config.get("Watson", "url")
         args.period = config.getint("Watson", "period")
+        args.liveness = config.get("Watson", "liveness")  # required in config file
     else:
         parser = ArgumentParser(parents=[parser])
-        parser.add_argument("-d", "--directory", default="//localhost/directory")
+        parser.add_argument("-d", "--directory", metavar="ADDRESS", default="//localhost/directory")
+        parser.add_argument("-l", "--liveness", metavar="URL",
+                            help="liveness check URL (default: /liveness_check under service URL)")
         parser.add_argument("address", help="service address")
         parser.add_argument("url", help="service URL (target)")
         parser.add_argument("period", type=int, help="seconds between liveness checks")
         args = parser.parse_args()
 
-    checker = LivenessByHTTPGet(args.url)
+    checker = LivenessByHTTPGet(args.liveness or (args.url + "/liveness_check"))
 
     Reactor(Watson(args, checker)).run()
 
