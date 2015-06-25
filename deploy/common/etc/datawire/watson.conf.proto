@@ -2,4 +2,5 @@
 directory: //hostname-of-directory/directory
 address: //hostname-of-directory/service-name
 url: http://localhost:9000/url/of/service
+liveness: http://localhost:9000/url/of/service/liveness_check
 period: 3  ; seconds between liveness checks
