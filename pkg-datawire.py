@@ -12,7 +12,7 @@ class Datawire:
         self.version = "0.2"
 
     def setup(self, env):
-        env.system("cd %s; git archive --remote git@bitbucket.org:datawireio/server.git --format=tar --prefix=datawire/ master | tar -xf -" % env.work)
+        env.system("git archive --format=tar --prefix=datawire/ HEAD | (cd %s && tar -xf -)" % env.work)
 
     def build(self, distro):
         result = """
