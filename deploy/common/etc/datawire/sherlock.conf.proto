@@ -1,2 +1,4 @@
 [Sherlock]
 directory: //hostname-of-directory/directory
+proxy: /usr/sbin/haproxy
+rundir: /opt/datawire/run

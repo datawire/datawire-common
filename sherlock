@@ -11,6 +11,7 @@ Sherlock
 - Keep an HAProxy config file updated with tracked routes
 """
 
+import os
 from argparse import ArgumentParser
 from ConfigParser import SafeConfigParser as ConfigParser
 from urlparse import urlparse
@@ -45,6 +46,10 @@ class Sherlock(object):
         self.lastChangeTime = 0
         self.debounceInterval = 2  # seconds
         self.lastConfig = None
+
+        self.cfgFilename = os.path.join(args.rundir, "haproxy.conf")
+        self.pidFilename = os.path.join(args.rundir, "haproxy.pid")
+        self.proxyCommand = "%s -f %s -p %s" % (args.proxy, self.cfgFilename, self.pidFilename)
 
     def on_reactor_init(self, event):
         self.receiver.start(event.reactor)
@@ -101,16 +106,16 @@ class Sherlock(object):
         cfgData = self.render()
         if cfgData != self.lastConfig:
             self.lastConfig = cfgData
-            filename = "ha-%s.conf" % hex(int(time()))
-            with open(filename, "wb") as outf:
+            with open(self.cfgFilename, "wb") as outf:
                 outf.write("# Last update %s\n" % ctime())
                 outf.write(cfgData)
                 outf.write("\n")
-            print "Wrote new configuration file to", filename, "at", ctime()
+            print "Wrote new configuration file to", self.cfgFilename, "at", ctime()
+            command = self.proxyCommand
             try:
-                command = "haproxy -f %s -p haproxy.pid -sf %s" % (filename, open("haproxy.pid").read())
+                command += " -sf %s" % open(self.pidFilename).read()
             except IOError:
-                command = "haproxy -f %s -p haproxy.pid" % filename
+                pass
             try:
                 Popen(command.split())
                 print "Launched %s" % command
@@ -133,9 +138,14 @@ def main():
         config = ConfigParser()
         config.read(args.config)
         args.directory = config.get("Sherlock", "directory")
+        args.proxy = config.get("Sherlock", "proxy")
+        args.rundir = config.get("Sherlock", "rundir")
     else:
         parser = ArgumentParser(parents=[parser])
-        parser.add_argument("-d", "--directory", default="//localhost/directory")
+        parser.add_argument("-d", "--directory", default="//localhost/directory", metavar="ADDRESS")
+        parser.add_argument("-p", "--proxy", default="haproxy", metavar="PATH", help="full path of haproxy executable")
+        parser.add_argument("-r", "--rundir", default=".", metavar="PATH",
+                            help="path to location for haproxy.{pid,conf}")
         args = parser.parse_args()
 
     Reactor(Sherlock(args)).run()
