@@ -6,6 +6,9 @@
 Datawire Security Architecture
 ******************************
 
+
+https://blog.cloudflare.com/how-to-build-your-own-public-key-infrastructure/
+
 The Datawire security architecture is a "zero trust" security model
 where security is ubiquitous throughout the infrastructure. In this
 model, there is no perimeter, and authentication and trust are
