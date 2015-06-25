@@ -120,6 +120,11 @@ class SourceTest:
             def __init__(self):
                 self.received = 0
                 self.receiver = None
+                self.open_event = False
+
+            def on_link_remote_open(self, event):
+                self.open_event = True
+
             def on_message(self, event):
                 assert event.message.body == oself.source.template % self.received
                 self.received += 1
@@ -133,6 +138,7 @@ class SourceTest:
         rcv.start(self.reactor)
         self.reactor.run()
         assert counter.received == count
+        assert counter.open_event
 
     def testReceiver150(self):
         self.testReceiver(150)

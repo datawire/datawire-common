@@ -12,3 +12,4 @@ class Processor:
         else:
             self.__delegate = delegate
         self.handlers = [CFlowController(window), CHandshaker(), Decoder(self.__delegate)]
+        if delegate: self.handlers.append(delegate)
