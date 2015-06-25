@@ -10,7 +10,7 @@ class Datawire:
     def __init__(self):
         self.name = "datawire"
         self.build_deps = []
-        self.deps = [deps.datawire_proton]
+        self.deps = [deps.datawire_proton, deps.haproxy]
         self.version = "0.2"
         self.arch = "all"
 
