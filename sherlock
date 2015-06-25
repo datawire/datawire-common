@@ -70,8 +70,9 @@ class Sherlock(object):
             return
 
         now = time()
-        if self.lastChangeTime - now < self.debounceInterval:
+        if now - self.lastChangeTime < self.debounceInterval:
             event.reactor.schedule(self.debounceInterval, self)
+            return
 
         self.updated = False
         self.pokeHAProxy()
