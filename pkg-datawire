@@ -12,6 +12,7 @@ class Datawire:
         self.build_deps = []
         self.deps = [deps.datawire_proton]
         self.version = "0.2"
+        self.arch = "all"
 
     def setup(self, env):
         env.system("git archive --format=tar --prefix=datawire/ HEAD | (cd %s && tar -xf -)" % env.work)

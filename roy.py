@@ -208,10 +208,11 @@ def build(package):
         buildsh = "cd /work\n"
         buildsh += package.build(distro)
         buildsh += "\ncd /work\n"
-        buildsh += "\nfpm -f -s dir -t %(ext)s -n %(name)s -v %(version)s %(deps)s -C/work/install .\n" % {
+        buildsh += "\nfpm -f -s dir -t %(ext)s -n %(name)s -v %(version)s -a %(arch)s %(deps)s -C/work/install .\n" % {
             "ext": distro.ext,
             "name": package.name,
             "version": package.version,
+            "arch": getattr(package, "arch", "native"),
             "deps": distro.render(package.deps, prefix="-d ")
         }
         distro.run(bimg, buildsh)
