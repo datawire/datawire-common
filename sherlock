@@ -42,9 +42,12 @@ class Sherlock(object):
         self.receiver = Receiver(args.directory, Processor(self))
         self.routeMap = {}  # address -> [ url, url, ... ], policy
 
+        self.debounceInterval = args.debounce
+        self.dirDebounceInterval = args.dir_debounce
+
         self.updated = True
         self.lastChangeTime = 0
-        self.debounceInterval = 2  # seconds
+        self.currentDebounce = self.debounceInterval
         self.lastConfig = None
 
         self.cfgFilename = os.path.join(args.rundir, "haproxy.conf")
@@ -53,6 +56,10 @@ class Sherlock(object):
 
     def on_reactor_init(self, event):
         self.receiver.start(event.reactor)
+
+    def on_link_remote_open(self, event):
+        print "Detected new connection to the directory at", ctime()
+        self.currentDebounce = self.dirDebounceInterval
 
     def on_message(self, event):
         if event.message.subject != "routes":
@@ -65,21 +72,21 @@ class Sherlock(object):
                                   for (host, port, target), owner in routes
                                   if target and target.upper().startswith("HTTP")], \
                                  policy
-        #print address, self.routeMap[address]
         self.updated = True
         self.lastChangeTime = time()
-        event.reactor.schedule(self.debounceInterval, self)
+        event.reactor.schedule(self.currentDebounce, self)
 
     def on_timer_task(self, event):
         if not self.updated:
             return
 
-        now = time()
-        if now - self.lastChangeTime < self.debounceInterval:
-            event.reactor.schedule(self.debounceInterval, self)
+        elapsed = time() - self.lastChangeTime
+        if elapsed < self.currentDebounce:
+            event.reactor.schedule(self.currentDebounce - elapsed, self)
             return
 
         self.updated = False
+        self.currentDebounce = self.debounceInterval
         self.pokeHAProxy()
 
     def render(self):
@@ -140,12 +147,18 @@ def main():
         args.directory = config.get("Sherlock", "directory")
         args.proxy = config.get("Sherlock", "proxy")
         args.rundir = config.get("Sherlock", "rundir")
+        args.debounce = config.getint("Sherlock", "debounce")
+        args.dir_debounce = config.getint("Sherlock", "dir_debounce")
     else:
         parser = ArgumentParser(parents=[parser])
         parser.add_argument("-d", "--directory", default="//localhost/directory", metavar="ADDRESS")
-        parser.add_argument("-p", "--proxy", default="haproxy", metavar="PATH", help="full path of haproxy executable")
+        parser.add_argument("-p", "--proxy", default="haproxy", metavar="PATH", help="full path of HAProxy executable")
         parser.add_argument("-r", "--rundir", default=".", metavar="PATH",
                             help="path to location for haproxy.{pid,conf}")
+        parser.add_argument("--debounce", type=int, default=2, metavar="SECONDS",
+                            help="time in seconds to coalesce events before updating HAProxy")
+        parser.add_argument("--dir-debounce", type=int, default=2, metavar="SECONDS",
+                            help="debounce time to use when the directory has restarted")
         args = parser.parse_args()
 
     Reactor(Sherlock(args)).run()
