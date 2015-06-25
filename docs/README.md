@@ -1,10 +1,25 @@
 Quickstart
 ==========
 
-You can run these inside virtualenv, which I'd recommend. Regardless:
+You will need sphinx to build the documentation. You can install it via pip:
 
-   pip install sphinx
-   amke install && make html
+    pip install sphinx
+
+The documentation looks better with the following pacckage installed,
+however it is not requried:
+
+    pip install sphinx-better-theme
+
+Once you have sphinx installed, you can build the documentation by
+running the following command from this directory:
+
+    sphinx-build source html
+
+The second argument of the above command is the output directory. In
+other words this will generate the documentation into the "html"
+directory. If you wish to put it somewhere else you may supply a
+different path. Once the build completes you can point your web
+browser at the output directory you supplied and inspect the result.
 
 Details
 =======
