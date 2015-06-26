@@ -1,11 +1,11 @@
-Deployment Procedures
-=====================
+Deployment
+==========
 
-Canary Testing
---------------
+Directory
+---------
 
-Load Balancing
---------------
-
-Upgrades
+Sherlock
 --------
+
+Watson
+------

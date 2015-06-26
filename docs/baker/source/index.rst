@@ -12,5 +12,6 @@ Baker Documentation
    overview
    quickstart
    deployment
+   usage
    architecture
    reference
