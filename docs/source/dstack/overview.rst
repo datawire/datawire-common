@@ -40,14 +40,6 @@ How Baker Works
 
    
 
-Deploying Baker
-===============
-
-Baker deploys as a separate process next to your application. You then
-update your application to talk to Baker, instead of directly to
-another application. This approach means that Baker can integrate with
-any application architecture, written in any language.
-   
 Design and Architecture
 =======================
 
