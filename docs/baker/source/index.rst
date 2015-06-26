@@ -10,4 +10,7 @@ Baker Documentation
    :maxdepth: 2
 
    overview
-   intro_dstack
+   quickstart
+   deployment
+   architecture
+   reference
