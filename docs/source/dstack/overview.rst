@@ -37,8 +37,20 @@ microservice to start using Baker.
 How Baker Works
 ===============
 
+Baker consists of three main components:
 
-   
+* Sherlock, which is responsible for routing a microservice's
+  connections to the right destination
+* Watson, which provides real-time liveness detection of a given
+  microservice
+* the Datawire Directory, which keeps track of all microservices and
+  their associated routes
+
+Sherlock and Watson are deployed on every microservice container or
+server. Each microservice is then configured to proxy its connections
+through Sherlock (behind the scenes, we use the super-reliable,
+super-fast HAProxy). Sherlock uses information from the Directory to
+route connections to the appropriate destination.
 
 Design and Architecture
 =======================
@@ -62,7 +74,8 @@ Baker does make several different design decisions than SmartStack.
    directory service focuses on availability. This also simplifies
    Baker deployment.
 
-
+The Baker architecture is fully distributed, and resilient to the
+failure of any component. 
 
 
 
