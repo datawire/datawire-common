@@ -37,8 +37,8 @@ chmod a+x /work/install/usr/bin/%(script)s
 """ % {"script": script}
 
         result += """
-cp -r deploy/common/* /work/install
-cp -r deploy/%(system)s-*/* /work/install
+cp -r deploy/baker/common/* /work/install
+cp -r deploy/baker/%(system)s-*/* /work/install
 """ % {"system": distro.image}
 
         return result
