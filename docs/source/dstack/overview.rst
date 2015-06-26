@@ -1,26 +1,44 @@
 Baker
 =====
 
-Baker is a service discovery and routing system, designed to simplify 
-deploying microservices.
+Baker is a service discovery and routing system designed for
+microservice architectures.
 
 Why use Baker?
 ==============
 
-Suppose you have two services, A and B, that communicate with each
-other. For reliability, imagine that A and B are deployed on four
-separate instances, A1-A4 and B1-B4 for availability and scalability. 
+Suppose you have two microservices, A and B, that communicate with
+each other. For scalability and availability, both microservices are
+deployed on multiple servers (or containers).
 
 Baker solves several problems:
 
 #. Service discovery. Requests from A to B automatically locate an
-   available server instance running the B service.
+   available instance of the B microservice.
+
 #. Load balancing. Requests from A to B are automatically distributed
-   between all available instances of B.
+   between all available instances of B, without requiring a central
+   load balancer in front of B.
+   
 #. Upgrades and testing. New versions of a microservice can be
    easily introduced by adding a new server instance to the service
    pool. Load will be distributed to the new version, and old
    instances can be turned off as new ones are introduced to the pool.
+
+
+Deploying Baker
+===============
+
+Baker runs on any modern flavor of Linux. Baker works with any
+application or microservice, regardless of programming
+language. Usually, you just need a small configuration change in your
+microservice to start using Baker.
+
+How Baker Works
+===============
+
+
+   
 
 Deploying Baker
 ===============
