@@ -5,12 +5,12 @@
 
 from roy import build, deps
 
-class Datawire:
+class Baker:
 
     def __init__(self):
-        self.name = "datawire"
+        self.name = "datawire-baker"
         self.build_deps = []
-        self.deps = [deps.datawire_proton]
+        self.deps = [deps.datawire, deps.haproxy]
         self.version = "0.2"
         self.arch = "all"
 
@@ -22,10 +22,10 @@ class Datawire:
 set -e
 cd datawire
 mkdir -p /work/install/opt/datawire/lib
-cp -r directory dw datawire /work/install/opt/datawire/lib
+cp -r sherlock watson /work/install/opt/datawire/lib
 mkdir -p /work/install/usr/bin
 """
-        for script in ["directory", "dw"]:
+        for script in ["sherlock", "watson"]:
             result += """
 sed -i -e '1s@.*@#!/usr/bin/python2.7@' /work/install/opt/datawire/lib/%(script)s
 cat > /work/install/usr/bin/%(script)s <<LAUNCHER
@@ -43,4 +43,4 @@ cp -r deploy/%(system)s-*/* /work/install
 
         return result
 
-build(Datawire())
+build(Baker())

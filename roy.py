@@ -2,6 +2,9 @@ import os, sys, tempfile
 from argparse import ArgumentParser
 from collections import defaultdict
 
+# TODO: factor out common patterns from pkg-* files and add them as
+#       utilities here
+
 class Dep:
 
     def __init__(self, name, dev=False):
