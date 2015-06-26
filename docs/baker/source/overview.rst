@@ -2,7 +2,8 @@ What is Baker?
 ==============
 
 Baker is a service discovery and routing system designed for
-microservice architectures.
+microservice architectures. Baker simplifies scaling, testing, and
+upgrading microservices.
 
 Why use Baker?
 ==============
