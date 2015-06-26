@@ -8,3 +8,4 @@ tags
 *_host.js
 barker/users.pickle
 barker/webui/proxy/node_modules
+dist
