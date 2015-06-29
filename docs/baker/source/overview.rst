@@ -6,7 +6,7 @@ microservice architectures. Baker simplifies scaling, testing, and
 upgrading microservices.
 
 Why use Baker?
-==============
+--------------
 
 Suppose you have two microservices, A and B, that communicate with
 each other. For scalability and availability, both microservices are
@@ -28,7 +28,7 @@ Baker solves several problems:
 
 
 Deploying Baker
-===============
+---------------
 
 Baker runs on any modern flavor of Linux. Baker works with any
 application or microservice, regardless of programming
@@ -36,7 +36,7 @@ language. Usually, you just need a small configuration change in your
 microservice to start using Baker.
 
 How Baker Works
-===============
+---------------
 
 Baker consists of three main components:
 
