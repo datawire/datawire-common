@@ -3,23 +3,25 @@
 Quick Start
 ===========
 
-At the end of this quick start you will use the promising features from above. Statement of what you are about to do. **FIXME** Figure out what to say here once we decide how much the quick start will cover.
+Ready to dive right in? This page will take you through deploying Baker in a minimal environment and then using it for load balancing and upgrading a simple service.
 
-Requirements
-------------
+You will need a CentOS 7 or Ubuntu 14.04 LTS machine, JDK 1.8 and Maven 3+ for the simple service, and about 15 minutes of your time.
 
-* RHEL 7/CentOS 7 or Ubuntu 14.04 LTS.
-* Run everything on one machine (localhost).
-* Some http services, or use the `Greeting service from Spring <https://spring.io/guides/gs/rest-service/>`_
-* **FIXME** Probably want sentences here...
+Setup
+-----
 
-Verify access to your service using a web browser or a command line tools like ``curl``. For the Greeting service::
+The sample deployment shown here will run everything on ``localhost``. The :ref:`deployment` section of this manual covers how to set things up in a production environment.
+
+The simple service in this example is the Greeting service from `Spring's RESTful Web Service Guide <https://spring.io/guides/gs/rest-service/>`_. Set up that service::
 
   $ wget -q https://github.com/spring-guides/gs-rest-service/archive/master.zip
   $ unzip -q master.zip
   $ cd gs-rest-service-master/complete/
   $ mvn -q package
   $ env SERVER_PORT=9001 java -jar target/gs-rest-service-0.1.0.jar > /dev/null 2>&1 &
+
+Verify access to the Greeting service using a web browser or a command line tool like ``curl``::
+
   $ curl http://localhost:9001/greeting
   {"id":3,"content":"Hello, World!"}
 
@@ -29,23 +31,25 @@ Install
 On CentOS 7, add access to the `Datawire repository on PackageCloud <https://packagecloud.io/datawire/staging/install>`_ and use ``yum`` to perform the installation::
 
   $ curl -s https://packagecloud.io/install/repositories/datawire/staging/script.rpm.sh | sudo bash
+  [...]
   $ sudo yum install datawire-baker
 
 On Ubuntu 14.04 LTS, add access to the `Datawire repository on PackageCloud <https://packagecloud.io/datawire/staging/install>`_ and use ``apt-get`` to perform the installation::
 
   $ curl -s https://packagecloud.io/install/repositories/datawire/staging/script.deb.sh | sudo bash
+  [...]
   $ sudo apt-get install datawire-baker
 
 Configure
 ---------
 
-OS ``service`` commands can control Baker once ``/etc/datawire`` has the appropriate configuration files. Sample files are installed there. Replicate those and edit them to look like this::
+Baker looks for its configuration files in ``/etc/datawire``. Sample files are installed there. Replicate those and edit them to look like this::
 
   $ cd /etc/datawire
-  $ cp directory.conf.proto directory.conf
-  $ cp sherlock.conf.proto sherlock.conf
-  $ cp watson.conf.proto watson.conf
-  $ nano directory.conf sherlock.conf watson.conf
+  $ sudo cp directory.conf.proto directory.conf
+  $ sudo cp sherlock.conf.proto sherlock.conf
+  $ sudo cp watson.conf.proto watson.conf
+  $ sudo nano directory.conf sherlock.conf watson.conf
    [...]
 
   $ cat directory.conf
@@ -74,20 +78,20 @@ Launch
 
 Once configured, launching Baker components is easy using your operating system's standard controls. On CentOS 7::
 
-  $ systemctl start directory.service
-  $ systemctl start sherlock.service
-  $ systemctl start watson.service
+  $ sudo systemctl start directory.service
+  $ sudo systemctl start sherlock.service
+  $ sudo systemctl start watson.service
 
 On Ubuntu 14.04 LTS::
 
-  $ service directory start
-  $ service sherlock start
-  $ service watson start
+  $ sudo service directory start
+  $ sudo service sherlock start
+  $ sudo service watson start
 
 Access your service through Baker to verify things are working okay::
 
   $ curl http://localhost:8000/greeting
-  {"id":72,"content":"Hello, World!"}
+  {"id":17,"content":"Hello, World!"}
 
 Watson notifies the Directory that the Greeting microservice on ``http://localhost:9001/`` is running. Sherlock sets up HAProxy to route ``greeting`` requests to that microservice. Your ``curl`` above gets proxied to the right place.
 
@@ -100,18 +104,26 @@ Let's add more Greeting microservice instances for load balancing::
   $ env SERVER_PORT=9002 java -jar target/gs-rest-service-0.1.0.jar > /dev/null 2>&1 &
   $ env SERVER_PORT=9003 java -jar target/gs-rest-service-0.1.0.jar > /dev/null 2>&1 &
 
-We will need to add a Watson instance for each one. Normally, you would run one microservice per server, VM, or container; see the Deployment section for more detail. For this quick start, we have run them all on the same host, so we must run corresponding Watson instances manually::
+We will need to add a Watson instance for each one. Normally, you would run one microservice per server, VM, or container; see the :ref:`deployment` section for more detail. For this quick start, we have run them all on the same host, so we must run corresponding Watson instances manually::
 
   $ watson -d //localhost/directory -l http://localhost:9002/greeting //localhost/greeting http://localhost:9002/greeting 3 > /dev/null 2>&1 &
   $ watson -d //localhost/directory -l http://localhost:9003/greeting //localhost/greeting http://localhost:9003/greeting 3 > /dev/null 2>&1 &
 
-Sherlock and HAProxy will automatically and transparently load balance over these three microservice instances because they all have the same service name ``//localhost/greeting``. The ``curl`` command above will access each of them in turn.
+Sherlock and HAProxy will automatically and transparently load balance over these three microservice instances because they all have the same service name ``//localhost/greeting``. The ``curl`` command above will access each of them in turn::
+
+  $ for i in 1 2 3 4 5 ; do curl http://localhost:8000/greeting ; echo ; done
+  {"id":18,"content":"Hello, World!"}
+  {"id":16,"content":"Hello, World!"}
+  {"id":54,"content":"Hello, World!"}
+  {"id":19,"content":"Hello, World!"}
+  {"id":17,"content":"Hello, World!"}
 
 Upgrade
 -------
 
 Let's upgrade the Greeting service. Duplicate the Greeting service tree and edit line 11 in ``GreetingController.java``::
 
+  $ cd ../..
   $ mkdir v2
   $ cd v2
   $ unzip -q ../master.zip
@@ -129,23 +141,18 @@ Instead of upgrading all of Greeting to the new version, let's perform a *canary
 Baker will direct a subset of all traffic to that new instance automatically::
 
   $ for i in 1 2 3 4 5 ; do curl http://localhost:8000/greeting ; echo ; done
-  {"id":137,"content":"Hello, World!"}
-  {"id":124,"content":"Hello, World!"}
-  {"id":124,"content":"Hello, World!"}
-  {"id":5,"content":"Hello 2.0, World!"}
-  {"id":138,"content":"Hello, World!"}
+  {"id":112,"content":"Hello, World!"}
+  {"id":77,"content":"Hello, World!"}
+  {"id":75,"content":"Hello, World!"}
+  {"id":6,"content":"Hello 2.0, World!"}
+  {"id":113,"content":"Hello, World!"}
 
 Let your upgraded Greeting service soak test as long as is desired. Problems? Just kill Greeting 2.0; Baker will keep the requests flowing. Everything going smoothly? Upgrade the remaining instances one at a time without any interruption of service.
 
 Summary
 -------
 
-Congratulations on making your way through the Baker quick start! You've seen
-
-* Easy deployment and configuration
-* No changes to your service
-* Automatic load balancing
-* Safe upgrades with no interruption of service
+Congratulations on making your way through the Baker quick start! You've seen that Baker can be deployed quickly and easily, in many cases with no changes to your service. You've used Baker to perform load balancing and a safe upgrade with no interruption of service.
 
 Next Steps
 ----------
