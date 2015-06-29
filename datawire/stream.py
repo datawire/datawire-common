@@ -1,7 +1,17 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
-import sqlite3, logging, time
+import logging, time
+try:
+    import sqlite3
+    def dbapi_connect(name):
+        return sqlite3.connect(name)
+    dbapi_Binary = sqlite3.Binary
+except:
+    from com.ziclix.python.sql import zxJDBC
+    def dbapi_connect(name):
+        return zxJDBC.connect("jdbc:sqlite:"+name, "", "", "org.sqlite.JDBC")
+    dbapi_Binary = zxJDBC.Binary
 from proton import Message, Endpoint
 from proton.reactor import Reactor
 from proton.handlers import CFlowController, CHandshaker
@@ -21,7 +31,7 @@ class Store:
     def __init__(self, name=None):
         self.name = name
         if self.name:
-            self.db = sqlite3.connect(self.name)
+            self.db = dbapi_connect(self.name)
             if not list(self.db.execute('pragma table_info(streams)')):
                 log.info("%s: creating schema", self.name)
                 self.db.execute('''create table streams (serial integer,
@@ -77,7 +87,7 @@ class Store:
                 if entry.persistent:
                     log.debug("%s: insert %s, %r", self.name, serial, entry.message)
                     self.db.execute("insert into streams (serial, message) values (?, ?)",
-                                    (serial, sqlite3.Binary(entry.message)))
+                                    (serial, dbapi_Binary(entry.message)))
             self.db.commit()
         self.lastflush = self.max()
 
@@ -92,7 +102,7 @@ class Store:
             if entry.persistent:
                 log.debug("%s: update %s, %r", self.name, self.serial + idx, entry.message)
                 self.db.execute("insert or replace into streams (serial, message) values (?, ?)",
-                                (self.serial + idx, sqlite3.Binary(entry.message)))
+                                (self.serial + idx, dbapi_Binary(entry.message)))
             else:
                 log.debug("%s: delete %s", self.name, self.serial + idx)
                 self.db.execute("delete from streams where serial = ?", (self.serial + idx,))
