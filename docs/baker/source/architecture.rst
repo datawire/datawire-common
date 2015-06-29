@@ -37,20 +37,6 @@ Baker does make several different design decisions than SmartStack.
    service focuses on availability. This also simplifies Baker
    deployment.
 
-Sidekicks
----------
-
-The Baker architecture depends heavily on the notion of a *sidekick*
-process. A *sidekick* process is colocated (i.e. run on the same
-machine/container) as its *lead(s)*. This enables easy integration
-since the sidekick can use the localhost network to communicate with
-the leads without fear of inconsistent or ambiguous states that can
-arrise in the event of network partititions or node failures.
-
-While it is possible to deploy the sidekick and leads on separate
-machines since they interact over the network, doing this would
-violate a key assumption of the Baker architecture.
-
 Deployment Model
 ----------------
 
@@ -75,9 +61,13 @@ Service Nodes
 ~~~~~~~~~~~~~
 
 A service node is responsible for keeping the directory accurately
-informed of its presence and location. Baker relies on the *watson*
-sidekick to check the health of the service with which it is colocated
-and communicate its presence and location to the directory.
+informed of its presence and location. Baker relies on the ``watson``
+process to check the health of the service and communicate its
+presence and location to the directory. ``watson`` should always be
+deployed on the same server/container as the service it is
+monitoring. This deployment model minimizes issues related to node
+failure or network partitions, since ``watson`` can monitor the host
+service directly over localhost.
 
 Client Nodes
 ~~~~~~~~~~~~
@@ -85,9 +75,10 @@ Client Nodes
 A client node maintains a table of the location of all relevant
 service nodes and updates this whenever the directory notifies the
 client of changes in the state of services. Baker relies on the
-*sherlock* sidekick to gather information from the directory about all
-available services and dynamically proxy connections from its
-colocated leads accordingly.
+``sherlock`` process from the directory about all available services
+and dynamically proxy connections from its colocated leads
+accordingly. ``sherlock`` should always be deployed on the same
+server/container as the service it is supporting.
 
 Discovery Protocol
 ------------------
