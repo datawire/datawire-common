@@ -5,7 +5,7 @@ Quick Start
 
 Ready to dive right in? This page will take you through deploying Baker in a minimal environment and then using it for load balancing and upgrading a simple service.
 
-You will need a CentOS 7 or Ubuntu 14.04 LTS machine, JDK 1.8 and Maven 3+ for the simple service, and about 15 minutes of your time.
+You will need an Enterprise Linux 7 (RHEL 7, CentOS 7, etc.) or Ubuntu 14.04 LTS machine, JDK 1.8 and Maven 3+ for the simple service, and about 15 minutes of your time.
 
 Setup
 -----
@@ -28,7 +28,7 @@ Verify access to the Greeting service using a web browser or a command line tool
 Install
 -------
 
-On CentOS 7, add access to the `Datawire repository on PackageCloud <https://packagecloud.io/datawire/staging/install>`_ and use ``yum`` to perform the installation::
+On Enterprise Linux 7, add access to the `Datawire repository on PackageCloud <https://packagecloud.io/datawire/staging/install>`_ and use ``yum`` to perform the installation::
 
   $ curl -s https://packagecloud.io/install/repositories/datawire/staging/script.rpm.sh | sudo bash
   [...]
@@ -76,7 +76,7 @@ Baker looks for its configuration files in ``/etc/datawire``. Sample files are i
 Launch
 ------
 
-Once configured, launching Baker components is easy using your operating system's standard controls. On CentOS 7::
+Once configured, launching Baker components is easy using your operating system's standard controls. On Enterprise Linux 7::
 
   $ sudo systemctl start directory.service
   $ sudo systemctl start sherlock.service
