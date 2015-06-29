@@ -1,7 +1,16 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
-import os, resource, sys, time
+import os, sys, time
+try:
+    import resource
+except:
+    class resource:
+        RUSAGE_SELF = object()
+        @staticmethod
+        def getrusage(what):
+            return object()
+
 from proton import Message, timestamp
 from proton.handlers import CHandshaker
 from .counts import lib
