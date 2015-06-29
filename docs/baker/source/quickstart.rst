@@ -20,10 +20,14 @@ The simple service in this example is the Greeting service from `Spring's RESTfu
   $ mvn -q package
   $ env SERVER_PORT=9001 java -jar target/gs-rest-service-0.1.0.jar > /dev/null 2>&1 &
 
+**Note**: Running Maven without the ``-q`` option generates a lot of output, which may be helpful if there are any problems with the build process.
+
 Verify access to the Greeting service using a web browser or a command line tool like ``curl``::
 
   $ curl http://localhost:9001/greeting
-  {"id":3,"content":"Hello, World!"}
+  {"id":1,"content":"Hello, World!"}
+
+The ``id`` field in the output is a counter. If you hit the service repeatedly, that field will increment. Once set up, Watson will monitor this service by accessing it periodically, causing the counter to increment in the background.
 
 Install
 -------
@@ -93,7 +97,7 @@ Access your service through Baker to verify things are working okay::
   $ curl http://localhost:8000/greeting
   {"id":17,"content":"Hello, World!"}
 
-Watson notifies the Directory that the Greeting microservice on ``http://localhost:9001/`` is running. Sherlock sets up HAProxy to route ``greeting`` requests to that microservice. Your ``curl`` above gets proxied to the right place.
+Watson notifies the Directory that the Greeting microservice on ``http://localhost:9001/`` is running. Sherlock sets up HAProxy to route ``greeting`` requests to that microservice. Your ``curl`` above gets proxied to the right place. Note that your ``id`` field will likely be a different value, depending on how long Watson has run and how many times you accessed the service manually.
 
 Load Balancing
 --------------
