@@ -57,22 +57,26 @@ system::
 
   $ ssh directory.example.com
 
-  directory $ sudo yum install datawire
+  directory $ sudo yum install datawire-directory
    (or)
-  directory $ sudo apt-get install datawire
+  directory $ sudo apt-get install datawire-directory
 
-Configure the directory with its well known and stable hostname as
+Configure the well known and stable hostname of the directory as
 follows::
 
-  directory $ sudo cp directory.conf.proto directory.conf
-  directory $ sudo nano directory.conf
-  directory $ cat directory.conf
-  [Directory]
-  host: directory.example.com
-  level: WARNING
+  directory $ cd /etc/datawire
+  directory $ sudo nano datawire.conf
+  directory $ cat datawire.conf
+  [DEFAULT]
+  ; logging level may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  logging: WARNING
 
-Once the directory is configured, use the appropriate tool to start
-it. On Enterprise Linux 7::
+  [Datawire]
+  ; Change this to the well known and stable hostname of the directory for your deployment.
+  directory_host: directory.example.com
+
+Once the directory hostname is configured, use the appropriate tool to
+start (or restart) the directory. On Enterprise Linux 7::
 
   directory $ sudo systemctl start directory.service
 
@@ -89,26 +93,41 @@ be as simple as a command line HTTP tool like ``curl``, or it might be
 a large, complicated system that needs access to dozens of services to
 perform the core operations of a business.
 
-Setting up Sherlock::
+Installing Sherlock::
 
   $ ssh vm123.example.com
 
-  vm123 $ sudo yum install datawire-baker
+  vm123 $ sudo yum install datawire-sherlock
    (or)
-  vm123 $ sudo apt-get install datawire-baker
+  vm123 $ sudo apt-get install datawire-sherlock
 
-Once baker is installed, edit the sherlock config to reference the
+Once sherlock is installed, edit the datawire.conf to reference the
 well known directory set up in the previous section::
 
-  vm123 $ sudo cp sherlock.conf.proto sherlock.conf
+  vm123 $ cd /etc/datawire
+  vm123 $ sudo nano datawire.conf
+  vm123 $ cat datawire.conf
+  [DEFAULT]
+  ; logging level may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  logging: WARNING
+
+  [Datawire]
+  ; Change this to the well known and stable hostname of the directory for your deployment.
+  directory_host: directory.example.com
+
+You can also tweak the sherlock preferences in sherlock.conf, however
+the defaults will generally work well::
+
+  vm123 $ cd /etc/datawire
   vm123 $ sudo nano sherlock.conf
   vm123 $ cat sherlock.conf
   [Sherlock]
-  directory: //directory.example.com/directory
   proxy: /usr/sbin/haproxy
   rundir: /opt/datawire/run
-  debounce: 2
-  dir_debounce: 2
+  debounce: 2  ; seconds
+  dir_debounce: 2  ; seconds
+  ; logging level (default in datawire.conf) may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  ;logging: WARNING
 
 Now any process on your vm can access services by name without needing
 to know where instances of the service are running::
@@ -132,36 +151,47 @@ must run colocated on the same machine/vm as the service instance.
 Watson will periodically check the health of the service instance and
 register its location and status with the directory.
 
-Setting up Watson::
+Installing Watson::
 
   $ ssh vm101.example.com
 
-  vm101 $ sudo yum install datawire-baker
+  vm101 $ sudo yum install datawire-watson
     (or)
-  vm101 $ sudo apt-get install datawire-baker
+  vm101 $ sudo apt-get install datawire-watson
 
-Once baker is installed, edit the watson config to:
+Once Watson is installed, edit the datawire.conf to reference the well
+known directory set up in the first section::
 
-#. Reference the well known directory set up in the previous section.
-#. Specify the logical service name for clients.
-#. Provide a physical service address that is accessible from all
-   client nodes.
-#. Provide a url for health checks.
+  vm101 $ cd /etc/datawire
+  vm101 $ sudo nano datawire.conf
+  vm101 $ cat datawire.conf
+  [DEFAULT]
+  ; logging level may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  logging: WARNING
+
+  [Datawire]
+  ; Change this to the well known and stable hostname of the directory for your deployment.
+  directory_host: directory.example.com
+
+Now copy the example watson configuration found in
+/etc/datawire/watson.conf.proto and confgure it for your service:
+
+#. Provide the base url for your service.
+#. Provide the url for health checks on your service.
 
 ::
 
+  vm101 $ cd /etc/datawire
   vm101 $ sudo cp watson.conf.proto watson.conf
   vm101 $ sudo nano watson.conf
   vm101 $ cat watson.conf
   [Watson]
-  directory: //directory.example.com/directory
-  address: //directory.example.com/<service-name>
-  url: http://vm101.example.com:9001/<service-name>
-  liveness: http://vm101.example.com:9001/<service-name>/health
+  ; service_name must uniquely identify your service
+  service_url: http://vm101.example.com:8080/example-service
+  liveness_url: %(service_url)s/liveness_check
   period: 3  ; seconds between liveness checks
-
-Please note that if you have multiple instances for the same service,
-the url and liveness check will be different for each instance.
+  ; logging level (default in datawire.conf) may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  ;logging: WARNING
 
 More Services
 -------------

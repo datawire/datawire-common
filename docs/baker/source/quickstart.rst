@@ -36,51 +36,39 @@ On Enterprise Linux 7, add access to the `Datawire repository on PackageCloud <h
 
   $ curl -s https://packagecloud.io/install/repositories/datawire/staging/script.rpm.sh | sudo bash
   [...]
-  $ sudo yum install datawire-baker
+  $ sudo yum install datawire-directory datawire-sherlock datawire-watson
 
 On Ubuntu 14.04 LTS, add access to the `Datawire repository on PackageCloud <https://packagecloud.io/datawire/staging/install>`_ and use ``apt-get`` to perform the installation::
 
   $ curl -s https://packagecloud.io/install/repositories/datawire/staging/script.deb.sh | sudo bash
   [...]
-  $ sudo apt-get install datawire-baker
+  $ sudo apt-get install datawire-directory datawire-sherlock datawire-watson
 
 Configure
 ---------
 
-Baker looks for its configuration files in ``/etc/datawire``. Sample files are installed there. Replicate those and edit them to look like this::
+Baker looks for its configuration files in ``/etc/datawire``. A sample
+configuration file for Watson is installed there. Copy it and edit it
+to reference your service::
 
   $ cd /etc/datawire
-  $ sudo cp directory.conf.proto directory.conf
-  $ sudo cp sherlock.conf.proto sherlock.conf
   $ sudo cp watson.conf.proto watson.conf
-  $ sudo nano directory.conf sherlock.conf watson.conf
+  $ sudo nano watson.conf
    [...]
-
-  $ cat directory.conf
-  [Directory]
-  host: localhost
-  level: WARNING
-
-  $ cat sherlock.conf
-  [Sherlock]
-  directory: //localhost/directory
-  proxy: /usr/sbin/haproxy
-  rundir: /opt/datawire/run
-  debounce: 2
-  dir_debounce: 2
 
   $ cat watson.conf
   [Watson]
-  directory: //localhost/directory
-  address: //localhost/greeting
-  url: http://localhost:9001/greeting
-  liveness: http://localhost:9001/greeting
+  ; service_name must uniquely identify your service
+  service_url: http://localhost:9001/greeting
+  liveness_url: http://localhost:9001/greeting
   period: 3  ; seconds between liveness checks
+  ; logging level (default in datawire.conf) may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  ;logging: WARNING
 
 Launch
 ------
 
-Once configured, launching Baker components is easy using your operating system's standard controls. On Enterprise Linux 7::
+Once you have configured Watson, launching the Baker components is easy using your operating system's standard controls. On Enterprise Linux 7::
 
   $ sudo systemctl start directory.service
   $ sudo systemctl start sherlock.service
@@ -110,10 +98,33 @@ Let's add more Greeting microservice instances for load balancing::
 
 We will need to add a Watson instance for each one. Normally, you would run one microservice per server, VM, or container; see the :ref:`deployment` section for more detail. For this quick start, we have run them all on the same host, so we must run corresponding Watson instances manually::
 
-  $ watson -d //localhost/directory -l http://localhost:9002/greeting //localhost/greeting http://localhost:9002/greeting 3 > /dev/null 2>&1 &
-  $ watson -d //localhost/directory -l http://localhost:9003/greeting //localhost/greeting http://localhost:9003/greeting 3 > /dev/null 2>&1 &
+  $ cp /etc/datawire/watson.conf watson-9002.conf
+  $ cp /etc/datawire/watson.conf watson-9003.conf
+  $ nano watson-9002.conf watson-9003.conf
+  [...]
 
-Sherlock and HAProxy will automatically and transparently load balance over these three microservice instances because they all have the same service name ``//localhost/greeting``. The ``curl`` command above will access each of them in turn::
+  $ cat watson-9002.conf
+  [Watson]
+  ; service_name must uniquely identify your service
+  service_url: http://localhost:9002/greeting
+  liveness_url: http://localhost:9002/greeting
+  period: 3  ; seconds between liveness checks
+  ; logging level (default in datawire.conf) may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  ;logging: WARNING
+
+  $ cat watson-9003.conf
+  [Watson]
+  ; service_name must uniquely identify your service
+  service_url: http://localhost:9003/greeting
+  liveness_url: http://localhost:9003/greeting
+  period: 3  ; seconds between liveness checks
+  ; logging level (default in datawire.conf) may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  ;logging: WARNING
+
+  $ watson -c watson-9002.conf &
+  $ watson -c watson-9003.conf &
+
+Sherlock and HAProxy will automatically and transparently load balance over these three microservice instances because they all have the same service name ``http://localhost:8000/greeting``. The ``curl`` command above will access each of them in turn::
 
   $ for i in 1 2 3 4 5 ; do curl http://localhost:8000/greeting ; echo ; done
   {"id":18,"content":"Hello, World!"}
@@ -140,7 +151,20 @@ Let's upgrade the Greeting service. Duplicate the Greeting service tree and edit
 Instead of upgrading all of Greeting to the new version, let's perform a *canary test*. Roll out one new instance of Greeting 2.0 and its associated Watson::
 
   $ env SERVER_PORT=9004 java -jar target/gs-rest-service-0.1.0.jar > /dev/null 2>&1 &
-  $ watson -d //localhost/directory -l http://localhost:9004/greeting //localhost/greeting http://localhost:9004/greeting 3 > /dev/null 2>&1 &
+  $ cp /etc/datawire/watson.conf watson-9004.conf
+  $ nano watson-9004.conf
+  [...]
+
+  $ cat watson-9004.conf
+  [Watson]
+  ; service_name must uniquely identify your service
+  service_url: http://localhost:9004/greeting
+  liveness_url: http://localhost:9004/greeting
+  period: 3  ; seconds between liveness checks
+  ; logging level (default in datawire.conf) may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  ;logging: WARNING
+
+  $ watson -c watson-9004.conf &
 
 Baker will direct a subset of all traffic to that new instance automatically::
 
