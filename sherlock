@@ -11,15 +11,18 @@ Sherlock
 - Keep an HAProxy config file updated with tracked routes
 """
 
-import os
+import os, logging
 from argparse import ArgumentParser
-from ConfigParser import SafeConfigParser as ConfigParser
 from urlparse import urlparse
 from time import time, ctime
 from subprocess import Popen
 
 from proton.reactor import Reactor
-from datawire import Processor, Receiver
+from datawire import Configuration, Processor, Receiver
+
+logging.basicConfig(datefmt="%Y-%m-%d %H:%M:%S",
+                    format="%(asctime)s sherlock %(name)s %(levelname)s %(message)s")
+log = logging.getLogger()
 
 confBase = """
 global
@@ -59,7 +62,7 @@ class Sherlock(object):
         event.reactor.schedule(self.currentDebounce, self)
 
     def on_link_remote_open(self, event):
-        print "Detected new connection to the directory at", ctime()
+        log.info("Detected new connection to the directory at %s", ctime())
         self.currentDebounce = self.dirDebounceInterval
 
     def on_message(self, event):
@@ -118,7 +121,7 @@ class Sherlock(object):
                 outf.write("# Last update %s\n" % ctime())
                 outf.write(cfgData)
                 outf.write("\n")
-            print "Wrote new configuration file to", self.cfgFilename, "at", ctime()
+            log.info("Wrote new configuration file to %s at %s", self.cfgFilename, ctime())
             command = self.proxyCommand
             try:
                 command += " -sf %s" % open(self.pidFilename).read()
@@ -126,41 +129,53 @@ class Sherlock(object):
                 pass
             try:
                 Popen(command.split())
-                print "Launched %s" % command
+                log.info("Launched %s", command)
             except OSError as exc:
-                print "Failed to launch %r" % command
-                print " (%s)" % exc
+                log.error("Failed to launch %r", command)
+                log.error(" (%s)", exc)
         else:
-            print "Duplicate output suppressed at", ctime()
+            log.info("Duplicate output suppressed at %s", ctime())
 
+default_config = """
+[DEFAULT]
+logging: WARNING
+
+[Datawire]
+directory_host:
+
+[Sherlock]
+proxy: /usr/sbin/haproxy
+rundir: .
+debounce: 2  ; seconds
+dir_debounce: 2  ; seconds
+"""
 
 def main():
-    parser = ArgumentParser(add_help=False)
-    parser.add_argument("-c", "--config", help="read from config file (no other args)", metavar="FILE")
-    args, remaining_argv = parser.parse_known_args()
+    parser = ArgumentParser()
+    parser.add_argument("-c", "--config", help="read from additional config file", metavar="FILE")
+    args = parser.parse_args()
 
+    loader = Configuration(default_config)
+    loader.add_file_relative("sherlock.conf")
     if args.config:
-        if remaining_argv:
-            parser.error("config file, if included, must be the only argument")
-            return  # Unreachable
-        config = ConfigParser()
-        config.read(args.config)
-        args.directory = config.get("Sherlock", "directory")
-        args.proxy = config.get("Sherlock", "proxy")
-        args.rundir = config.get("Sherlock", "rundir")
-        args.debounce = config.getint("Sherlock", "debounce")
-        args.dir_debounce = config.getint("Sherlock", "dir_debounce")
-    else:
-        parser = ArgumentParser(parents=[parser])
-        parser.add_argument("-d", "--directory", default="//localhost/directory", metavar="ADDRESS")
-        parser.add_argument("-p", "--proxy", default="haproxy", metavar="PATH", help="full path of HAProxy executable")
-        parser.add_argument("-r", "--rundir", default=".", metavar="PATH",
-                            help="path to location for haproxy.{pid,conf}")
-        parser.add_argument("--debounce", type=int, default=2, metavar="SECONDS",
-                            help="time in seconds to coalesce events before updating HAProxy")
-        parser.add_argument("--dir-debounce", type=int, default=2, metavar="SECONDS",
-                            help="debounce time to use when the directory has restarted")
-        args = parser.parse_args()
+        loader.add_file_absolute(args.config)
+
+    config = loader.parse()
+    args.directory_host = config.get("Datawire", "directory_host")
+    args.proxy = config.get("Sherlock", "proxy")
+    args.rundir = config.get("Sherlock", "rundir")
+    args.debounce = config.getint("Sherlock", "debounce")
+    args.dir_debounce = config.getint("Sherlock", "dir_debounce")
+    args.logging = config.get("Sherlock", "logging")
+
+    log.setLevel(getattr(logging, args.logging.upper()))
+    if not loader.parsed_filenames:
+        log.warning("No configuration files found. Falling back to defaults.")
+    if not args.directory_host:
+        log.warning("No directory_host configured. Falling back to localhost.")
+        args.directory_host = "localhost"
+
+    args.directory = "//%s/directory" % args.directory_host
 
     Reactor(Sherlock(args)).run()
 

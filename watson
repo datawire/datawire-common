@@ -10,14 +10,17 @@ Watson
 - Tether to the directory if GET was successful
 """
 
-import urllib2
+import urllib2, logging
 from argparse import ArgumentParser
-from ConfigParser import SafeConfigParser as ConfigParser
+from urlparse import urlparse
 
 from proton.reactor import Reactor
 
-from datawire import Tether
+from datawire import Configuration, Tether
 
+logging.basicConfig(datefmt="%Y-%m-%d %H:%M:%S",
+                    format="%(asctime)s watson %(name)s %(levelname)s %(message)s")
+log = logging.getLogger()
 
 class LivenessByHTTPGet(object):
 
@@ -38,13 +41,12 @@ class LivenessByHTTPGet(object):
 class Watson(object):
 
     def __init__(self, args, testLiveness):
-        self.tetherArgs = args.directory, args.address, args.url
+        self.tetherArgs = args.directory, args.address, args.service_url
         self.tether = None
         self.testingPeriod = args.period
         self.testLiveness = testLiveness
         self.justStarted = True
-
-        self.url = args.url
+        self.url = args.service_url
 
     def on_reactor_init(self, event):
         event.reactor.schedule(0, self)
@@ -54,49 +56,74 @@ class Watson(object):
             # Alive
             if self.tether is None:
                 # Just came to life
-                print self.url, "DEAD->LIVE"
+                log.info("DEAD -> LIVE (%s)", self.url)
                 self.tether = Tether(*self.tetherArgs)
                 self.tether.start(event.reactor)
         else:
             # Dead
             if self.tether is not None:
                 # Just died
-                print self.url, "LIVE->DEAD"
+                log.info("LIVE -> DEAD (%s)", self.url)
                 self.tether.stop(event.reactor)
                 self.tether = None
+                log.debug(" liveness check at %s for service %s", self.testLiveness.url, self.url)
             elif self.justStarted:
-                print self.url, "START->DEAD"
+                log.info("START -> DEAD (%s)", self.url)
                 self.justStarted = False
+                log.debug("liveness check at %s for service %s", self.testLiveness.url, self.url)
         event.reactor.schedule(self.testingPeriod, self)
 
+default_config = """
+[DEFAULT]
+logging: WARNING
+
+[Datawire]
+directory_host:
+
+[Watson]
+period: 3
+"""
 
 def main():
-    parser = ArgumentParser(add_help=False)
-    parser.add_argument("-c", "--config", help="read from config file (no other args)", metavar="FILE")
-    args, remaining_argv = parser.parse_known_args()
+    parser = ArgumentParser()
+    parser.add_argument("-c", "--config", help="read from additional config file", metavar="FILE")
+    args = parser.parse_args()
 
+    loader = Configuration(default_config)
+    loader.add_file_relative("watson.conf")
     if args.config:
-        if remaining_argv:
-            parser.error("config file, if included, must be the only argument")
-            return  # Unreachable
-        config = ConfigParser()
-        config.read(args.config)
-        args.directory = config.get("Watson", "directory")
-        args.address = config.get("Watson", "address")
-        args.url = config.get("Watson", "url")
-        args.period = config.getint("Watson", "period")
-        args.liveness = config.get("Watson", "liveness")  # required in config file
-    else:
-        parser = ArgumentParser(parents=[parser])
-        parser.add_argument("-d", "--directory", metavar="ADDRESS", default="//localhost/directory")
-        parser.add_argument("-l", "--liveness", metavar="URL",
-                            help="liveness check URL (default: /liveness_check under service URL)")
-        parser.add_argument("address", help="service address")
-        parser.add_argument("url", help="service URL (target)")
-        parser.add_argument("period", type=int, help="seconds between liveness checks")
-        args = parser.parse_args()
+        loader.add_file_absolute(args.config)
 
-    checker = LivenessByHTTPGet(args.liveness or (args.url + "/liveness_check"))
+    config = loader.parse()
+    if not loader.parsed_filenames:
+        parser.exit(1, "No configuration found.\n")
+
+    args.directory_host = config.get("Datawire", "directory_host")
+    args.period = config.getint("Watson", "period")
+    args.logging = config.get("Watson", "logging")
+
+    try:
+        args.service_url = config.get("Watson", "service_url")
+        args.liveness_url = config.get("Watson", "liveness_url")
+    except Exception:
+        parser.exit(1, "Configuration error. Please ensure service_url and liveness_url are configured.\n")
+
+    url_info = urlparse(args.service_url)
+    service_name = url_info.path
+    if service_name.startswith("/"):
+        service_name = service_name[1:]
+    if not service_name:
+        parser.exit(1, "Configuration error: service_url must have a path component (http://host:port/path).\n")
+
+    log.setLevel(getattr(logging, args.logging.upper()))
+    if not args.directory_host:
+        log.warning("No directory_host configured. Falling back to localhost.")
+        args.directory_host = "localhost"
+
+    args.directory = "//%s/directory" % args.directory_host
+    args.address = "//%s/%s" % (args.directory_host, service_name)
+
+    checker = LivenessByHTTPGet(args.liveness_url)
 
     Reactor(Watson(args, checker)).run()
 
