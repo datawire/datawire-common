@@ -14,7 +14,7 @@ The sample deployment shown here will run everything on ``localhost``. The :ref:
 
 The simple service in this example is the Greeting service from `Spring's RESTful Web Service Guide <https://spring.io/guides/gs/rest-service/>`_. Set up that service::
 
-  $ wget -q https://github.com/spring-guides/gs-rest-service/archive/master.zip
+  $ curl https://github.com/spring-guides/gs-rest-service/archive/master.zip -LO
   $ unzip -q master.zip
   $ cd gs-rest-service-master/complete/
   $ mvn -q package
