@@ -1,6 +1,0 @@
-[Sherlock]
-directory: //hostname-of-directory/directory
-proxy: /usr/sbin/haproxy
-rundir: /opt/datawire/run
-debounce: 2
-dir_debounce: 2
