@@ -211,12 +211,16 @@ def build(package):
         buildsh = "cd /work\n"
         buildsh += package.build(distro)
         buildsh += "\ncd /work\n"
-        buildsh += "\nfpm -f -s dir -t %(ext)s -n %(name)s -v %(version)s -a %(arch)s %(deps)s -C/work/install .\n" % {
+        conf = ""
+        for c in getattr(package, "conf", []):
+            conf += " --config-files %s" % c
+        buildsh += "\nfpm -f -s dir -t %(ext)s -n %(name)s -v %(version)s -a %(arch)s %(deps)s %(conf)s -C/work/install .\n" % {
             "ext": distro.ext,
             "name": package.name,
             "version": package.version,
             "arch": getattr(package, "arch", "native"),
-            "deps": distro.render(package.deps, prefix="-d ")
+            "deps": distro.render(package.deps, prefix="-d "),
+            "conf": conf
         }
         distro.run(bimg, buildsh)
         distro.run(bimg, "chown -R %s:%s /work" % (os.getuid(), os.getgid()))

@@ -1,32 +1,22 @@
-#!/usr/bin/env python
-
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
-from roy import build, deps
-
-class Baker:
-
-    def __init__(self):
-        self.name = "datawire-baker"
-        self.build_deps = []
-        self.deps = [deps.datawire, deps.haproxy]
-        self.version = "0.2"
-        self.arch = "all"
+class Common:
 
     def setup(self, env):
         env.system("git archive --format=tar --prefix=datawire/ HEAD | (cd %s && tar -xf -)" % env.work)
 
-    def build(self, distro):
-        result = """
+    def install_prep(self):
+        return """
 set -e
 cd datawire
 mkdir -p /work/install/opt/datawire/lib
-cp -r sherlock watson /work/install/opt/datawire/lib
 mkdir -p /work/install/usr/bin
 """
-        for script in ["sherlock", "watson"]:
-            result += """
+
+    def install_script(self, script):
+        return """
+cp %(script)s /work/install/opt/datawire/lib
 sed -i -e '1s@.*@#!/usr/bin/python2.7@' /work/install/opt/datawire/lib/%(script)s
 cat > /work/install/usr/bin/%(script)s <<LAUNCHER
 #!/bin/bash
@@ -36,11 +26,12 @@ LAUNCHER
 chmod a+x /work/install/usr/bin/%(script)s
 """ % {"script": script}
 
-        result += """
-cp -r deploy/baker/common/* /work/install
-cp -r deploy/baker/%(system)s-*/* /work/install
-""" % {"system": distro.image}
-
-        return result
-
-build(Baker())
+    def install_config(self, dir, system=None):
+        result = """
+cp -r deploy/%(dir)s/common/* /work/install
+"""
+        if system:
+            result += """
+cp -r deploy/%(dir)s/%(system)s-*/* /work/install
+"""
+        return result % {"system": system or None, "dir": dir}

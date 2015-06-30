@@ -6,23 +6,20 @@
 from roy import build, deps
 from pkg_common import Common
 
-class Datawire(Common):
+class Directory(Common):
 
     def __init__(self):
-        self.name = "datawire"
+        self.name = "datawire-directory"
         self.build_deps = []
-        self.deps = [deps.datawire_proton]
+        self.deps = [deps.datawire]
         self.version = "0.2"
         self.arch = "all"
-        self.conf = ["/etc/datawire/datawire.conf"]
+        self.conf = ["/etc/datawire/directory.conf"]
 
     def build(self, distro):
         result = self.install_prep()
-        result += """
-cp -r datawire /work/install/opt/datawire/lib
-"""
-        result += self.install_script("dw")
-        result += self.install_config(self.name)
+        result += self.install_script("directory")
+        result += self.install_config(self.name, distro.image)
         return result
 
-build(Datawire())
+build(Directory())
