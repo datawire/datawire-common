@@ -17,3 +17,4 @@ from .stream import Entry, Store, Stream
 from .decoder import Decoder
 from .processor import Processor
 from .sampler import Sampler
+from .configuration import Configuration
