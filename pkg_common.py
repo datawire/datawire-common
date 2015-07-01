@@ -3,6 +3,10 @@
 
 class Common:
 
+    @property
+    def version(self):
+        return "0.2"
+
     def setup(self, env):
         env.system("git archive --format=tar --prefix=datawire/ HEAD | (cd %s && tar -xf -)" % env.work)
 

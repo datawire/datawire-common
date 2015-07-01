@@ -12,7 +12,6 @@ class Sherlock(Common):
         self.name = "datawire-sherlock"
         self.build_deps = []
         self.deps = [deps.datawire, deps.haproxy]
-        self.version = "0.2"
         self.arch = "all"
         self.conf = ["/etc/datawire/sherlock.conf"]
 

@@ -12,7 +12,6 @@ class Watson(Common):
         self.name = "datawire-watson"
         self.build_deps = []
         self.deps = [deps.datawire]
-        self.version = "0.2"
         self.arch = "all"
 
     def build(self, distro):
