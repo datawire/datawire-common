@@ -17,7 +17,7 @@ mkdir -p /work/install/usr/bin
     def install_script(self, script):
         return """
 cp %(script)s /work/install/opt/datawire/lib
-sed -i -e '1s@.*@#!/usr/bin/python2.7@' /work/install/opt/datawire/lib/%(script)s
+sed -i -e '1s@.*@#!/usr/bin/python2.7 -u@' /work/install/opt/datawire/lib/%(script)s
 cat > /work/install/usr/bin/%(script)s <<LAUNCHER
 #!/bin/bash
 export PYTHONPATH=/opt/datawire/lib/proton/bindings/python
