@@ -32,15 +32,19 @@ The ``id`` field in the output is a counter. If you hit the service repeatedly, 
 Install
 -------
 
-On Enterprise Linux 7, add access to the `Datawire repository on PackageCloud <https://packagecloud.io/datawire/staging/install>`_ and use ``yum`` to perform the installation::
+On Enterprise Linux 7, add access to the |Repository|_ and use ``yum`` to perform the installation
 
-  $ curl -s https://packagecloud.io/install/repositories/datawire/staging/script.rpm.sh | sudo bash
+.. parsed-literal::
+
+  $ curl -s |script_rpm| | sudo bash
   [...]
   $ sudo yum install datawire-directory datawire-sherlock datawire-watson
 
-On Ubuntu 14.04 LTS, add access to the `Datawire repository on PackageCloud <https://packagecloud.io/datawire/staging/install>`_ and use ``apt-get`` to perform the installation::
+On Ubuntu 14.04 LTS, add access to the |Repository|_ and use ``apt-get`` to perform the installation
 
-  $ curl -s https://packagecloud.io/install/repositories/datawire/staging/script.deb.sh | sudo bash
+.. parsed-literal::
+
+  $ curl -s |script_deb| | sudo bash
   [...]
   $ sudo apt-get install datawire-directory datawire-sherlock datawire-watson
 

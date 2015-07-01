@@ -3,18 +3,21 @@
 Deployment
 ==========
 
-The following instructions explain how to set up and utilize Baker in a
-typical environment. The instructions below assume that you have set up the
-`Datawire repository on PackageCloud <https://packagecloud.io/datawire/staging/install>`_
-on all relevant machines/vms.
+The following instructions explain how to set up and utilize Baker in
+a typical environment. The instructions below assume that you have set
+up the |Repository|_ on all relevant machines/vms.
 
-On Enterprise Linux 7::
+On Enterprise Linux 7
 
-  $ curl -s https://packagecloud.io/install/repositories/datawire/staging/script.rpm.sh | sudo bash
+.. parsed-literal::
 
-On Ubuntu 14.04 LTS::
+  $ curl -s |script_rpm| | sudo bash
 
-  $ curl -s https://packagecloud.io/install/repositories/datawire/staging/script.deb.sh | sudo bash
+On Ubuntu 14.04 LTS
+
+.. parsed-literal::
+
+  $ curl -s |script_deb| | sudo bash
 
 
 
