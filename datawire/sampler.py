@@ -19,7 +19,7 @@ class Sampler:
 
     def _sample(self, event):
         link = event.link
-        if link.state & PN_LOCAL_ACTIVE:
+        if link and link.state & PN_LOCAL_ACTIVE:
             event.dispatch(self.__delegate, SAMPLE)
             class Sample:
                 def on_timer_task(_self, _):
