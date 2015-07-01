@@ -33,7 +33,7 @@ class SinkTest:
     def testSampler(self, count=1, frequency=10):
         self.server.max_connections = 1
         oself = self
-        class Gen:
+        class Gen(Timeout):
             def __init__(self):
                 self.sent = 0
 
@@ -42,10 +42,16 @@ class SinkTest:
                 self.sent += 1
                 if self.sent >= count:
                     event.link.close()
-        snd = Sender("//localhost:%s" % PORT, Sampler(Gen(), frequency))
+                    self.cancel()
+            def on_timer_task(self, event):
+              snd.stop(event.reactor)
+        gen = Gen();
+        snd = Sender("//localhost:%s" % PORT, Sampler(gen, frequency))
         self.reactor.handler.add(snd)
+        gen.set_timeout(self.reactor, 2)
         snd.start(self.reactor)
         self.reactor.run()
+        assert gen.cancelled, "Sampling timed out"
         assert len(self.sink.messages) == count, len(self.sink.messages)
         for i in range(count):
             assert self.sink.messages[i] == "test-%s" % i

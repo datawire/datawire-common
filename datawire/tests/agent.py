@@ -21,7 +21,8 @@ class AgentTest:
         self.samples = 0
 
     def teardown(self):
-        self.server.acceptor.close()
+        if self.server.acceptor:
+            self.server.acceptor.close()
 
     def sample(self, stats):
         stats["samples"] = self.samples
@@ -30,7 +31,7 @@ class AgentTest:
     def testAgent(self, count=1, frequency=10):
         self.server.max_connections = 1
         self.agent.sampler.frequency = frequency
-        class Counter:
+        class Counter(Timeout):
             def __init__(self):
                 self.received = 0
             def on_message(self, event):
@@ -38,9 +39,16 @@ class AgentTest:
                 self.received += 1
                 if self.received == count:
                     rcv.stop(event.reactor)
-        rcv = Receiver("//localhost:%s" % PORT, Processor(Counter()))
+                    self.cancel()
+            def on_timer_task(self, event):
+              rcv.stop(event.reactor)
+        
+        counter = Counter()
+        rcv = Receiver("//localhost:%s" % PORT, Processor(counter))
         rcv.start(self.reactor)
+        counter.set_timeout(self.reactor, 2)
         self.reactor.run()
+        assert counter.cancelled, "Sampling timed out"
 
     def testAgent10M100F(self):
         self.testAgent(10, 100)

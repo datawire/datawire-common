@@ -78,3 +78,21 @@ class Server:
     def on_reactor_init(self, event):
         self.acceptor = event.reactor.acceptor("localhost", PORT, Closer(self.delegate, self))
 
+class Timeout:
+    _cancelled = None
+    _timer = None
+
+    def set_timeout(self, reactor, timeout):
+      assert not self._timer, "Timeout is already set"
+      self._timer = reactor.schedule(timeout, self)
+      self.cancelled = False
+
+    def cancel(self):
+        assert self._timer, "Cannot cancel when timeout is not set"
+        self._timer.cancel()
+        self._timer = None
+        self.cancelled = True
+
+    @property
+    def cancelled(self):
+      return self._cancelled
