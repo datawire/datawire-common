@@ -17,13 +17,15 @@ class BizLogic(object):
         self.linker = Linker()
         self.container = Container(Processor(self))
         self.container[self.tether.agent] = Agent(self.tether)
-        self.handlers = [self.container]
 
     def on_reactor_init(self, event):
-        event.reactor.acceptor(self.host, self.port)
+        event.reactor.acceptor(self.host, self.port, self.container)
         self.tether.start(event.reactor)
         event.reactor.schedule(0, self)
         self.linker.start(event.reactor)
+
+    def on_reactor_quiesced(self, event):
+        event.dispatch(self.container)
 
     def on_timer_task(self, event):
         self.users = common.load_data("users.pickle")
