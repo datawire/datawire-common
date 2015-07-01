@@ -207,5 +207,3 @@ network of communicating services. Baker makes it easy for
 microservices to communicate with each other, and other Datawire
 components help to organize, manage, and understand the complicated
 topologies that may arise.
-
-**FIXME** What to do with the above?
