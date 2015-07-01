@@ -3,112 +3,113 @@
 Reference
 =========
 
+The Datawire Baker components rely on configuration files to manage setup. The individual components look in ``/etc/datawire`` and ``~/.datawire`` for standard files, with the contents of the latter overriding the contents of the former. The ``--config`` command line option allows an additional file to be specified, with its contents overriding the prior files.
+
+Every component starts by loading ``datawire.conf``::
+
+  [DEFAULT]
+  ; logging level may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  logging: WARNING
+
+  [Datawire]
+  ; Change this to the well known and stable hostname of the directory for your deployment.
+  directory_host: localhost
+
+This configuration file allows the specification of the default logging level for every Datawire component, but individual component configurations may override this by specifying a different ``logging`` directive. Component log output goes to stdout, with the operating system's service control mechanism (systemd, Upstart, etc.) handling output redirection (to the system journal, to ``/var/log/upstart/*.log``, etc.).
+
+This configuration file also contains the central designation for the host running the Datawire Directory. As one directory can serve an entire site installation, it is convenient to have this hostname specified in one place.
+
 Directory
 ---------
 
-A single Datawire Directory allows all other Baker components to communicate.
+A single Datawire Directory allows all other Baker components to communicate. Unlike the other components, the directory allows significant configuration by command line options.
 
 At the command line::
 
-  usage: directory [-h] [-c FILE] [-n HOST] [-p PORT] [-a ADDRESS] [-s STORE]
-                   [-l LEVEL] [-o OUTPUT] [-V]
+  usage: directory [-h] [-c FILE] [-n HOST] [-p PORT] [-a ADDRESS] [-l LEVEL]
+                   [-V]
 
   optional arguments:
     -h, --help            show this help message and exit
     -c FILE, --config FILE
-                          read from config file
+                          read from additional config file
     -n HOST, --host HOST  network host (defaults to localhost)
     -p PORT, --port PORT  network port (defaults to 5672)
     -a ADDRESS, --address ADDRESS
                           amqp address, defaults to //<host>[:<port]
-    -s STORE, --store STORE
-                          save routes to store
     -l LEVEL, --level LEVEL
                           logging level
-    -o OUTPUT, --output OUTPUT
-                          file for log output
     -V, --version         show program's version number and exit
+
+The command line ``host`` option must be set to an externally-visible hostname for the machine running the directory; it is typically pulled from the ``directory_host`` field in ``datawire.conf`` as described above. The ``port`` and ``address`` command line options are for unusual deployments only.
 
 By config file::
 
   [Directory]
-  host: hostname-of-directory
-  port: 5672
-  address: //hostname-of-directory:5672
-  level: WARNING
-  output: filename
+  ; logging level (default in datawire.conf) may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  ;logging: WARNING
 
-The ``host`` option must be set to an externally-visible hostname for the machine running the directory. It is not optional for any realistic deployment, as it defaults to ``localhost``. The ``port`` and ``address`` options are for unusual deployments only. The ``store`` option is experimental.
-
-Output can be sent to a file, but typically the operating system's service control mechanism (systemd, Upstart, etc.) handles output redirection. The logging level may be set to ``DEBUG`` or ``INFO`` if more output is desired; ``WARNING`` is the default.
-
-Watson
-------
-
-In a typical deployment, one microservice is deployed per server, VM, or container. Watson is deployed alongside that microservice using its configuration file and system service integration. The command line options exist to enable launching multiple instances of Watson on a single machine.
-
-At the command line::
-
-  usage: watson [-h] [-c FILE] [-d ADDRESS] [-l URL] address url period
-
-  positional arguments:
-    address               service address
-    url                   service URL (target)
-    period                seconds between liveness checks
-
-  optional arguments:
-    -h, --help            show this help message and exit
-    -c FILE, --config FILE
-                          read from config file (no other args)
-    -d ADDRESS, --directory ADDRESS
-    -l URL, --liveness URL
-                          liveness check URL (default: /liveness_check under
-                          service URL)
-
-By config file::
-
-  [Watson]
-  directory: //hostname-of-directory/directory
-  address: //hostname-of-directory/service-name
-  url: http://localhost:9000/url/of/service
-  liveness: http://localhost:9000/url/of/service/liveness_check
-  period: 3  ; seconds between liveness checks
-
-Watson connects to the liveness check URL every three seconds (as configured by the ``period`` parameter). If the service appears live (returns an HTTP response of 200), Watson ensures that the directory (as specified by the ``directory`` parameter) is aware that the indicated service (named by the ``address`` parameter) is being served at the specified URL.
+The configuration file has just one commented-out option for changing the directory's logging level from the default.
 
 Sherlock
 --------
 
-A client node, which is to say a server, VM, or container that runs software that needs to access services, runs Sherlock to enable said access. Sherlock is typically deployed using its configuration file and system service integration, but command line parameters are available to support special case usage.
+A client node, which is to say a server, VM, or container that runs software that needs to access services, runs Sherlock to enable said access. Sherlock is typically deployed using its configuration file ``/etc/datawire/sherlock.conf`` and system service integration, but the command line allows specifying an additional configuration file to support special case usage.
 
 At the command line::
 
-  usage: sherlock [-h] [-c FILE] [-d ADDRESS] [-p PATH] [-r PATH]
-                  [--debounce SECONDS] [--dir-debounce SECONDS]
+  usage: sherlock [-h] [-c FILE]
 
   optional arguments:
     -h, --help            show this help message and exit
     -c FILE, --config FILE
-                          read from config file (no other args)
-    -d ADDRESS, --directory ADDRESS
-    -p PATH, --proxy PATH
-                          full path of HAProxy executable
-    -r PATH, --rundir PATH
-                          path to location for haproxy.{pid,conf}
-    --debounce SECONDS    time in seconds to coalesce events before updating
-                          HAProxy
-    --dir-debounce SECONDS
-                          debounce time to use when the directory has restarted
+                          read from additional config file
 
-By config file::
+The standard config file lists all the fields::
 
   [Sherlock]
-  directory: //hostname-of-directory/directory
   proxy: /usr/sbin/haproxy
   rundir: /opt/datawire/run
-  debounce: 2
-  dir_debounce: 2
+  debounce: 2  ; seconds
+  dir_debounce: 2  ; seconds
+  ; logging level (default in datawire.conf) may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  ;logging: WARNING
 
-Sherlock gathers information about running services and the URLs of the microservices that implement them from the directory (as specified by the ``directory`` parameter). It configures and launches HAProxy (as specified by the ``proxy`` parameter), keeping HAProxy-specific files in the path specified by the ``rundir`` parameter.
+Sherlock gathers information about running services and the URLs of the microservices that implement them from the directory (as specified in ``datawire.conf``). It configures and launches HAProxy (as specified by the ``proxy`` parameter), keeping HAProxy-specific files in the path specified by the ``rundir`` parameter.
 
 Reconfiguring HAProxy can introduce a brief interruption of service (well under a second), so Sherlock coalesces updates from the directory. When there are no new updates for two seconds (as configured by the ``debounce`` parameter in seconds), Sherlock outputs a new HAProxy configuration and reconfigures HAProxy. If Sherlock detects that it has disconnected from and then reconnected to the directory, it instead coaslesces over ``dir_debounce`` seconds.
+
+The configuration file has a commented-out option for changing sherlock's logging level from the default.
+
+Watson
+------
+
+In a typical deployment, one microservice is deployed per server, VM, or container. Watson is deployed alongside that microservice using its configuration file ``/etc/datawire/watson.conf`` and system service integration. The command line ``--config`` option exists to enable launching multiple instances of Watson on a single machine by specifying alternate configuration files.
+
+At the command line::
+
+  usage: watson [-h] [-c FILE]
+
+  optional arguments:
+    -h, --help            show this help message and exit
+    -c FILE, --config FILE
+                          read from additional config file
+
+The config file prototype ``watson.conf.proto`` lists all fields::
+
+  [Watson]
+  ; service_name must uniquely identify your service
+  service_url: http://hostname:port/service_name
+  liveness_url: %(service_url)s/liveness_check
+  period: 3  ; seconds between liveness checks
+  ; logging level (default in datawire.conf) may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
+  ;logging: WARNING
+
+The path portion of the ``service_url`` field ("service_name" in the prototype above) is used to identify a service. This *service name* serves two key purposes:
+
+# Sherlock uses the *service name* portion of incoming requests to determine where to route/proxy the request.
+# Every microservice whose associated *service name* is set to a particular name (e.g., greeting) is considered equivalent for load balancing.
+
+Watson connects to the liveness check URL every three seconds (as configured by the ``period`` parameter). If the service appears live (returns an HTTP response of 200), Watson ensures that the directory (as specified in ``datawire.conf``) is aware that the service is being served at the specified ``service_url``.
+
+The configuration file has a commented-out option for changing watson's logging level from the default.
