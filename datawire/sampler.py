@@ -21,6 +21,7 @@ class Sampler:
         link = event.link
         if link and link.state & PN_LOCAL_ACTIVE:
             event.dispatch(self.__delegate, SAMPLE)
+            event = event.copy()
             class Sample:
                 def on_timer_task(_self, _):
                     self._sample(event)
