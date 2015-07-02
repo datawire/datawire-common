@@ -16,7 +16,7 @@ class Sherlock(Common):
         self.conf = ["/etc/datawire/sherlock.conf"]
         self.postinstall = """
 /usr/sbin/setsebool -P haproxy_connect_any on
-/usr/bin/chcon system_u:object_r:haproxy_var_run_t /opt/datawire/run
+/usr/bin/chcon --type haproxy_var_run_t /opt/datawire/run
 """
 
     def build(self, distro):
