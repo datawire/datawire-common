@@ -31,6 +31,8 @@ chmod a+x /work/install/usr/bin/%(script)s
 """ % {"script": script}
 
     def install_config(self, dir, system=None):
+        if system == "fedora":
+            system = "centos"
         result = """
 cp -r deploy/%(dir)s/common/* /work/install
 """

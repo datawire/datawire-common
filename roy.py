@@ -166,6 +166,12 @@ class Centos(Distro):
         self.bootstrap_deps += [deps.rpm_build]
         self.makecache = "yum makecache --disablerepo='*' --enablerepo=datawire_staging"
 
+class Fedora(Centos):
+
+    def __init__(self):
+        Centos.__init__(self)
+        self.image = "fedora"
+
 class Env:
 
     def __init__(self, work):
@@ -189,8 +195,8 @@ def build(package):
     if not os.path.isdir(output):
         parser.error("output must be a directory: %s" % output)
 
-    for distro in [Centos(), Ubuntu()]:
-        if args.distro and base.image != args.distro:
+    for distro in [Centos(), Ubuntu(), Fedora()]:
+        if args.distro and distro.image != args.distro:
             continue
         distro.configure(output)
 
