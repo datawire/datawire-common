@@ -34,12 +34,15 @@ def system(cmd):
         print "command failed:", cmd
         sys.exit(st)
 
-def _dimage(ctx, tag, text):
+def _dimage(ctx, tag, text, update):
     dfile = os.path.join(ctx, "Dockerfile")
     f = open(dfile, "w")
     f.write(text)
     f.close()
-    system("docker build -t %s %s" % (tag, ctx))
+    opts = ""
+    if update:
+        opts += "--no-cache"
+    system("docker build %s -t %s %s" % (opts, tag, ctx))
 
 class Distro:
 
@@ -60,11 +63,11 @@ class Distro:
                 os.makedirs(d)
             assert os.path.isdir(d)
 
-    def images(self, config):
+    def images(self, config, update):
         bimg = "%s-build" % self.image
         timg = "%s-test" % self.image
-        _dimage(self.build, bimg, self.build_image(config))
-        _dimage(self.test, timg, self.test_image(config))
+        _dimage(self.build, bimg, self.build_image(config), update)
+        _dimage(self.test, timg, self.test_image(config), update)
         return bimg, timg
 
     def run(self, image, script):
@@ -155,6 +158,7 @@ class Centos(Distro):
         self.alias(deps.ssl.dev, "openssl-devel")
         self.alias(deps.uuid, "libuuid")
         self.alias(deps.uuid.dev, "libuuid-devel")
+        self.alias(deps.policycoreutils, "policycoreutils", "policycoreutils-python")
         self.image = "centos"
         self.pkg = "yum"
         self.ext = "rpm"
@@ -177,6 +181,7 @@ def build(package):
     parser.add_argument("-d", "--distro", help="specify a distro (default to all)")
     parser.add_argument("-r", "--run", action="store_true", help="run a shell in the test image")
     parser.add_argument("-s", "--shell", action="store_true", help="run a shell in the build image")
+    parser.add_argument("-u", "--update", action="store_true", help="update images")
     args = parser.parse_args()
     output = args.output
     if not os.path.exists(output):
@@ -190,7 +195,7 @@ def build(package):
         distro.configure(output)
 
         distro.prep()
-        bimg, timg = distro.images(package)
+        bimg, timg = distro.images(package, args.update)
         if args.images:
             continue
 
@@ -211,16 +216,22 @@ def build(package):
         buildsh = "cd /work\n"
         buildsh += package.build(distro)
         buildsh += "\ncd /work\n"
-        conf = ""
+        opts = ""
         for c in getattr(package, "conf", []):
-            conf += " --config-files %s" % c
-        buildsh += "\nfpm -f -s dir -t %(ext)s -n %(name)s -v %(version)s -a %(arch)s %(deps)s %(conf)s -C/work/install .\n" % {
+            opts += " --config-files %s" % c
+        if hasattr(package, "postinstall"):
+            opts += " --after-install /tmp/postinstall"
+            buildsh += """cat > /tmp/postinstall <<POSTINSTALL
+%s
+POSTINSTALL
+""" % package.postinstall
+        buildsh += "\nfpm -f -s dir -t %(ext)s -n %(name)s -v %(version)s -a %(arch)s %(deps)s %(opts)s -C/work/install .\n" % {
             "ext": distro.ext,
             "name": package.name,
             "version": package.version,
             "arch": getattr(package, "arch", "native"),
             "deps": distro.render(package.deps, prefix="-d "),
-            "conf": conf
+            "opts": opts
         }
         distro.run(bimg, buildsh)
         distro.run(bimg, "chown -R %s:%s /work" % (os.getuid(), os.getgid()))
