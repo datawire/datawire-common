@@ -2,7 +2,7 @@ import os, sys, tempfile
 from argparse import ArgumentParser
 from collections import defaultdict
 
-REPO = "stable"
+REPO = "staging"
 
 # TODO: factor out common patterns from pkg-* files and add them as
 #       utilities here
