@@ -245,4 +245,4 @@ POSTINSTALL
         }
         distro.run(bimg, buildsh)
         distro.run(bimg, "chown -R %s:%s /work" % (os.getuid(), os.getgid()))
-        system("mv %s/*.%s %s" % (distro.work, distro.ext, output))
+        system("mv %s/*.%s %s" % (distro.work, distro.ext, distro.dist))
