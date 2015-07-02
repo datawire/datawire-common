@@ -1,8 +1,0 @@
----
-directories:
-  host: directory1.internal.example.com
-  port: 2341
-configuration:
-  location: /etc/datawire.d/
-  location: /var/barker/biz.yaml
-  

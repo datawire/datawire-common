@@ -28,7 +28,7 @@ Baker does make several different design decisions than SmartStack.
    For example HAProxy supports HTTP and TCP, but does not natively
    support other protocols. In particular, HAProxy does not support
    any async messaging protocols, which are important for many use
-   cases in microservics. Also, HAProxy's load balancing algorithms
+   cases in microservices. Also, HAProxy's load balancing algorithms
    tend to assume that it is the only thing dispatching load to a
    given backend, however that is not the case in this architecture.
 
@@ -49,15 +49,15 @@ three distinct node types individually.
 Directory Node
 ~~~~~~~~~~~~~~
 
-The Directory node functions as a rendevous point between services and
+The Directory node functions as a rendezvous point between services and
 clients. Each service node broadcasts its presence and location to the
 directory, and the directory notifies any interested client nodes as
 service nodes come and go.
 
 There is exactly one Directory node per Baker deployment. Every
-service and client must be configured with the location of this
-node. We expect to support multiple Directory nodes in future versions
-of Baker.
+service and client must be configured with the location of this node.
+We expect to support multiple Directory nodes in future versions of
+Baker.
 
 Service Nodes
 ~~~~~~~~~~~~~
@@ -78,7 +78,7 @@ A client node maintains a table of the location of all relevant
 service nodes and updates this whenever the directory notifies the
 client of changes in the state of services. Baker relies on the
 ``sherlock`` process from the directory about all available services
-and dynamically proxy connections from its colocated leads
+and dynamically proxy connections from its co-located leads
 accordingly. ``sherlock`` should always be deployed on the same
 server/container as the service it is supporting.
 
@@ -97,7 +97,7 @@ A service node contains the following state:
 
 A service node is responsible for initiating contact with the
 directory and informing the directory of its presence at least once
-per hearbeat interval. If the directory node is unavailable for any
+per heartbeat interval. If the directory node is unavailable for any
 reason, the service node will continue to retry indefinitely.
 
 Client Nodes
@@ -174,12 +174,11 @@ Future Work
 -----------
 
 We expect to extend the system in a future release to support multiple
-directory nodes. This will provide following benefits:
+directory nodes. This will provide the following benefits:
 
 #. Scalability and availability of directory services for deployments
    where adding and removing service and/or client nodes *is* expected
    to be a high volume operation.
 
-#. The system could provide better introspection for nodes that are
-   not reachable from the directory in the event of a network
-   partition.
+#. The ability to provide better introspection for nodes that are not
+   reachable from the directory in the event of a network partition.

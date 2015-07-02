@@ -5,7 +5,7 @@ Deployment
 
 The following instructions explain how to set up and utilize Baker in
 a production environment. The instructions below assume that you have
-set up the |Repository|_ on all relevant machines/vms.
+set up the |Repository|_ on all relevant machines/VMs.
 
 On Enterprise Linux 7
 
@@ -132,7 +132,7 @@ the defaults will generally work well::
   ; logging level (default in datawire.conf) may be DEBUG, INFO, WARNING, ERROR, or CRITICAL
   ;logging: WARNING
 
-Now any process on your vm can access services by name without needing
+Now any process on your VM can access services by name without needing
 to know where instances of the service are running::
 
   vm123 $ curl http://localhost:8000/<service-name>
@@ -142,7 +142,7 @@ in round-robin fashion. If an instance drops out, e.g., for
 maintenance, Watson notifies the directory, which allows Sherlock to
 update the HAProxy configuration and keep requests flowing through the
 remaining instances. When that instance comes back, Sherlock again
-makes the appropriate adjustments to haproxy. New instances get added
+makes the appropriate adjustments to HAProxy. New instances get added
 to the pool automatically in much the same way.
 
 Watson
@@ -150,7 +150,7 @@ Watson
 
 Service instances that want to be dynamically accessible will use
 watson to advertise their presence to the datawire directory. Watson
-must run colocated on the same machine/vm as the service instance.
+must run co-located on the same machine/VM as the service instance.
 Watson will periodically check the health of the service instance and
 register its location and status with the directory.
 
