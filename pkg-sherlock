@@ -11,9 +11,13 @@ class Sherlock(Common):
     def __init__(self):
         self.name = "datawire-sherlock"
         self.build_deps = []
-        self.deps = [deps.datawire, deps.haproxy]
+        self.deps = [deps.datawire, deps.haproxy, deps.policycoreutils]
         self.arch = "all"
         self.conf = ["/etc/datawire/sherlock.conf"]
+        self.postinstall = """
+/usr/sbin/setsebool -P haproxy_connect_any on
+/usr/bin/chcon system_u:object_r:haproxy_var_run_t /opt/datawire/run
+"""
 
     def build(self, distro):
         result = self.install_prep()
