@@ -4,8 +4,8 @@ Deployment
 ==========
 
 The following instructions explain how to set up and utilize Baker in
-a typical environment. The instructions below assume that you have set
-up the |Repository|_ on all relevant machines/vms.
+a production environment. The instructions below assume that you have
+set up the |Repository|_ on all relevant machines/vms.
 
 On Enterprise Linux 7
 
@@ -177,7 +177,7 @@ known directory set up in the first section::
   directory_host: directory.example.com
 
 Now copy the example watson configuration found in
-/etc/datawire/watson.conf.proto and confgure it for your service:
+/etc/datawire/watson.conf.proto and configure it for your service:
 
 #. Provide the base url for your service.
 #. Provide the url for health checks on your service.

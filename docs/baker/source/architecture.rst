@@ -55,7 +55,9 @@ directory, and the directory notifies any interested client nodes as
 service nodes come and go.
 
 There is exactly one Directory node per Baker deployment. Every
-service and client must be configured with the location of this node.
+service and client must be configured with the location of this
+node. We expect to support multiple Directory nodes in future versions
+of Baker.
 
 Service Nodes
 ~~~~~~~~~~~~~

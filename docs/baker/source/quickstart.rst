@@ -184,7 +184,14 @@ Let your upgraded Greeting service soak test as long as is desired. Problems? Ju
 Summary
 -------
 
-Congratulations on making your way through the Baker quick start! You've seen that Baker can be deployed quickly and easily, in many cases with no changes to your service. You've used Baker to perform load balancing and a safe upgrade with no interruption of service.
+Congratulations on making your way through the Baker quick start!
+You've seen that Baker can be deployed quickly and easily, in many
+cases with no changes to your service. You've used Baker to perform
+load balancing and a safe upgrade with no interruption of
+service. You've been able to do all these without deploying and
+configuring a central load balancer for each of your microservices, a
+scenario which introduces a single point of failure and adds
+additional management overhead.
 
 Next Steps
 ----------
