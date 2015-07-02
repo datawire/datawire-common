@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.2
+VERSION=0.3
 TARGET=/var/www/html
 
 mkdir -p $TARGET

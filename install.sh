@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Datawire installation script
-RELEASE="0.2"
+RELEASE="0.3"
 WORK_DIR=$PWD
 
 # Check OS
