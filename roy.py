@@ -2,6 +2,8 @@ import os, sys, tempfile
 from argparse import ArgumentParser
 from collections import defaultdict
 
+REPO = "staging"
+
 # TODO: factor out common patterns from pkg-* files and add them as
 #       utilities here
 
@@ -103,7 +105,7 @@ class Distro:
         result = """FROM %(image)s
 RUN %(pkg)s -y update
 RUN %(pkg)s -y install curl
-RUN curl -s https://packagecloud.io/install/repositories/datawire/staging/script.%(ext)s.sh | bash
+RUN curl -s https://packagecloud.io/install/repositories/datawire/%(REPO)s/script.%(ext)s.sh | bash
 RUN %(makecache)s && %(pkg)s -y install %(bootstrap_deps)s && gem install fpm
 """
         if config.build_deps:
@@ -116,7 +118,8 @@ RUN %(pkg)s -y install %(build_deps)s
             "ext": self.ext,
             "bootstrap_deps": self.render(self.bootstrap_deps),
             "build_deps": self.render(config.build_deps),
-            "makecache": self.makecache
+            "makecache": self.makecache,
+            "REPO": REPO
         }
         return result
 
@@ -124,14 +127,15 @@ RUN %(pkg)s -y install %(build_deps)s
         return """FROM %(image)s
 RUN %(pkg)s -y update
 RUN %(pkg)s -y install curl
-RUN curl -s https://packagecloud.io/install/repositories/datawire/staging/script.%(ext)s.sh | bash
+RUN curl -s https://packagecloud.io/install/repositories/datawire/%(REPO)s/script.%(ext)s.sh | bash
 RUN %(makecache)s && %(pkg)s -y install %(deps)s
 """ % {
     "image": self.image,
     "pkg": self.pkg,
     "ext": self.ext,
     "deps": self.render(config.deps),
-    "makecache": self.makecache
+    "makecache": self.makecache,
+    "REPO": REPO
 }
 
 
@@ -164,7 +168,7 @@ class Centos(Distro):
         self.ext = "rpm"
         self.dev = "devel"
         self.bootstrap_deps += [deps.rpm_build]
-        self.makecache = "yum makecache --disablerepo='*' --enablerepo=datawire_staging"
+        self.makecache = "yum makecache --disablerepo='*' --enablerepo=datawire_%(REPO)s" % {"REPO": REPO}
 
 class Fedora(Centos):
 
