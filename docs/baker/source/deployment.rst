@@ -34,7 +34,7 @@ running in an application server like Tomcat. An example service
 called ``greeting`` running on the host ``vm678.example.com`` could be
 accessed at the URL ``http://vm678.example.com/greeting``. Any HTTP
 client would suffice. The command line examples will use ``curl`` but
-each of the following is roughly equivalent::
+each of the following are roughly equivalent::
 
   curl http://vm678.example.com/greeting
   lynx -dump http://vm678.example.com/greeting

@@ -77,10 +77,11 @@ Client Nodes
 A client node maintains a table of the location of all relevant
 service nodes and updates this whenever the directory notifies the
 client of changes in the state of services. Baker relies on the
-``sherlock`` process from the directory about all available services
-and dynamically proxy connections from its co-located leads
-accordingly. ``sherlock`` should always be deployed on the same
-server/container as the service it is supporting.
+``sherlock`` process to gather information from the directory about
+all available services and dynamically proxy connections from its
+co-located client processes accordingly. ``sherlock`` should always be
+deployed on the same server/container as the client processes it is
+supporting.
 
 Discovery Protocol
 ------------------
