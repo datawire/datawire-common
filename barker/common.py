@@ -1,4 +1,8 @@
-import cPickle, os, sys, random, time, logging
+try:
+  import cPickle as pickle
+except:
+  import pickle 
+import os, sys, random, time, logging
 from collections import namedtuple
 
 logging.basicConfig(level=logging.INFO, datefmt="%H%M%S",
@@ -8,12 +12,12 @@ log = logging.getLogger(__name__)
 def dump_data(filename, data):
     tempname = filename + ".temp"
     with open(tempname, "wb") as outf:
-        cPickle.dump(data, outf)
+        pickle.dump(data, outf)
     os.rename(tempname, filename)
 
 def load_data(filename):
     with open(filename) as inf:
-        return cPickle.load(inf)
+        return pickle.load(inf)
 
 
 class User(object):
