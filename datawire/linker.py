@@ -73,7 +73,10 @@ class Link:
 
     def on_delivery(self, event):
         for h in self.handlers:
-            event.dispatch(h)
+            try:
+                event.dispatch(h)
+            except:
+                raise
         self.do_drained(event)
         return DELEGATED
 

@@ -250,11 +250,16 @@ class Stream:
     def setup(self, event):
         snd = event.sender
         if snd and not hasattr(snd, "reader"):
-            snd.reader = self.store.reader(snd.remote_source.address or snd.source.address or
-                                           snd.remote_target.address or snd.target.address)
+            rsa = snd.remote_source.address
+            lsa = snd.source.address
+            rta = snd.remote_target.address
+            lta = snd.target.address
+            snd.reader = self.store.reader(rsa or lsa or
+                                           rta or lta)
             self.outgoing.append(snd)
         elif event.receiver and event.receiver not in self.incoming:
-            self.incoming.append(event.receiver)
+            rcv = event.receiver
+            self.incoming.append(rcv)
 
     def on_link_final(self, event):
         if event.sender:
@@ -289,13 +294,19 @@ class Stream:
     def on_reactor_quiesced(self, event):
         self.pump()
 
+    ctr = 0
     def on_delivery(self, event):
         rcv = event.receiver
         dlv = event.delivery
         if rcv and not dlv.partial:
-            msg = rcv.recv(dlv.pending)
+            try:
+                self.ctr += 1
+                msg = rcv.recv(dlv.pending)
+            except:
+                raise
             address = rcv.target.address
             self.store.put(msg, address=address)
+            log.debug("incoming delivery=%s", dlv);
             dlv.settle()
 
     def _matches(self, host, port, address, link):

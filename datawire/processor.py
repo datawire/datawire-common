@@ -15,4 +15,7 @@ class Processor:
 
     def on_unhandled(self, name, event):
         if self.__delegate is not self and event.connection:
-            event.dispatch(self.__delegate)
+            try:
+                event.dispatch(self.__delegate)
+            except:
+                raise
