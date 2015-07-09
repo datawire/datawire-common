@@ -76,7 +76,9 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("-n", "--host", default="127.0.0.1", help="network hostname")
     parser.add_argument("-p", "--port", default="6000", help="network port")
+    parser.add_argument("-l", "--level", default="warning", help="logging level")
     args = parser.parse_args()
+    logging.getLogger().setLevel(getattr(logging, args.level.upper()))
 
     Reactor(Monitor(args)).run()
 
