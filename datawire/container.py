@@ -2,7 +2,7 @@
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
 from proton.handlers import CHandshaker
-from linker import Sender, Receiver
+from .linker import Sender, Receiver
 
 def ancestors(address):
     yield address
