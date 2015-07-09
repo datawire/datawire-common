@@ -90,6 +90,7 @@
 
   <modules>
     <module>datawire-j</module>
+    <module>tests</module>
   </modules>
 
   <url>http://www.datawire.io/</url>

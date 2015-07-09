@@ -25,4 +25,11 @@
 
   <artifactId>datawire-j</artifactId>
   <name>datawire-j</name>
+  <dependencies>
+  	<dependency>
+  		<groupId>org.apache.qpid</groupId>
+  		<artifactId>proton-j</artifactId>
+  		<version>0.10-SNAPSHOT</version>
+  	</dependency>
+  </dependencies>
 </project>

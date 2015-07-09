@@ -612,6 +612,9 @@ class Harness:
 modules = opts.modules
 if not modules:
   modules.extend(["datawire.tests"])
+print sys.path
+print modules
+
 h = Harness()
 for name in modules:
   m = __import__(name, None, None, ["dummy"])
