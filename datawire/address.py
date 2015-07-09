@@ -15,7 +15,7 @@ def _hostport(network):
     if ":" in network:
         return network.split(":", 1)
     else:
-        return network, 5672
+        return network, "5672"
 
 @dual_impl
 class Address:

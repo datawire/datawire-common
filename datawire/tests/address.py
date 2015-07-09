@@ -21,13 +21,13 @@ class AddressTest(TestCase):
     def testHost(self):
         # hmm, the port seems to default as an integer, but parse as a
         # string
-        self._testParse("//host", "host", 5672)
+        self._testParse("//host", "host", "5672")
 
     def testHostPort(self):
-        self._testParse("//host:5672", "host", "5672")
+        self._testParse("//host:5673", "host", "5673")
 
     def testHostPortStuff(self):
-        self._testParse("//host:5672/stuff", "host", "5672")
+        self._testParse("//host:5673/stuff", "host", "5673")
 
     def testHostStuff(self):
-        self._testParse("//host/stuff", "host", 5672)
+        self._testParse("//host/stuff", "host", "5672")
