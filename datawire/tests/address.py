@@ -2,8 +2,9 @@
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
 from datawire.address import Address
+from unittest import TestCase
 
-class AddressTest:
+class AddressTest(TestCase):
 
     def testAddressNone(self):
         assert Address(None).host is None
@@ -14,8 +15,8 @@ class AddressTest:
 
     def _testParse(self, text, host, port):
         addr = Address.parse(text)
-        assert addr.host == host, addr.host
-        assert addr.port == port, addr.port
+        self.assertEqual(addr.host, host)
+        self.assertEqual(addr.port, port)
 
     def testHost(self):
         # hmm, the port seems to default as an integer, but parse as a

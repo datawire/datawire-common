@@ -1,6 +1,8 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
+from .impl import dual_impl
+
 def _network(address):
     if address is None: return None
     if address.startswith("//"):
@@ -15,6 +17,7 @@ def _hostport(network):
     else:
         return network, 5672
 
+@dual_impl
 class Address:
 
     @staticmethod
