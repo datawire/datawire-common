@@ -71,19 +71,16 @@ class SinkTest(TestCase):
             for j in range(message_count):
                 snd = linker.sender("//localhost:%s/%s" % (PORT, i))
                 assert len(linker.senders) == i + 1
-                snd.send("test-%s-%s" % (i, j))
+                snd.send(dict(i=i, j=j))
         linker.close()
         self.reactor.run()
 
-        # XXX: The ordering happens to work out here due to
-        # implementation constraints, however strictly speaking the
-        # messages captured by the sink are only partially ordered.
-        idx = 0
-        for i in range(address_count):
-            for j in range(message_count):
-                assert self.sink.messages[idx] == "test-%s-%s" % (i, j)
-                idx += 1
-        assert len(self.sink.messages) == address_count*message_count
+        by_addr = dict((i,[]) for i in range(address_count))
+        for m in self.sink.messages:
+          by_addr[m["i"]].append(m)
+        for addr, msgs in by_addr.iteritems():
+          self.assertSequenceEqual(msgs, list(sorted(msgs, key=lambda x:(x["i"],x["j"]))))
+        self.assertEqual(len(self.sink.messages), address_count*message_count)
 
     def testLinker2A1M(self):
         self.testLinker(2, 1)
