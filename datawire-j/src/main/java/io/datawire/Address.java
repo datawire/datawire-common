@@ -1,10 +1,10 @@
 package io.datawire;
 
 public final class Address {
-    private String text;
-    private String network;
-    private String host;
-    private String port;
+    private String _text;
+    private String _network;
+    private String _host;
+    private String _port;
     
     public static Address parse(String text) {
         if (text == null) {
@@ -15,14 +15,14 @@ public final class Address {
     }
     
     public Address(String text) {
-        this.text = text;
-        network = network(text);
-        String[] hostport = hostport(network);
-        host = hostport[0];
-        port = hostport[1];
+        this._text = text;
+        _network = networkOfAddress(text);
+        String[] hostport = hostportOfNetwork(_network);
+        _host = hostport[0];
+        _port = hostport[1];
     }
 
-    public static String network(String address) {
+    public static String networkOfAddress(String address) {
         if (address == null)
             return null;
         if (address.startsWith("//")) {
@@ -31,7 +31,7 @@ public final class Address {
         return null;
     }
 
-    public static String[] hostport(String network) {
+    public static String[] hostportOfNetwork(String network) {
         if (network == null)
             return new String[2];
         if (network.contains(":")) {
@@ -42,23 +42,23 @@ public final class Address {
     }
 
     public String getText() {
-        return text;
+        return _text;
     }
 
     public String getNetwork() {
-        return network;
+        return _network;
     }
 
     public String getHost() {
-        return host;
+        return _host;
     }
 
     public String getPort() {
-        return port;
+        return _port;
     }
     
     @Override
     public String toString() {
-        return text;
+        return _text;
     }
 }
