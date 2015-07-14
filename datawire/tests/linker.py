@@ -1,18 +1,22 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
+from unittest import TestCase
 from proton import Message
 from proton.reactor import Reactor
 from datawire import Linker, Processor, Receiver, Sampler, Sender, Stream
 
 from .common import *
 
-class SinkTest:
+class SinkTest(TestCase):
 
-    def __init__(self):
+    def setUp(self):
         self.sink = Sink()
         self.server = Server(self.sink)
         self.reactor = Reactor(self.server)
+        
+    def tearDown(self):
+        pass
 
     def testSender(self, count=1):
         self.server.max_connections = 1
@@ -109,12 +113,15 @@ class SinkTest:
         self.testLinker(16, 16)
 
 
-class SourceTest:
+class SourceTest(TestCase):
 
-    def __init__(self):
+    def setUp(self):
         self.source = Source("test-%s")
         self.server = Server(self.source)
         self.reactor = Reactor(self.server)
+        
+    def tearDown(self):
+      pass
 
     def testReceiver(self, count=1):
         self.server.max_connections = 1
