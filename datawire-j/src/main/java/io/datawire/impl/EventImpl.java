@@ -17,8 +17,13 @@ import org.apache.qpid.proton.reactor.Task;
 import io.datawire.Event;
 
 public class EventImpl implements Event {
+    public static class MessageAccessor {
+        public Message get(Record record) {
+            return record.get(this, Message.class);
+        }
+    }
     
-    public static final Object MESSAGE = new Object();
+    public static final MessageAccessor MESSAGE = new MessageAccessor();
     
     private org.apache.qpid.proton.engine.Event impl;
 
@@ -108,7 +113,7 @@ public class EventImpl implements Event {
 
     @Override
     public Message getMessage() {
-        Message m = impl.attachments().get(MESSAGE, Message.class);
+        Message m = MESSAGE.get(impl.attachments());
         return m;                
     }
 }
