@@ -555,7 +555,10 @@ class FunctionScanner(PatternMatcher):
 class ClassScanner(PatternMatcher):
 
   def inspect(self, obj):
-    return type(obj) in (types.ClassType, types.TypeType) and self.matches(obj.__name__)
+    try:
+      return type(obj) in (types.ClassType, types.TypeType) and self.matches(obj.__name__)
+    except:
+      return False
 
   def descend(self, cls):
     # the None is required for older versions of python

@@ -65,7 +65,7 @@ mvn test \
             <protonJythonTestRoot>${basedir}/..</protonJythonTestRoot>
             <protonJythonBinding>${basedir}/../../qpid-proton/proton-c/bindings/python</protonJythonBinding>
             <protonJythonShim>${basedir}/../../qpid-proton/proton-j/src/main/resources</protonJythonShim>
-            <datawireJythonBinding>${basedir}/..</datawireJythonBinding>
+            <datawireJythonBinding>${basedir}/../</datawireJythonBinding>
             <datawireJythonShim>${basedir}/../datawire-j/src/main/resources</datawireJythonShim>
             <protonJythonTestScript>${basedir}/../dtest</protonJythonTestScript>
             <protonJythonTestXmlOutputDirectory>${testReportOutputDirectory}</protonJythonTestXmlOutputDirectory>

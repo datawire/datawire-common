@@ -19,9 +19,10 @@ class ImplTest(TestCase):
     try:
       import jdatawire
     except:
-      import sys
+      import sys, traceback
+      traceback.print_exc()
       self.assertNotEquals(sys.platform, "jython")
-      self.skipTest("Not a jython run")
+      self.skipTest("Not a jython run, platform=" + sys.platform)
 
   def testDualImplCoverage(self):
     self.checkRunningOnJython()

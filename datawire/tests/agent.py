@@ -1,15 +1,16 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
+from unittest import TestCase
 from proton import Message
 from proton.reactor import Reactor
 from datawire import Agent, Receiver
 
 from common import *
 
-class AgentTest:
+class AgentTest(TestCase):
 
-    def __init__(self):
+    def setUp(self):
         class FakeTether:
             def __init__(self):
                 self.address = None
@@ -20,7 +21,7 @@ class AgentTest:
         self.reactor = Reactor(self.server)
         self.samples = 0
 
-    def teardown(self):
+    def tearDown(self):
         if self.server.acceptor:
             self.server.acceptor.close()
 
