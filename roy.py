@@ -235,6 +235,7 @@ def build(package):
 %s
 POSTINSTALL
 """ % package.postinstall
+        opts += " --iteration %s" % getattr(package, "iteration", 1)
         buildsh += "\nfpm -f -s dir -t %(ext)s -n %(name)s -v %(version)s -a %(arch)s %(deps)s %(opts)s -C/work/install .\n" % {
             "ext": distro.ext,
             "name": package.name,
