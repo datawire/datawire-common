@@ -4,8 +4,11 @@
 import sys, traceback
 from proton import EventType, Message, Delivery
 
-MESSAGE = EventType("message")
+from .impl import dual_impl, Event
 
+MESSAGE = EventType("message", Event.Type.MESSAGE)
+
+@dual_impl
 class Decoder:
 
     def __init__(self, delegate=None):
@@ -26,5 +29,6 @@ class Decoder:
                 dlv.update(Delivery.REJECTED)
                 traceback.print_exc()
                 print sys.exc_info()
+                # TODO no rethrow?
             finally:
                 dlv.settle()

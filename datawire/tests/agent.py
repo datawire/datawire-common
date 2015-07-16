@@ -36,6 +36,7 @@ class AgentTest(TestCase):
             def __init__(self):
                 self.received = 0
             def on_message(self, event):
+                m = event.message
                 assert event.message.body["samples"] == self.received, (event.message.body, self.received)
                 self.received += 1
                 if self.received == count:

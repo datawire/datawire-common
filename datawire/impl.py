@@ -10,7 +10,10 @@ try:
       return getattr(jdatawire, clazz.__name__)
     else:
       return clazz
+  Event = jdatawire.Event
 except:
   def dual_impl(clazz):
     return clazz
-
+  class Event:
+    class Type:
+      MESSAGE = None

@@ -26,46 +26,62 @@ public class EventImpl implements Event {
         impl = e;
     }
 
+    @Override
     public Record attachments() {
         return impl.attachments();
     }
 
+    @Override
     public EventType getType() {
         return impl.getType();
     }
 
+    @Override
     public org.apache.qpid.proton.engine.Event.Type getBuiltinType() {
         return impl.getBuiltinType();
     }
 
+    @Override
     public Object getContext() {
         return impl.getContext();
     }
 
+    @Override
     public void dispatch(Handler handler) throws HandlerException {
         impl.dispatch(handler);
     }
 
+    @Override
+    public void redispatch(EventType as_type, Handler handler) {
+        impl.redispatch(as_type, handler);
+    }
+
+    @Override
     public Connection getConnection() {
         return impl.getConnection();
     }
 
+    @Override
     public Session getSession() {
         return impl.getSession();
     }
 
+    @Override
     public Link getLink() {
         return impl.getLink();
     }
 
+    @Override
     public Delivery getDelivery() {
         return impl.getDelivery();
     }
 
+    @Override
     public Transport getTransport() {
         return impl.getTransport();
     }
 
+    @Override
     public Reactor getReactor() {
         return impl.getReactor();
     }
@@ -95,6 +111,4 @@ public class EventImpl implements Event {
         Message m = impl.attachments().get(MESSAGE, Message.class);
         return m;                
     }
-
-  
 }

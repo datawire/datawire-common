@@ -15,7 +15,7 @@ public class Decoder extends BaseHandler {
     private static final Accepted ACCEPTED = Accepted.getInstance();
     private static final Rejected REJECTED = new Rejected();
 
-    private Handler delegate;
+    private org.apache.qpid.proton.engine.Handler delegate;
     
     // FIXME: one instance of Message is dangerous, user of the API can easily use the same Decoder
     // instance with two reactors! It would be better if message was associated
@@ -27,7 +27,7 @@ public class Decoder extends BaseHandler {
         this.delegate = this;
     }
 
-    public Decoder(Handler delegate) {
+    public Decoder(org.apache.qpid.proton.engine.Handler delegate) {
         this.delegate = delegate;
     }
 
@@ -39,7 +39,7 @@ public class Decoder extends BaseHandler {
         }               
         try {
             e.attachments().set(EventImpl.MESSAGE, Message.class, message);
-            Event.Type.MESSAGE.dispatch(e, delegate);
+            e.redispatch(Event.Type.MESSAGE, delegate);
             dlv.disposition(ACCEPTED);
         } catch (Throwable ex) {
             dlv.disposition(REJECTED);     // TODO: setErrorCondition?
@@ -47,6 +47,11 @@ public class Decoder extends BaseHandler {
         } finally {
             dlv.settle();
         }
+    }
+    
+    @Override
+    public void onMessage(Event e) {
+        // When this instance is used as the delegate it should not forward this event to the onUnhandled
     }
 
     private boolean recv(Message message2, Delivery dlv) {
