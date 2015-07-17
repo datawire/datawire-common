@@ -57,3 +57,10 @@ class Decoder(WrappedHandler):
         
 def datawire_decoder():
     return io_datawire_Decoder()
+
+class Impls:
+    Address = Address
+    Decoder = Decoder
+
+impls = Impls()
+del Impls

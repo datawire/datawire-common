@@ -1,16 +1,16 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
+__all__ = ["dualImpls", "dual_impl", "Event"]
 dualImpls = set()
 try:
-  import jdatawire
+  from jdatawire import impls, Event
   def dual_impl(clazz):
-    if hasattr(jdatawire, clazz.__name__):
+    if hasattr(impls, clazz.__name__):
       dualImpls.add(clazz.__name__)
-      return getattr(jdatawire, clazz.__name__)
+      return getattr(impls, clazz.__name__)
     else:
       return clazz
-  Event = jdatawire.Event
 except:
   def dual_impl(clazz):
     return clazz
