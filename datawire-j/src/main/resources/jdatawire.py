@@ -3,6 +3,7 @@
 # in some cases the io.datawire package later gets removed, so grab references to stuff needed at runtime
 
 from io.datawire import Address
+from io.datawire import Processor as io_datawire_Processor
 from io.datawire import Decoder as io_datawire_Decoder
 from io.datawire import Event
 from io.datawire.impl import EventImpl as io_datawire_impl_EventImpl
@@ -60,12 +61,30 @@ class Decoder(WrappedHandler):
             else:
                 return io_datawire_Decoder()
         WrappedHandler.__init__(self, datawire_decoder)
-        
 
+class Processor(WrappedHandler):
+
+    def __init__(self, delegate = None, window = None):
+        def datawire_processor():
+            args = []
+            if delegate is not None:
+                if isinstance(delegate, BaseHandler):
+                    args.append(delegate)
+                else:
+                    args.append(_chandler(delegate))
+            else:
+                args.append(None)
+            if window is not None:
+                args.append(window)
+            ret = io_datawire_Processor(*args)
+            return ret
+        WrappedHandler.__init__(self, datawire_processor)
+        
 
 class Impls:
     Address = Address
     Decoder = Decoder
+    Processor = Processor
 
 impls = Impls()
 del Impls

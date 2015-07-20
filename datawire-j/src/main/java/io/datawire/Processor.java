@@ -6,8 +6,8 @@ import org.apache.qpid.proton.reactor.Handshaker;
 public class Processor extends BaseHandler {
 
     private final org.apache.qpid.proton.engine.Handler delegate;
-    public Processor(org.apache.qpid.proton.engine.Handler delegate, int window) {
-        this.delegate = delegate != null ? delegate : this;
+    public Processor(org.apache.qpid.proton.engine.Handler _delegate, int window) {
+        delegate = _delegate != null ? _delegate : this;
         add(new FlowController(window));
         add(new Handshaker());
         add(new Decoder(delegate));

@@ -15,7 +15,7 @@ public class Decoder extends BaseHandler {
     private static final Accepted ACCEPTED = Accepted.getInstance();
     private static final Rejected REJECTED = new Rejected();
 
-    private org.apache.qpid.proton.engine.Handler delegate;
+    private final org.apache.qpid.proton.engine.Handler delegate;
     
     // FIXME: one instance of Message is dangerous, user of the API can easily use the same Decoder
     // instance with two reactors! It would be better if message was associated
@@ -24,11 +24,11 @@ public class Decoder extends BaseHandler {
     private byte[] buffer = new byte[10000];
 
     public Decoder() {
-        this.delegate = this;
+        this(null);
     }
 
-    public Decoder(org.apache.qpid.proton.engine.Handler delegate) {
-        this.delegate = delegate;
+    public Decoder(org.apache.qpid.proton.engine.Handler _delegate) {
+        this.delegate = _delegate != null ? _delegate : this;
     }
 
     @Override
