@@ -3,7 +3,9 @@
 
 from proton.handlers import CFlowController, CHandshaker
 from .decoder import Decoder
+from .impl import dual_impl
 
+@dual_impl
 class Processor:
 
     def __init__(self, delegate=None, window=1024):
