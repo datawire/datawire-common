@@ -27,6 +27,7 @@ class Source:
             self.count += 1
 
 class Sink(Processor):
+    messages = None
 
     def __init__(self):
         Processor.__init__(self)
