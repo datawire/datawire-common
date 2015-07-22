@@ -3,8 +3,11 @@
 
 from proton import EventType, PN_LOCAL_ACTIVE
 
-SAMPLE = EventType("sample")
+from .impl import dual_impl, Event
 
+SAMPLE = EventType("sample", Event.Type.SAMPLE)
+
+@dual_impl
 class Sampler:
 
     def __init__(self, delegate=None, frequency=1):
@@ -25,4 +28,4 @@ class Sampler:
             class Sample:
                 def on_timer_task(_self, _):
                     self._sample(event)
-            event.reactor.schedule(1.0/self.frequency, Sample())
+            event.reactor.schedule(1.0/self.frequency, Sample()) # FIXME: schedule is in milliseconds ?

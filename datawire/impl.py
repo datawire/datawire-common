@@ -17,3 +17,4 @@ except:
   class Event:
     class Type:
       MESSAGE = None
+      SAMPLE = None

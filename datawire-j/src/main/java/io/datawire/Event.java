@@ -9,6 +9,7 @@ public interface Event extends org.apache.qpid.proton.engine.Event {
 
     public enum Type implements EventType {
         MESSAGE,
+        SAMPLE,
         NOT_A_DATAWIRE_TYPE;
 
         @Override
