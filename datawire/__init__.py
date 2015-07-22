@@ -18,3 +18,4 @@ from .decoder import Decoder
 from .processor import Processor
 from .sampler import Sampler
 from .configuration import Configuration
+from .counts import Counts

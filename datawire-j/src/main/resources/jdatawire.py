@@ -3,6 +3,7 @@
 # in some cases the io.datawire package later gets removed, so grab references to stuff needed at runtime
 
 from io.datawire import Address
+from io.datawire import Counts
 from io.datawire import Processor as io_datawire_Processor
 from io.datawire import Decoder as io_datawire_Decoder
 from io.datawire import Sampler as io_datawire_Sampler
@@ -127,6 +128,7 @@ class Impls:
     Decoder = Decoder
     Processor = Processor
     Sampler = Sampler
+    Counts = Counts
 
 impls = Impls()
 del Impls
