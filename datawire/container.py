@@ -5,15 +5,18 @@ from proton.handlers import CHandshaker
 from .linker import Sender, Receiver
 
 def ancestors(address):
-    yield address
-    if address is None: return
+    if address is None:
+        yield address 
+        return
     address = address.split("?", 1)[0]
-    path = address.split("/")[:-1]
+    path = address.split("/")
     while path:
         addr = "/".join(path)
-        yield "%s/" % addr
         yield addr
-        path.pop()
+        if path[-1]:
+            path[-1] = ""
+        else:
+            path.pop()
 
 class Container:
 
