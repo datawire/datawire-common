@@ -16,9 +16,7 @@ def _version():
                    "X.X")
 
 def _repo():
-    import os
-    return _getvar("REPO", os.path.join(os.path.dirname(__file__),
-                                        "../../../roy.py"), "stable")
+    return "staging"
 
 version = _version()
 repo = _repo()

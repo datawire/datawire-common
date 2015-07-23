@@ -9,8 +9,9 @@ class Proton:
 
     def __init__(self):
         self.name = "datawire-proton"
-        self.build_deps = [deps.patch, deps.cmake, deps.uuid.dev, deps.ssl.dev,
-                           deps.swig, deps.python.dev]
+        self.build_deps = [deps.patch, deps.make, deps.gcc, deps.cmake,
+                           deps.uuid.dev, deps.ssl.dev, deps.swig,
+                           deps.python.dev]
         self.deps = [deps.uuid, deps.ssl, deps.python]
         self.version = "0.9-datawire-1"
 

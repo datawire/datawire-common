@@ -2,8 +2,6 @@ import os, sys, tempfile
 from argparse import ArgumentParser
 from collections import defaultdict
 
-REPO = "staging"
-
 # TODO: factor out common patterns from pkg-* files and add them as
 #       utilities here
 
@@ -36,16 +34,6 @@ def system(cmd):
         print "command failed:", cmd
         sys.exit(st)
 
-def _dimage(ctx, tag, text, update):
-    dfile = os.path.join(ctx, "Dockerfile")
-    f = open(dfile, "w")
-    f.write(text)
-    f.close()
-    opts = ""
-    if update:
-        opts += "--no-cache"
-    system("docker build %s -t %s %s" % (opts, tag, ctx))
-
 class Distro:
 
     def __init__(self):
@@ -57,20 +45,36 @@ class Distro:
         self.dist = os.path.join(output, self.image)
         self.build = os.path.join(self.dist, "build")
         self.work = os.path.join(self.dist, "work")
-        self.test = os.path.join(self.dist, "test")
+        self.pack = os.path.join(self.dist, "pack")
 
     def prep(self):
-        for d in (self.build, self.work, self.test):
+        for d in (self.build, self.work, self.pack):
             if not os.path.exists(d):
                 os.makedirs(d)
             assert os.path.isdir(d)
 
+    def _dimage(self, ctx, tag, text, update):
+        if isinstance(text, tuple):
+            text, files = text
+        else:
+            files = {}
+
+        for name, content in [("Dockerfile", text)] + files.items():
+            dfile = os.path.join(ctx, name)
+            f = open(dfile, "w")
+            f.write(content)
+            f.close()
+        opts = ""
+        if update:
+            opts += "--no-cache"
+        system("docker build %s -t %s %s" % (opts, tag, ctx))
+
     def images(self, config, update):
         bimg = "%s-build" % self.image
-        timg = "%s-test" % self.image
-        _dimage(self.build, bimg, self.build_image(config), update)
-        _dimage(self.test, timg, self.test_image(config), update)
-        return bimg, timg
+        pimg = "%s-pkg" % self.image
+        self._dimage(self.build, bimg, self.build_image(config), update)
+        self._dimage(self.pack, pimg, self.pack_image(config), update)
+        return bimg, pimg
 
     def run(self, image, script):
         run = os.path.join(self.dist, "run.sh")
@@ -79,8 +83,8 @@ class Distro:
         f.write(script)
         f.close()
         system("chmod a+x %s" % run)
-        system("docker run --entrypoint=/run.sh --privileged=true -v %s:/run.sh -v %s:/work %s" %
-               (os.path.abspath(run), os.path.abspath(self.work), image))
+        system("docker run --rm --entrypoint=/run.sh --privileged=true -v %s:/run.sh -v %s:/work -v %s:/dist %s" %
+               (os.path.abspath(run), os.path.abspath(self.work), os.path.abspath(self.output), image))
 
     def alias(self, dep, *values):
         self.aliases[dep].extend(values)
@@ -101,43 +105,32 @@ class Distro:
 
         return " ".join([prefix + e for e in expanded])
 
-    def build_image(self, config):
-        result = """FROM %(image)s
-RUN %(pkg)s -y update
-RUN %(pkg)s -y install curl
-RUN curl -s https://packagecloud.io/install/repositories/datawire/%(REPO)s/script.%(ext)s.sh | bash
-RUN %(makecache)s && %(pkg)s -y install %(bootstrap_deps)s && gem install fpm
-"""
-        if config.build_deps:
-            result += """
-RUN %(pkg)s -y install %(build_deps)s
-"""
-        result = result % {
+    def vars(self, config):
+        return {
             "image": self.image,
             "pkg": self.pkg,
+            "extrapkgopts": self.extrapkgopts,
             "ext": self.ext,
             "bootstrap_deps": self.render(self.bootstrap_deps),
             "build_deps": self.render(config.build_deps),
-            "makecache": self.makecache,
-            "REPO": REPO
+            "deps": self.render(config.deps),
+            "repopath": self.repopath,
+            "repocfg": self.repocfg,
+            "createrepo": self.createrepo
         }
-        return result
 
-    def test_image(self, config):
+    def pack_image(self, config):
         return """FROM %(image)s
 RUN %(pkg)s -y update
-RUN %(pkg)s -y install curl
-RUN curl -s https://packagecloud.io/install/repositories/datawire/%(REPO)s/script.%(ext)s.sh | bash
-RUN %(makecache)s && %(pkg)s -y install %(deps)s
-""" % {
-    "image": self.image,
-    "pkg": self.pkg,
-    "ext": self.ext,
-    "deps": self.render(config.deps),
-    "makecache": self.makecache,
-    "REPO": REPO
-}
+RUN %(pkg)s -y install %(bootstrap_deps)s && gem install fpm
+""" % self.vars(config)
 
+    def build_image(self, config):
+        result = """FROM %(image)s
+RUN %(pkg)s -y update
+ADD repo.txt %(repopath)s
+"""
+        return result % self.vars(config), {"repo.txt": self.repocfg}
 
 class Ubuntu(Distro):
 
@@ -149,10 +142,16 @@ class Ubuntu(Distro):
         self.alias(deps.uuid.dev, "uuid-dev")
         self.alias(deps.python, "python2.7", "libpython2.7")
         self.image = "ubuntu"
+        self.repopath = "/etc/apt/sources.list.d/roy.list"
+        self.repocfg = """
+deb file:/work/repo ./
+"""
+        self.createrepo = "cd /work/repo && dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz"
         self.pkg = "apt-get"
+        self.extrapkgopts = "--force-yes"
         self.ext = "deb"
         self.dev = "dev"
-        self.makecache = "apt-get update"
+        self.bootstrap_deps += [deps.dpkg_dev]
 
 class Centos(Distro):
 
@@ -164,11 +163,21 @@ class Centos(Distro):
         self.alias(deps.uuid.dev, "libuuid-devel")
         self.alias(deps.policycoreutils, "policycoreutils", "policycoreutils-python")
         self.image = "centos"
+        self.repopath = "/etc/yum.repos.d/roy.repo"
+        self.repocfg = """
+[roy]
+name=Roy - local packages
+baseurl=file:///work/repo
+enabled=1
+gpgcheck=0
+skip_if_unavailable=true
+"""
+        self.createrepo = "createrepo /work/repo"
         self.pkg = "yum"
+        self.extrapkgopts = ""
         self.ext = "rpm"
         self.dev = "devel"
-        self.bootstrap_deps += [deps.rpm_build]
-        self.makecache = "yum makecache --disablerepo='*' --enablerepo=datawire_%(REPO)s" % {"REPO": REPO}
+        self.bootstrap_deps += [deps.rpm_build, deps.createrepo]
 
 class Fedora(Centos):
 
@@ -189,8 +198,8 @@ def build(package):
     parser.add_argument("-o", "--output", default="dist", help="output directory")
     parser.add_argument("-i", "--images", action="store_true", help="produce images only")
     parser.add_argument("-d", "--distro", help="specify a distro (default to all)")
-    parser.add_argument("-r", "--run", action="store_true", help="run a shell in the test image")
     parser.add_argument("-s", "--shell", action="store_true", help="run a shell in the build image")
+    parser.add_argument("-p", "--package", action="store_true", help="run a shell in the package image")
     parser.add_argument("-u", "--update", action="store_true", help="update images")
     args = parser.parse_args()
     output = args.output
@@ -205,38 +214,47 @@ def build(package):
         distro.configure(output)
 
         distro.prep()
-        bimg, timg = distro.images(package, args.update)
+        bimg, pimg = distro.images(package, args.update)
         if args.images:
             continue
 
-        if args.run or args.shell:
+        if args.shell or args.package:
             if args.shell:
                 shimg = bimg
             else:
-                shimg = timg
+                shimg = pimg
             print
             print "IMAGE:", shimg
             print
-            os.system("docker run --privileged=true -it -v %s:/dist %s /bin/bash" %
-                      (os.path.abspath(output), shimg))
+            os.system("docker run --rm --entrypoint=/bin/bash --privileged=true -it -v %s:/work -v %s:/dist %s" %
+                      (os.path.abspath(distro.work), os.path.abspath(output), shimg))
             continue
 
-        distro.run(bimg, "rm -rf /work/*")
+        distro.run(pimg, "rm -rf /work/*")
+        distro.run(pimg, """
+mkdir /work/repo
+cp /dist/%(image)s/*.%(ext)s /work/repo/
+%(createrepo)s
+        """ % distro.vars(package))
         package.setup(Env(distro.work))
-        buildsh = "cd /work\n"
+        buildsh = "%(pkg)s -y update\n"
+        if package.build_deps:
+            buildsh += "%(pkg)s -y %(extrapkgopts)s install %(build_deps)s\n"
+        buildsh += "cd /work\n"
+        buildsh = buildsh % distro.vars(package)
         buildsh += package.build(distro)
-        buildsh += "\ncd /work\n"
+        fpmsh = "cd /work\n"
         opts = ""
         for c in getattr(package, "conf", []):
             opts += " --config-files %s" % c
         if hasattr(package, "postinstall"):
             opts += " --after-install /tmp/postinstall"
-            buildsh += """cat > /tmp/postinstall <<POSTINSTALL
+            fpmsh += """cat > /tmp/postinstall <<POSTINSTALL
 %s
 POSTINSTALL
 """ % package.postinstall
         opts += " --iteration %s" % getattr(package, "iteration", 1)
-        buildsh += "\nfpm -f -s dir -t %(ext)s -n %(name)s -v %(version)s -a %(arch)s %(deps)s %(opts)s -C/work/install .\n" % {
+        fpmsh += "\nfpm -f -s dir -t %(ext)s -n %(name)s -v %(version)s -a %(arch)s %(deps)s %(opts)s -C/work/install .\n" % {
             "ext": distro.ext,
             "name": package.name,
             "version": package.version,
@@ -245,5 +263,6 @@ POSTINSTALL
             "opts": opts
         }
         distro.run(bimg, buildsh)
-        distro.run(bimg, "chown -R %s:%s /work" % (os.getuid(), os.getgid()))
+        distro.run(pimg, fpmsh)
+        distro.run(pimg, "chown -R %s:%s /work" % (os.getuid(), os.getgid()))
         system("mv %s/*.%s %s" % (distro.work, distro.ext, distro.dist))
