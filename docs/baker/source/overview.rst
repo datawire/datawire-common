@@ -1,9 +1,9 @@
-Baker
-=====
+Baker Street
+============
 
-Baker is a service discovery and routing system designed for
-microservice architectures. Baker simplifies scaling, testing, and
-upgrading microservices.
+Baker Street (hereafter shortened as Baker) is a service discovery and
+routing system designed for microservice architectures. Baker
+simplifies scaling, testing, and upgrading microservices.
 
 Why use Baker?
 --------------
