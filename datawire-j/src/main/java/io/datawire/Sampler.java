@@ -62,7 +62,7 @@ public class Sampler extends BaseHandler {
 
     private org.apache.qpid.proton.engine.Handler sampler = new org.apache.qpid.proton.engine.BaseHandler() {
         @Override
-        public void onTimerTask(Event _) {
+        public void onTimerTask(Event ignored) {
             sample();
         }
     };
