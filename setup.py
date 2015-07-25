@@ -12,7 +12,7 @@ def version():
                 return l["__version__"]
     return None
 
-setup(name='datawire',
+setup(name='datawire-common',
       version=version(),
       description='Infrastructure for dataflow-driven, resilient microservices',
       author='datawire.io',
@@ -20,5 +20,5 @@ setup(name='datawire',
       url='http://www.datawire.io',
       py_modules=['common', 'service'],
       packages=['datawire'],
-      scripts=['directory', 'dw', 'manifold']
-      )
+      install_requires=['python-qpid-proton >= 0.9.1.1'],
+      scripts=['directory', 'dw', 'manifold'])

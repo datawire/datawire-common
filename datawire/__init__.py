@@ -3,7 +3,7 @@
 
 __author__    = "datawire.io <hello@datawire.io>"
 __copyright__ = "Copyright (C) 2015 k736, inc."
-__version__   = "0.3"
+__version__   = "0.4"
 
 # So logging doesn't emit "No handlers could be found for logger" message.
 import logging as _logging
