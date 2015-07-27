@@ -1,16 +1,46 @@
+/**
+ * Copyright (C) k736, inc. All Rights Reserved.
+ * Unauthorized copying or redistribution of this file is strictly prohibited.
+ */
 package io.datawire;
 
 import org.apache.qpid.proton.reactor.FlowController;
 import org.apache.qpid.proton.reactor.Handshaker;
 
+/**
+ * A handler for processing incoming messages.
+ * <p>
+ * 
+ * <pre>
+ * {@code
+ * class MyHandler extends BaseHandler {
+ *   {@literal @}Override
+ *   public void onMessage(Event e) {
+ *     // process message
+ *   }
+ *   
+ *   public static void main(String[] args) {
+ *     Reactor r = Reactor.Factory.create();
+ *     r.acceptor("localhost", "12345", new Processor(new MyHandler()));
+ *     r.run();
+ *   }
+ * }
+ * }
+ * </pre>
+ * <p>
+ * 
+ * @author bozzo
+ *
+ */
 public class Processor extends BaseHandler {
 
     private final org.apache.qpid.proton.engine.Handler delegate;
-    public Processor(org.apache.qpid.proton.engine.Handler _delegate, int window) {
-        delegate = _delegate != null ? _delegate : this;
+
+    public Processor(org.apache.qpid.proton.engine.Handler delegate, int window) {
+        this.delegate = delegate != null ? delegate : this;
         add(new FlowController(window));
         add(new Handshaker());
-        add(new Decoder(delegate));
+        add(new Decoder(this.delegate));
     }
 
     public Processor(org.apache.qpid.proton.engine.Handler delegate) {

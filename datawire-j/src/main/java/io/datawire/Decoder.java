@@ -18,13 +18,24 @@ import org.apache.qpid.proton.message.Message;
 /**
  * Handler for decoding deliveries into messages.
  * <p>
- * <b>Usage</b>: Implement a {@link Handler} preferably by extending the {@link BaseHandler}, implement the {@link Handler#onMessage(Event)} and then either 
+ * <b>Usage</b>: Implement a {@link Handler} preferably by extending the
+ * {@link BaseHandler}, implement the {@link Handler#onMessage(Event)} and then
+ * either
  * <ul>
- * <li>pass it as {@code delegate} to the {@link Decoder#Decoder(org.apache.qpid.proton.engine.Handler)} constructor, or</li>
- * <li>add your handler with {@link Decoder#add(org.apache.qpid.proton.engine.Handler)} to an instance of {@link #Decoder()}</li>
+ * <li>pass it as {@code delegate} to the
+ * {@link Decoder#Decoder(org.apache.qpid.proton.engine.Handler)} constructor,
+ * or</li>
+ * <li>add your handler with
+ * {@link Decoder#add(org.apache.qpid.proton.engine.Handler)} to an instance of
+ * {@link #Decoder()}</li>
  * </ul>
- * 
- * TODO: for simple scenarios use the prepackaged ServiceBase class
+ *
+ * The Decoder fires the {@link Handler#onMessage(Event)} synchronously and
+ * depending on success or failure (exception being thrown) either accepts (
+ * {@link Delivery#disposition(org.apache.qpid.proton.amqp.transport.DeliveryState)}
+ * ) or rejects the delivery and settles it ({@link Delivery#settle()})
+ * <p>
+ * TODO: for simple scenarios use the ServiceBase class
  * 
  * @author bozzo
  *
@@ -36,19 +47,34 @@ public class Decoder extends BaseHandler {
     private final org.apache.qpid.proton.engine.Handler delegate;
 
     // FIXME: one instance of Message is dangerous, user of the API can easily
-    // use the same Decoder
-    // instance with two reactors! It would be better if message was associated
-    // with datawire EventImpl and kept as part of the pool
+    // use the same Decoder instance with two reactors! It would be better if
+    // message was associated with datawire EventImpl and kept as part of the
+    // pool
     // FIXME: Event.copy does not copy deep enough. A handler that would build
-    // something akin Sampler on top of decoder to refer to a message will get
+    // something akin Sampler on top of Decoder to refer to a message will get
     // the message changed from under it.
     private Message message = Message.Factory.create();
     private byte[] buffer = new byte[10000];
 
+    /**
+     * An instance of decoder that will use itself as the delegate, see
+     * {@link #Decoder(org.apache.qpid.proton.engine.Handler)}
+     * <p>
+     * Use this constructor when deriving or adding your handler via
+     * {@link Decoder#add(org.apache.qpid.proton.engine.Handler)}
+     */
     public Decoder() {
         this(null);
     }
 
+    /**
+     * An instance of decoder that will invoke {@link Handler#onMessage(Event)}
+     * on the supplied delegate
+     * <p>
+     * XXX: is it ever a good idea to use this approach? Deprecate?
+     * 
+     * @param delegate the handler to invoke with decoded messages. Can be {@literal null}.
+     */
     public Decoder(org.apache.qpid.proton.engine.Handler delegate) {
         this.delegate = delegate != null ? delegate : this;
     }
@@ -65,7 +91,7 @@ public class Decoder extends BaseHandler {
             dlv.disposition(ACCEPTED);
         } catch (Throwable ex) {
             dlv.disposition(REJECTED); // TODO: setErrorCondition?
-            throw ex; // TODO: Why does python Decoder not re-throw???
+            throw ex; // XXX: Why does python Decoder not re-throw???
         } finally {
             dlv.settle();
         }
@@ -75,7 +101,7 @@ public class Decoder extends BaseHandler {
     public void onMessage(Event e) {
         // XXX: is this really really necessary?
         // When this instance is used as the delegate it should not forward this
-        // event to the onUnhandled
+        // event to the onUnhandled.
     }
 
     private boolean recv(Message message2, Delivery dlv) {
