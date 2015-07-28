@@ -1,7 +1,7 @@
 # Copyright (C) k736, inc. All Rights Reserved.
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
-import os
+import os, sys
 from cStringIO import StringIO
 from ConfigParser import SafeConfigParser as ConfigParser
 
@@ -27,3 +27,7 @@ class Configuration(object):
             parser.readfp(StringIO(self.default_config))
         self.parsed_filenames = parser.read(self.filenames)
         return parser
+
+    def exit_with_config_error(self, message):
+        sys.stderr.write(message + "\n")
+        sys.exit(78)  # EX_CONFIG = 78 according to sysexits.h
