@@ -215,7 +215,7 @@ abstract class Link extends BaseHandler {
     
     @Override
     public void onConnectionBound(Event event) {
-        event.getTransport().setIdleTimeout(60); /// XXX: units???
+        event.getTransport().setIdleTimeout(60000); /// XXX: units???
         // TODO: transport tracer
     }
     
