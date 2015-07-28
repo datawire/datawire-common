@@ -36,9 +36,9 @@ To execute, &quot;mvn test&quot;.
 Example of advanced usage (all of the -D flags are optional):
 
 mvn test \
--Ddatawire.pythontest.pattern='datawire_tests.transport.TransportTest.*' \
--Ddatawire.pythontest.invocations=20 \
--Ddatawire.pythontest.always_colorize=true \
+-Dproton.pythontest.pattern='datawire_tests.transport.TransportTest.*' \
+-Dproton.pythontest.invocations=20 \
+-Dproton.pythontest.always_colorize=true \
 </description>
 
   <scm>

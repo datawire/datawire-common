@@ -31,6 +31,10 @@ public interface Event extends org.apache.qpid.proton.engine.Event {
          */
         SAMPLE,
         /**
+         * An event 
+         */
+        DRAINED,
+        /**
          * A guard value returned by {@link Event#getDatawireType()} when this method is invoked on a non-datawire {@link org.apache.qpid.proton.engine.Event} instance.
          * This value is not valid for {@link Event#redispatch(EventType, Handler)}, see {@link EventType#isValid()}
          */

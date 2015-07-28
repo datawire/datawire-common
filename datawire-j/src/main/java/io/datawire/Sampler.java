@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) k736, inc. All Rights Reserved.
+ * Unauthorized copying or redistribution of this file is strictly prohibited.
+ */
 package io.datawire;
 
 import java.util.Iterator;
@@ -7,6 +11,12 @@ import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.engine.Handler;
 import org.apache.qpid.proton.engine.Link;
 
+/**
+ * Fixed interval recurring timer event for monitoring of {@link EndpointState#ACTIVE} {@link Link}.
+ * 
+ * @author bozzo
+ *
+ */
 public class Sampler extends BaseHandler {
 
     private final org.apache.qpid.proton.engine.Handler delegate;

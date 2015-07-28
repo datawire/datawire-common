@@ -18,3 +18,4 @@ except:
     class Type:
       MESSAGE = None
       SAMPLE = None
+      DRAINED = None

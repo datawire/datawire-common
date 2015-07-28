@@ -116,4 +116,9 @@ public class EventImpl implements Event {
         Message m = MESSAGE.get(impl.attachments());
         return m;                
     }
+
+    @Override
+    public void delegate() throws HandlerException {
+        impl.delegate();
+    }
 }

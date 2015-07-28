@@ -5,6 +5,8 @@ import logging
 from proton import DELEGATED, Endpoint, EventType, Message
 from .address import Address
 
+from .impl import dual_impl, Event
+
 log = logging.getLogger(__name__)
 
 def redirect(link, original):
@@ -41,7 +43,7 @@ def redirect(link, original):
     else:
         return None
 
-DRAINED = EventType("drained")
+DRAINED = EventType("drained", Event.Type.DRAINED)
 
 class Link:
 
@@ -150,6 +152,7 @@ class Link:
         conn.hostname = self.network()
         return conn.session()
 
+@dual_impl
 class Sender(Link):
 
     def __init__(self, target, *handlers, **kwargs):
@@ -196,6 +199,7 @@ class Sender(Link):
     def close(self):
         self.__closed = True
 
+@dual_impl
 class Receiver(Link):
 
     def __init__(self, source, *handlers, **kwargs):
@@ -217,6 +221,7 @@ class Receiver(Link):
         rcv.target.address = self.target
         return rcv
 
+@dual_impl
 class Tether(Sender):
 
     def __init__(self, directory, address, target, host=None, port=None, policy=None, agent_type=None):
@@ -254,6 +259,7 @@ def _key(target, handlers, kwargs):
     items.sort()
     return target, handlers, tuple(items)
 
+@dual_impl
 class Linker:
 
     def __init__(self):

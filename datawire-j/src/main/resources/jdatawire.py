@@ -7,6 +7,8 @@ from io.datawire import Counts
 from io.datawire import Processor as io_datawire_Processor
 from io.datawire import Decoder as io_datawire_Decoder
 from io.datawire import Sampler as io_datawire_Sampler
+from io.datawire import Sender as io_datawire_Sender
+from io.datawire import Receiver as io_datawire_Receiver
 from io.datawire import Event
 from io.datawire.impl import EventImpl as io_datawire_impl_EventImpl
 
@@ -119,16 +121,62 @@ class Sampler(WrappedHandler):
                 args.append(frequency)
             return io_datawire_Sampler(*args)
 
-        WrappedHandler.__init__(self, datawire_sampler())
+        WrappedHandler.__init__(self, datawire_sampler)
 
     frequency = WrappedHandlerProperty()
 
+
+class _Linker:
+  def start(self, reactor):
+    self._impl.start(reactor._impl)
+
+  def stop(self, reactor):
+    self._impl.stop(reactor._impl)
+    
+  linked = WrappedHandlerProperty()
+
+  
+class Sender(WrappedHandler, _Linker):
+  def __init__(self, target, *handlers, **kwargs):
+    def datawire_sender():
+      args = []
+      args.append(target);
+      args.append(kwargs.pop("source", None))
+      args.append(map(unwrap_handler, handlers))
+      if handlers:
+        pass
+      if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.items()))
+      return io_datawire_Sender(*args)
+    WrappedHandler.__init__(self, datawire_sender)
+    
+  def send(self, o):
+    self._impl.send(o)
+    
+  def close(self):
+    self._impl.close()
+    
+class Receiver(WrappedHandler, _Linker):
+  def __init__(self, source, *handlers, **kwargs):
+    def datawire_receiver():
+      args = []
+      args.append(source);
+      args.append(kwargs.pop("target", None))
+      args.append(kwargs.pop("drain", False))
+      args.append(map(unwrap_handler, handlers))
+      if handlers:
+        pass
+      if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.items()))
+      return io_datawire_Receiver(*args)
+    WrappedHandler.__init__(self, datawire_receiver)
+    
 class Impls:
     Address = Address
     Decoder = Decoder
     Processor = Processor
     Sampler = Sampler
     Counts = Counts
-
+    Sender = Sender
+    Receiver = Receiver
+    pass
 impls = Impls()
 del Impls

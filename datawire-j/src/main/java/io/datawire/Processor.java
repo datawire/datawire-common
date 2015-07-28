@@ -8,7 +8,7 @@ import org.apache.qpid.proton.reactor.FlowController;
 import org.apache.qpid.proton.reactor.Handshaker;
 
 /**
- * A handler for processing incoming messages.
+ * A handler for processing incoming messages. It aggregates a {@link FlowController}, a {@link Handshaker} and a {@link Decoder}. 
  * <p>
  * 
  * <pre>
