@@ -13,10 +13,9 @@ import org.apache.qpid.proton.reactor.Reactor;
 public class Receiver extends Link {
     
     private static class Config extends Link.Config {
-        public Link.Config link;
         public String source;
         public String target;
-        public boolean drain = false; //XXX: TODO constructor explosion, or think about builder pattern
+        public boolean drain = false;
     }
     
     public static class Builder {
@@ -33,8 +32,8 @@ public class Receiver extends Link {
             config.drain = drain;
             return this;
         }
-        public Builder addHandler(Handler handler) {
-            config.handlers.add(handler);
+        public Builder addHandlers(Handler... handlers) {
+            config.handlers.addAll(Arrays.asList(handlers));
             return this;
         }
         public Receiver create() {

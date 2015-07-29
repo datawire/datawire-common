@@ -9,6 +9,7 @@ from io.datawire import Decoder as io_datawire_Decoder
 from io.datawire import Sampler as io_datawire_Sampler
 from io.datawire import Sender as io_datawire_Sender
 from io.datawire import Receiver as io_datawire_Receiver
+from io.datawire import Tether as io_datawire_Tether
 from io.datawire import Event
 from io.datawire.impl import EventImpl as io_datawire_impl_EventImpl
 
@@ -168,6 +169,13 @@ class Receiver(WrappedHandler, _Linker):
       if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.items()))
       return io_datawire_Receiver(*args)
     WrappedHandler.__init__(self, datawire_receiver)
+
+class Tether(WrappedHandler, _Linker):
+    def __init__(self, directory, address, target, host=None, port=None, policy=None, agent_type=None):
+      def datawire_tether():
+        args = [directory, address, target, host, port, policy, agent_type]
+        return io_datawire_Tether(*args)
+      WrappedHandler.__init__(self, datawire_tether)
     
 class Impls:
     Address = Address
@@ -177,6 +185,7 @@ class Impls:
     Counts = Counts
     Sender = Sender
     Receiver = Receiver
+    Tether = Tether
     pass
 impls = Impls()
 del Impls

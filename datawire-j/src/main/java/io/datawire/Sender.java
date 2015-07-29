@@ -4,6 +4,8 @@
  */
 package io.datawire;
 
+import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -23,30 +25,101 @@ import org.apache.qpid.proton.reactor.Reactor;
  */
 public class Sender extends Link {
     
-    private String target;
-    private String source;
-    private Queue<byte[]> __buffer = new LinkedList<byte[]>();
-    private byte[] __data = new byte[512];
-    private Message __message =  Message.Factory.create();
-    private boolean __closed = false;
+    private final Config config;
+    private Queue<ByteBuffer> buffer = new LinkedList<ByteBuffer>();
+    private Message message =  Message.Factory.create();
+    private boolean closed = false;
 
-    public Sender(String target, Handler... handlers) {
-        this(target, null, handlers);
+    static class Config extends Link.Config {
+        public String target;
+        public String source;
+
+        /**
+         * Required by {@link Linker}
+         */
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = super.hashCode();
+            result = prime * result
+                    + ((source == null) ? 0 : source.hashCode());
+            result = prime * result
+                    + ((target == null) ? 0 : target.hashCode());
+            return result;
+        }
+        /**
+         * Required by {@link Linker}
+         */
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (!super.equals(obj))
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            Config other = (Config) obj;
+            if (source == null) {
+                if (other.source != null)
+                    return false;
+            } else if (!source.equals(other.source))
+                return false;
+            if (target == null) {
+                if (other.target != null)
+                    return false;
+            } else if (!target.equals(other.target))
+                return false;
+            return true;
+        }
+    }
+
+    public static class Builder {
+        private Config config = new Config();
+        Builder() {
+            // not constructible from outside
+        }
+        public Builder setTarget(String target) {
+            config.target = target;
+            return this;
+        }
+        public Builder setSource(String source) {
+            config.source = source;
+            return this;
+        }
+        public Builder addHandlers(Handler... handlers) {
+            config.handlers.addAll(Arrays.asList(handlers));
+            return this;
+        }
+        public Sender create() {
+            Config config = this.config;
+            this.config = null;
+            return new Sender(config);
+        }
+        protected Config getConfig() {
+            return config;
+        }
+    }
+
+    protected Sender(Config config) {
+        super(config);
+        this.config = config;
     }
 
     public Sender(String target, String source, Handler... handlers) {
         super(handlers);
-        this.target = target;
-        this.source = source;
+        config = new Config();
+        config.target = target;
+        config.source = source;
+        config.handlers.addAll(Arrays.asList(handlers));
     }
 
     private final LinkCreator link = new LinkCreator() {
         @Override
         public org.apache.qpid.proton.engine.Link create(Reactor reactor) {
             Session session = _session(reactor);
-            org.apache.qpid.proton.engine.Sender snd = session.sender(String.format("%1s->%2s", source, target));
-            setLinkSource(snd, source);
-            setLinkTarget(snd, target);
+            org.apache.qpid.proton.engine.Sender snd = session.sender(String.format("%1s->%2s", config.source, config.target));
+            setLinkSource(snd, config.source);
+            setLinkTarget(snd, config.target);
             return snd;
         }
     };
@@ -58,7 +131,7 @@ public class Sender extends Link {
 
     @Override
     protected String getNetwork() {
-        return new Address(target).getNetwork();
+        return new Address(config.target).getNetwork();
     }
 
     @Override
@@ -74,19 +147,20 @@ public class Sender extends Link {
         } else {
             throw new IllegalArgumentException("Expected a sender");
         }
-        while (!__buffer.isEmpty() && sender.getCredit() > 0) {
+        while (!buffer.isEmpty() && sender.getCredit() > 0) {
             Delivery dlv = sender.delivery(deliveryTag());
-            byte[] bytes = __buffer.poll();
-            sender.send(bytes, 0, bytes.length);
+            ByteBuffer bytes = buffer.poll();
+            bytes.flip();
+            sender.send(bytes.array(), bytes.arrayOffset(), bytes.position());
             dlv.settle();
         }
-        if (__closed && __buffer.isEmpty()) {
+        if (closed && buffer.isEmpty()) {
             sender.close();
         }
     }
-    
+
     private int tag = 1;
-    private byte[] deliveryTag() {
+    protected byte[] deliveryTag() {
         return String.valueOf(tag++).getBytes();
     }
 
@@ -96,23 +170,30 @@ public class Sender extends Link {
         }
         if (o instanceof Message) {
             Message msg = (Message) o;
-            __buffer.add(encode(msg));
+            buffer.add(encode(msg));
         } else if ( o instanceof Section ) {
-            __message.setBody((Section) o);
-            send(__message);
+            message.setBody((Section) o);
+            send(message);
         } else {
-            __message.setBody(new AmqpValue(o));
-            send(__message);
+            message.setBody(new AmqpValue(o));
+            send(message);
         }
     }
 
-    private byte[] encode(Message msg) {
-        int len = msg.encode(__data, 0, __data.length);
-        // XXX: __data resizing
-        return Arrays.copyOf(__data, len);
-    }
-    
     public void close() {
-        __closed = true;
+        closed = true;
+    }
+
+    private ByteBuffer encode(Message msg) {
+        int size = 1000;
+        while(true) {
+            try {
+                byte[] bytes = new byte[size];
+                int length = msg.encode(bytes, 0, bytes.length);
+                return ByteBuffer.wrap(bytes, 0, length);
+            } catch (BufferOverflowException ex) {
+                continue; 
+            }
+        }
     }
 }

@@ -32,6 +32,32 @@ abstract class Link extends BaseHandler {
 
     protected static class Config {
         ArrayList<Handler> handlers = new ArrayList<Handler>();
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result
+                    + ((handlers == null) ? 0 : handlers.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            Config other = (Config) obj;
+            if (handlers == null) {
+                if (other.handlers != null)
+                    return false;
+            } else if (!handlers.equals(other.handlers))
+                return false;
+            return true;
+        }
     }
 
     /**
@@ -174,20 +200,15 @@ abstract class Link extends BaseHandler {
                 pretty = String.format("%1s, %2s", network, address);
             }
             return new LinkCreator() {
-                
                 @Override
                 public org.apache.qpid.proton.engine.Link create(Reactor reactor) {
                     org.apache.qpid.proton.engine.Link link = getLinkCreator().create(reactor);
                     link.getSession().getConnection().setHostname(network);
                     if (address != null) {
                         if (link instanceof Sender) {
-                            Target target = new Target();
-                            target.setAddress(address.getText());
-                            link.setTarget(target);
+                            setLinkTarget(link, address.getText());
                         } else {
-                            Source source = new Source();
-                            source.setAddress(address.getText());
-                            link.setSource(source);
+                            setLinkSource(link, address.getText());
                         }
                     }
                     return link;
@@ -250,7 +271,7 @@ abstract class Link extends BaseHandler {
         String err = String.format("transport error %1s: %2s", cond.getCondition(), cond.getDescription());
         if (cond.getCondition() == AmqpError.RESOURCE_LIMIT_EXCEEDED &&
                 cond.getDescription() == "local-idle-timeout expired") {
-            log.fine(err);
+            log.info(err);
         } else {
             log.severe(err);
         }
