@@ -7,7 +7,9 @@ try:
   from jdatawire import impls, Event
   def dual_impl(clazz):
     if hasattr(impls, clazz.__name__):
-      dualImpls.add(clazz.__name__)
+      if clazz.__name__ not in dualImpls:
+        dualImpls.add(clazz.__name__)
+        print "Using java", clazz.__name__
       return getattr(impls, clazz.__name__)
     else:
       return clazz
