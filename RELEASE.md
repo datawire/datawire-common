@@ -42,12 +42,17 @@ tags, e.g. "0.3.x".
 
 ###Building packages:
 
-These steps require docker to be installed.
+These steps require docker to be installed. Run the following to
+generate installable packages for a variety of different systems,
+currently el7, fedora 22, and ubuntu trusty:
 
-1. Building installable packages for proton: ./pkg-proton
-2. Building installable packages for datawire: ./pkg-datawire
-3. Look in dist/<os> for the appropriate packages and push to a repo
+1. ./pkg-proton (generates an installable package for proton)
+2. ./pkg-datawire (generates an installable package for datawire that depends on the proton package)
+3. ./pkg-directory (generates an installable package for datawire-directory)
+4. Look in dist/<os> for the appropriate packages and push to a repo
    of your choice.
 
-Note that the rpm package name for datawire-common is actually
-datawire-directory, this will be reconciled at some point.
+Note that the OS packaging is currently slightly different than the
+python packaging. The datawire-common python package maps to the
+datawire and datawire-directory OS packages. This will be reconciled
+soon.
