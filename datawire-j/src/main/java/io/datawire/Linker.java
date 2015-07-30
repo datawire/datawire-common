@@ -12,7 +12,7 @@ public class Linker {
     private Map<Sender.Config, Sender> senders = new HashMap<Sender.Config, Sender>();
     public boolean started = false;
     public Reactor reactor;
-    
+
     public void start(Reactor reactor) {
         this.reactor = reactor;
         ArrayList<Sender> senders = new ArrayList<>(this.senders.values());
@@ -21,7 +21,7 @@ public class Linker {
             snd.start(reactor);
         }
     }
-    
+
     public void stop(Reactor reactor) {
         if (this.reactor != reactor) {
             throw new IllegalArgumentException("Must use the same reactor as for start");
@@ -32,12 +32,12 @@ public class Linker {
             snd.stop(reactor);
         }
     }
-    
-    public class Builder extends Sender.Builder {
+
+    public class Builder extends Sender.SenderBuilder {
         Builder() {}
         @Override
         public Sender create() {
-            Sender.Config key = getConfig();
+            Sender.Config key = config();
             Sender ret = senders.get(key);
             if (ret == null) {
                 ret = super.create();
@@ -48,11 +48,11 @@ public class Linker {
             return ret;
         }
     }
-    
+
     public Builder sender() {
         return new Builder();
     }
-    
+
     public Sender sender(String target, Handler...handlers) {
         return new Builder().withTarget(target).withHandlers(handlers).create();
     }

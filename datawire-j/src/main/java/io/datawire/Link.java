@@ -6,6 +6,7 @@ package io.datawire;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -31,7 +32,9 @@ abstract class Link extends BaseHandler {
     private static final Symbol NETWORK_PORT = Symbol.getSymbol("port");
     private static final Symbol NETWORK_ADDRESS = Symbol.getSymbol("address");
 
-    protected static class Config {
+    public static class Config {
+        String source;
+        String target;
         ArrayList<Handler> handlers = new ArrayList<Handler>();
 
         @Override
@@ -40,6 +43,10 @@ abstract class Link extends BaseHandler {
             int result = 1;
             result = prime * result
                     + ((handlers == null) ? 0 : handlers.hashCode());
+            result = prime * result
+                    + ((source == null) ? 0 : source.hashCode());
+            result = prime * result
+                    + ((target == null) ? 0 : target.hashCode());
             return result;
         }
 
@@ -49,7 +56,7 @@ abstract class Link extends BaseHandler {
                 return true;
             if (obj == null)
                 return false;
-            if (getClass() != obj.getClass())
+            if (!(obj instanceof Config))
                 return false;
             Config other = (Config) obj;
             if (handlers == null) {
@@ -57,9 +64,40 @@ abstract class Link extends BaseHandler {
                     return false;
             } else if (!handlers.equals(other.handlers))
                 return false;
+            if (source == null) {
+                if (other.source != null)
+                    return false;
+            } else if (!source.equals(other.source))
+                return false;
+            if (target == null) {
+                if (other.target != null)
+                    return false;
+            } else if (!target.equals(other.target))
+                return false;
             return true;
         }
     }
+
+    protected abstract static class Builder<S extends Link, C extends Config, B extends Builder<S,C,B>> {
+        protected abstract C config();
+        protected abstract B self();
+        public abstract S create();
+
+        public B withTarget(String target) {
+            config().target = target;
+            return self();
+        }
+        public B withSource(String source) {
+            config().source = source;
+            return self();
+        }
+        public B withHandlers(Handler... handlers) {
+            config().handlers.addAll(Arrays.asList(handlers));
+            return self();
+        }
+    }
+
+    public static Builder<?,?,?> Builder() { return null; }
 
     /**
      * create a link either a Sender or Receiver
@@ -73,7 +111,7 @@ abstract class Link extends BaseHandler {
     private org.apache.qpid.proton.engine.Link _link;
     private Object trace; // TODO
     private boolean relink;
-    
+
     protected org.apache.qpid.proton.engine.Link get_link() {
         return _link;
     }
@@ -147,7 +185,7 @@ abstract class Link extends BaseHandler {
         event.delegate();
         do_drained(event);
     }
-    
+
     @Override
     public void onLinkLocalClose(Event event) {
         org.apache.qpid.proton.engine.Link link = event.getLink();
@@ -163,7 +201,7 @@ abstract class Link extends BaseHandler {
         // TODO: Stream sets _relink on links, check that.
         return false;
     }
-    
+
     @Override
     public void onLinkRemoteClose(Event event) {
         org.apache.qpid.proton.engine.Link link = event.getLink();
@@ -216,7 +254,7 @@ abstract class Link extends BaseHandler {
                     }
                     return link;
                 }
-                
+
                 @Override
                 public String toString() {
                     return pretty;
@@ -239,13 +277,13 @@ abstract class Link extends BaseHandler {
         }
         return null;
     }
-    
+
     @Override
     public void onConnectionBound(Event event) {
         event.getTransport().setIdleTimeout(60000); /// XXX: units???
         // TODO: transport tracer
     }
-    
+
     @Override
     public void onConnectionUnbound(Event event) {
         if (_link != null && _link.getSession().getConnection() == event.getConnection()) {
@@ -270,7 +308,7 @@ abstract class Link extends BaseHandler {
     }
 
     protected abstract String getNetwork();
-    
+
     @Override
     public void onTransportError(Event event) {
         ErrorCondition cond = event.getTransport().getCondition();
@@ -282,12 +320,12 @@ abstract class Link extends BaseHandler {
             log.severe(err);
         }
     }
-    
+
     @Override
     public void onTransportClosed(Event event) {
         event.getConnection().free();
     }
-    
+
     protected Session _session(Reactor reactor) {
         Connection conn = reactor.connection(this);
         conn.setHostname(getNetwork());

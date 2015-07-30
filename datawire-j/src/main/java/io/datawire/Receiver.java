@@ -6,54 +6,72 @@ package io.datawire;
 
 import java.util.Arrays;
 
-import org.apache.qpid.proton.engine.Handler;
 import org.apache.qpid.proton.engine.Session;
 import org.apache.qpid.proton.reactor.Reactor;
 
 public class Receiver extends Link {
-    
-    private static class Config extends Link.Config {
-        public String source;
-        public String target;
+
+    public static class Config extends Link.Config {
         public boolean drain = false;
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = super.hashCode();
+            result = prime * result + (drain ? 1231 : 1237);
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (!super.equals(obj))
+                return false;
+            if (!(obj instanceof Config))
+                return false;
+            Config other = (Config) obj;
+            if (drain != other.drain)
+                return false;
+            return true;
+        }
     }
-    
-    public static class Builder {
-        Config config = new Config();
-        public Builder withSource(String source) {
-            config.source = source;
-            return this;
+
+    protected abstract static class Builder<S extends Receiver, C extends Config, B extends Builder<S, C, B>> extends Link.Builder<S, C, B> {
+        public B withDrain(boolean drain) {
+            config().drain = drain;
+            return self();
         }
-        public Builder withTarget(String target) {
-            config.target = target;
-            return this;
-        }
-        public Builder withDrain(boolean drain) {
-            config.drain = drain;
-            return this;
-        }
-        public Builder withHandlers(Handler... handlers) {
-            config.handlers.addAll(Arrays.asList(handlers));
-            return this;
-        }
-        public Receiver create() {
+    }
+
+    private static class ReceiverBuilder extends Builder<Receiver, Config, ReceiverBuilder> {
+        private Config config = new Config();
+        @Override protected Config config() { return config; }
+        @Override protected ReceiverBuilder self() { return this; }
+        @Override public Receiver create() {
             Config config = this.config;
             this.config = null;
             return new Receiver(config);
         }
     }
-    
+
     private final Config config;
-    
-    public static Builder Builder() {
-        return new Builder();
+
+    public static Builder<?,?,?> Builder() {
+        return new ReceiverBuilder();
     }
-    
+
+    private static Config validate(Config config) {
+        if (config.source == null)
+            throw new IllegalArgumentException("source is required");
+        return config;
+    }
+
     private Receiver(Config config) {
-        super(config);
+        super(validate(config));
         this.config = config;
     }
-    
+
     public Receiver(String source, String target, boolean drain, org.apache.qpid.proton.engine.Handler...handlers) {
         super(handlers);
         config = new Config();
@@ -61,6 +79,7 @@ public class Receiver extends Link {
         config.target = target;
         config.drain = drain;
         config.handlers.addAll(Arrays.asList(handlers));
+        validate(config);
     }
 
     private final LinkCreator link = new LinkCreator() {

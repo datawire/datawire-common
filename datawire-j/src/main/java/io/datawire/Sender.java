@@ -31,81 +31,39 @@ public class Sender extends Link {
     private boolean closed = false;
 
     static class Config extends Link.Config {
-        public String target;
-        public String source;
-
-        /**
-         * Required by {@link Linker}
-         */
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = super.hashCode();
-            result = prime * result
-                    + ((source == null) ? 0 : source.hashCode());
-            result = prime * result
-                    + ((target == null) ? 0 : target.hashCode());
-            return result;
-        }
-        /**
-         * Required by {@link Linker}
-         */
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (!super.equals(obj))
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            Config other = (Config) obj;
-            if (source == null) {
-                if (other.source != null)
-                    return false;
-            } else if (!source.equals(other.source))
-                return false;
-            if (target == null) {
-                if (other.target != null)
-                    return false;
-            } else if (!target.equals(other.target))
-                return false;
-            return true;
-        }
+        // no fields
     }
 
-    public static class Builder {
+    public abstract static class Builder<S extends Sender, C extends Config, B extends Builder<S, C, B>> extends Link.Builder<S, C, B> {
+        // no fields
+    }
+
+
+    static class SenderBuilder extends Builder<Sender, Config, SenderBuilder> {
         private Config config = new Config();
-        Builder() {
-            // not constructible from outside
-        }
-        public Builder withTarget(String target) {
-            config.target = target;
-            return this;
-        }
-        public Builder withSource(String source) {
-            config.source = source;
-            return this;
-        }
-        public Builder withHandlers(Handler... handlers) {
-            config.handlers.addAll(Arrays.asList(handlers));
-            return this;
-        }
+        @Override protected Config config() { return config; }
+        @Override protected SenderBuilder self() { return this; }
+        @Override 
         public Sender create() {
             Config config = this.config;
             this.config = null;
             return new Sender(config);
         }
-        protected Config getConfig() {
-            return config;
-        }
     }
-    
-    public static Builder Builder() {
-        return new Builder();
+
+    public static Builder<?,?,?> Builder() {
+        return new SenderBuilder();
+    }
+
+    private static Config validate(Config config) {
+        if (config.target == null) {
+            throw new IllegalArgumentException("Target is required");
+        }
+        return config;
     }
 
     protected Sender(Config config) {
-        super(config);
+        super(validate(config));
         this.config = config;
     }
 
@@ -115,6 +73,7 @@ public class Sender extends Link {
         config.target = target;
         config.source = source;
         config.handlers.addAll(Arrays.asList(handlers));
+        validate(config);
     }
 
     private final LinkCreator link = new LinkCreator() {
