@@ -4,11 +4,12 @@
  */
 package io.datawire;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.messaging.Target;
@@ -225,13 +226,16 @@ abstract class Link extends BaseHandler {
             return null;
         }
     }
-
+    private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
     private String getInfo(Map info, Symbol key) {
         if (info == null || key == null)
             return null;
         Object value = info.get(key);
         if (value instanceof String) {
             return (String) value;
+        } else if (value instanceof Binary) {
+            Binary binary = (Binary)value;
+            return new String(binary.getArray(), UTF8_CHARSET);
         }
         return null;
     }
