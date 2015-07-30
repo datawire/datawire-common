@@ -151,7 +151,7 @@ public class Sender extends Link {
             Delivery dlv = sender.delivery(deliveryTag());
             ByteBuffer bytes = buffer.poll();
             bytes.flip();
-            sender.send(bytes.array(), bytes.arrayOffset(), bytes.position());
+            sender.send(bytes.array(), bytes.position(), bytes.limit());
             dlv.settle();
         }
         if (closed && buffer.isEmpty()) {
@@ -189,9 +189,10 @@ public class Sender extends Link {
         while(true) {
             try {
                 byte[] bytes = new byte[size];
-                int length = msg.encode(bytes, 0, bytes.length);
-                return ByteBuffer.wrap(bytes, 0, length);
+                int length = msg.encode(bytes, 0, size);
+                return ByteBuffer.wrap(bytes, length, size-length);
             } catch (BufferOverflowException ex) {
+                size *= 2;
                 continue; 
             }
         }
