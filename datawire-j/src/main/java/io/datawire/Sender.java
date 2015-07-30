@@ -78,15 +78,15 @@ public class Sender extends Link {
         Builder() {
             // not constructible from outside
         }
-        public Builder setTarget(String target) {
+        public Builder withTarget(String target) {
             config.target = target;
             return this;
         }
-        public Builder setSource(String source) {
+        public Builder withSource(String source) {
             config.source = source;
             return this;
         }
-        public Builder addHandlers(Handler... handlers) {
+        public Builder withHandlers(Handler... handlers) {
             config.handlers.addAll(Arrays.asList(handlers));
             return this;
         }
@@ -98,6 +98,10 @@ public class Sender extends Link {
         protected Config getConfig() {
             return config;
         }
+    }
+    
+    public static Builder Builder() {
+        return new Builder();
     }
 
     protected Sender(Config config) {

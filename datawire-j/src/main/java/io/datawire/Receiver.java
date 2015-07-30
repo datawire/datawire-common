@@ -20,19 +20,19 @@ public class Receiver extends Link {
     
     public static class Builder {
         Config config = new Config();
-        public Builder setSource(String source) {
+        public Builder withSource(String source) {
             config.source = source;
             return this;
         }
-        public Builder setTarget(String target) {
+        public Builder withTarget(String target) {
             config.target = target;
             return this;
         }
-        public Builder setDrain(boolean drain) {
+        public Builder withDrain(boolean drain) {
             config.drain = drain;
             return this;
         }
-        public Builder addHandlers(Handler... handlers) {
+        public Builder withHandlers(Handler... handlers) {
             config.handlers.addAll(Arrays.asList(handlers));
             return this;
         }

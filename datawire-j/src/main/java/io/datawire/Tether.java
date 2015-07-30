@@ -27,6 +27,7 @@ public class Tether extends Sender {
 
     public static class Builder {
         private Config config = new Config();
+        Builder() {}
         public Sender create() {
             Config config = this.config;
             this.config = null;
@@ -41,7 +42,7 @@ public class Tether extends Sender {
         this.config = config;
     }
     
-    public static Builder Builder() {
+    public static Builder TBuilder() { // XXX: UGLEEEEE!
         return new Builder();
     }
     

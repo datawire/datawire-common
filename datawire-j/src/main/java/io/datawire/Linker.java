@@ -54,6 +54,6 @@ public class Linker {
     }
     
     public Sender sender(String target, Handler...handlers) {
-        return new Builder().setTarget(target).addHandlers(handlers).create();
+        return new Builder().withTarget(target).withHandlers(handlers).create();
     }
 }
