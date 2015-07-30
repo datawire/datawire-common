@@ -18,7 +18,6 @@ setup(name='datawire-common',
       author='datawire.io',
       author_email='hello@datawire.io',
       url='http://www.datawire.io',
-      py_modules=['common', 'service'],
       packages=['datawire'],
       install_requires=['python-qpid-proton >= 0.9.1.1'],
       scripts=['directory', 'dw', 'manifold'])
