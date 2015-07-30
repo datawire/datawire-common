@@ -175,7 +175,9 @@ abstract class Link extends BaseHandler {
             start(event.getReactor(), rlink);
         } else if (link.getRemoteCondition() != null) {
             ErrorCondition remoteCondition = link.getRemoteCondition();
-            if (remoteCondition.getCondition() == UNAVAILABLE) {
+            if (remoteCondition.getCondition() == null) {
+                // ok
+            } else if (remoteCondition.getCondition() == UNAVAILABLE) {
                 log.info("target address unavailable");
             } else {
                 log.warning(String.format("unexpected remote close condition: %s", remoteCondition));
