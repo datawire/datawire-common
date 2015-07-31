@@ -25,20 +25,6 @@ import com.github.rvesse.airline.examples.ExampleRunnable;
 @Command(name="send", description="Send a message to the target")
 public class Send extends BaseHandler implements ExampleRunnable {
 
-    @SuppressWarnings("unused")
-    @Inject
-    private HelpOption help;
-    
-    @Option(name={"--address"}, description="target address", required=true)
-    private String address;
-
-    @Arguments(description="message to send")
-    private List<String> args;
-
-    public static void main(String[] args) {
-        Logger.getGlobal().setLevel(Level.INFO);
-        ExampleExecutor.executeSingleCommand(Send.class, args);
-    }
 
     private Sender sender;
     private Reactor reactor;
@@ -66,5 +52,20 @@ public class Send extends BaseHandler implements ExampleRunnable {
             reactor.stop();
             return -1;
         }
+    }
+
+    @SuppressWarnings("unused")
+    @Inject
+    private HelpOption help;
+
+    @Option(name={"--address"}, description="target address", required=true)
+    private String address;
+
+    @Arguments(description="message to send")
+    private List<String> args;
+
+    public static void main(String[] args) {
+        Logger.getGlobal().setLevel(Level.INFO);
+        ExampleExecutor.executeSingleCommand(Send.class, args);
     }
 }
