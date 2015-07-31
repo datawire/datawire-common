@@ -33,9 +33,9 @@ abstract class Link extends BaseHandler {
     private static final Symbol NETWORK_ADDRESS = Symbol.getSymbol("address");
 
     public static class Config {
-        String source;
-        String target;
-        ArrayList<Handler> handlers = new ArrayList<Handler>();
+        public String source;
+        public String target;
+        public ArrayList<Handler> handlers = new ArrayList<Handler>();
 
         @Override
         public int hashCode() {
@@ -78,11 +78,7 @@ abstract class Link extends BaseHandler {
         }
     }
 
-    protected abstract static class Builder<S extends Link, C extends Config, B extends Builder<S,C,B>> {
-        protected abstract C config();
-        protected abstract B self();
-        public abstract S create();
-
+    protected abstract static class Builder<S extends Link, C extends Config, B extends Builder<S,C,B>>  extends ExtensibleBuilder<S,C,B>{
         public B withTarget(String target) {
             config().target = target;
             return self();

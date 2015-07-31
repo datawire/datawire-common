@@ -13,9 +13,11 @@ import org.apache.qpid.proton.amqp.messaging.AmqpSequence;
 import org.apache.qpid.proton.amqp.messaging.ApplicationProperties;
 import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.message.Message;
+import org.apache.qpid.proton.reactor.Reactor;
 
-public class Tether extends Sender {
-    protected static class Config extends Sender.Config {
+public class Tether extends BaseHandler {
+
+    public static class Config {
         public String directory;
         public String address;
         public String redirect_target;
@@ -27,7 +29,7 @@ public class Tether extends Sender {
         @Override
         public int hashCode() {
             final int prime = 31;
-            int result = super.hashCode();
+            int result = 1;
             result = prime * result
                     + ((address == null) ? 0 : address.hashCode());
             result = prime * result
@@ -49,7 +51,7 @@ public class Tether extends Sender {
         public boolean equals(Object obj) {
             if (this == obj)
                 return true;
-            if (!super.equals(obj))
+            if (obj == null)
                 return false;
             if (!(obj instanceof Config))
                 return false;
@@ -93,7 +95,7 @@ public class Tether extends Sender {
         }
     }
 
-    public abstract static class Builder<S extends Tether, C extends Config, B extends Builder<S, C, B>> extends Sender.Builder<S, C, B> {
+    public abstract static class Builder<S extends Tether, C extends Config, B extends Builder<S, C, B>> extends ExtensibleBuilder<S, C, B> {
         public B withDirectory(String directory) {
             config().directory = directory;
             return self();
@@ -136,35 +138,27 @@ public class Tether extends Sender {
     }
 
     private static Config validate(Config config) {
-        config.directory = config.target = defaultDirectory(config.directory, config.address);
-        if (config.source != null)
-            throw new IllegalArgumentException("Cannot set source on a teteher");
-        if (!config.handlers.isEmpty())
-            throw new IllegalArgumentException("Cannot set handlers on a tether");
+        if (config.address == null)
+            throw new IllegalArgumentException("Address is required");
+        if (config.directory == null)
+            config.directory = String.format("//%1s/directory", new Address(config.address).getHost());
         return config;
     }
 
-    private static String defaultDirectory(String directory, String address) {
-        if (directory != null)
-            return directory;
-        else
-            return String.format("//%1s/directory", new Address(address).getHost());
-    }
-    
-    private final Config config;
-    
-    protected Tether(Config config) {
-        super(validate(config));
-        this.config = config;
-    }
-    
     public static Builder<?,?,?> Builder() {
         return new TetherBuilder();
     }
-    
+
+    private final Config config;
+    private final Sender sender;
+
+    protected Tether(Config config) {
+        this.config = validate(config);
+        this.sender = makeSender();
+    }
+
     public Tether(String directory, String address, String redirect_target,
             String host, String port, String policy, String agent_type) {
-        super(defaultDirectory(directory, address), null);
         config = new Config();
         config.directory = directory;
         config.address = address;
@@ -174,6 +168,11 @@ public class Tether extends Sender {
         config.policy = policy;
         config.agent_type = agent_type;
         validate(config);
+        this.sender = makeSender();
+    }
+
+    private Sender makeSender() {
+        return Sender.Builder().withTarget(config.directory).withHandlers(this).create();
     }
 
     private String getAgent() {
@@ -200,12 +199,20 @@ public class Tether extends Sender {
         }
         body.add(tuple);
         body.add(null);
-        send(msg);
+        sender.send(msg);
         String agent = getAgent();
         if (agent != null) {
             body.set(0, agent);
             tuple.set(2, null);
-            send(msg);
+            sender.send(msg);
         }
+    }
+
+    public void start(Reactor reactor) {
+        sender.start(reactor);
+    }
+
+    public void stop(Reactor reactor) {
+        sender.stop(reactor);
     }
 }
