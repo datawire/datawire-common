@@ -24,4 +24,9 @@ public class BaseHandler extends org.apache.qpid.proton.engine.BaseHandler
         onUnhandled(e);
     }
 
+    @Override
+    public void onDrained(DatawireEvent e) {
+        onUnhandled(e);
+    }
+
 }

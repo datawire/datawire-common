@@ -1,12 +1,14 @@
 package io.datawire.impl;
 
+import org.apache.qpid.proton.engine.Event;
+import org.apache.qpid.proton.engine.Handler;
+
 import io.datawire.DatawireEvent;
 import io.datawire.DatawireHandler;
 
 public class DatawireEventTypeImpl {
 
-    public static void dispatch(DatawireEvent.Type type,
-            org.apache.qpid.proton.engine.Event e, org.apache.qpid.proton.engine.Handler h) {
+    public static void dispatch(DatawireEvent.Type type, Event e, Handler h) {
         DatawireHandler handler;
         if (h instanceof DatawireHandler) {
             handler = (DatawireHandler) h;
@@ -24,13 +26,21 @@ public class DatawireEventTypeImpl {
         case MESSAGE:
             handler.onMessage(event);
             break;
+        case DRAINED:
+            handler.onDrained(event);
+            break;
+        case SAMPLE:
+            handler.onSample(event);
+            break;
         case NOT_A_DATAWIRE_TYPE:
             throw new IllegalArgumentException("Cannot dispatch an invalid type value");
+        default:
+            break;
        
         }
     }
 
-    private static EventImpl makeEvent(org.apache.qpid.proton.engine.Event e) {
+    private static EventImpl makeEvent(Event e) {
         // TODO: refactor pool from collector
         return new EventImpl(e);
     }
