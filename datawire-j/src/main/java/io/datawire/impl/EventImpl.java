@@ -37,13 +37,13 @@ public class EventImpl implements Event {
     }
 
     @Override
-    public EventType getType() {
-        return impl.getType();
+    public EventType getEventType() {
+        return impl.getEventType();
     }
 
     @Override
-    public org.apache.qpid.proton.engine.Event.Type getBuiltinType() {
-        return impl.getBuiltinType();
+    public org.apache.qpid.proton.engine.Event.Type getType() {
+        return impl.getType();
     }
 
     @Override
@@ -105,7 +105,7 @@ public class EventImpl implements Event {
 
     @Override
     public Type getDatawireType() {
-        EventType type = impl.getType();
+        EventType type = impl.getEventType();
         if (type instanceof Type)
             return (Type)type;
         return Type.NOT_A_DATAWIRE_TYPE;
