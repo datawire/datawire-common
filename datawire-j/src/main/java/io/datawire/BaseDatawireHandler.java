@@ -11,7 +11,7 @@ package io.datawire;
  * @author bozzo
  *
  */
-public class BaseHandler extends org.apache.qpid.proton.engine.BaseHandler
+public class BaseDatawireHandler extends org.apache.qpid.proton.engine.BaseHandler
         implements DatawireHandler {
 
     @Override

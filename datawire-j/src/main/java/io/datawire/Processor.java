@@ -32,7 +32,7 @@ import org.apache.qpid.proton.reactor.Handshaker;
  * @author bozzo
  *
  */
-public class Processor extends BaseHandler {
+public class Processor extends BaseDatawireHandler {
 
     private final org.apache.qpid.proton.engine.Handler delegate;
 

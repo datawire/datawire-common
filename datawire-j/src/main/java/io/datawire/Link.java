@@ -25,7 +25,7 @@ import org.apache.qpid.proton.engine.Sender;
 import org.apache.qpid.proton.engine.Session;
 import org.apache.qpid.proton.reactor.Reactor;
 
-abstract class Link extends BaseHandler {
+abstract class Link extends BaseDatawireHandler {
     private static final Logger log = Logger.getLogger(Link.class.getName());
     public static final Symbol UNAVAILABLE = Symbol.getSymbol("datawire:link:unavailable");
     private static final Symbol NETWORK_HOST = Symbol.getSymbol("network-host");
@@ -292,7 +292,7 @@ abstract class Link extends BaseHandler {
             log.info(String.format("reconnecting... to %1s%2s", getNetwork(), relink));
             Reactor reactor = event.getReactor();
             start(reactor, false);
-            reactor.schedule(1, new BaseHandler() {
+            reactor.schedule(1, new BaseDatawireHandler() {
                 @Override
                 public void onTimerTask(Event event) {
                     if (_link != null) {

@@ -10,7 +10,7 @@ import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.reactor.Reactor;
 
 import io.datawire.Address;
-import io.datawire.BaseHandler;
+import io.datawire.BaseDatawireHandler;
 import io.datawire.DatawireEvent;
 import io.datawire.Processor;
 import io.datawire.Tether;
@@ -23,7 +23,7 @@ import com.github.rvesse.airline.examples.ExampleExecutor;
 import com.github.rvesse.airline.examples.ExampleRunnable;
 
 @Command(name="printer", description="print messages received from address")
-public class Printer extends BaseHandler implements ExampleRunnable {
+public class Printer extends BaseDatawireHandler implements ExampleRunnable {
     private Reactor reactor;
     private Tether tether;
     @Override

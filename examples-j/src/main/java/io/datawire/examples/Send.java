@@ -1,6 +1,6 @@
 package io.datawire.examples;
 
-import io.datawire.BaseHandler;
+import io.datawire.BaseDatawireHandler;
 import io.datawire.Sender;
 
 import java.io.IOException;
@@ -23,7 +23,7 @@ import com.github.rvesse.airline.examples.ExampleExecutor;
 import com.github.rvesse.airline.examples.ExampleRunnable;
 
 @Command(name="send", description="Send a message to the target")
-public class Send extends BaseHandler implements ExampleRunnable {
+public class Send extends BaseDatawireHandler implements ExampleRunnable {
 
 
     private Sender sender;

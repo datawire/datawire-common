@@ -17,7 +17,7 @@ import org.apache.qpid.proton.engine.Link;
  * @author bozzo
  *
  */
-public class Sampler extends BaseHandler {
+public class Sampler extends BaseDatawireHandler {
 
     private final org.apache.qpid.proton.engine.Handler delegate;
     private float frequency;

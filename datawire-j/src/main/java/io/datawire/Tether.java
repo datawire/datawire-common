@@ -15,7 +15,7 @@ import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.message.Message;
 import org.apache.qpid.proton.reactor.Reactor;
 
-public class Tether extends BaseHandler {
+public class Tether extends BaseDatawireHandler {
 
     public static class Config {
         public String directory;

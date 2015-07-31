@@ -19,7 +19,7 @@ import org.apache.qpid.proton.message.Message;
  * Handler for decoding deliveries into messages.
  * <p>
  * <b>Usage</b>: Implement a {@link DatawireHandler} preferably by extending the
- * {@link BaseHandler}, implement the {@link DatawireHandler#onMessage(DatawireEvent)} and then
+ * {@link BaseDatawireHandler}, implement the {@link DatawireHandler#onMessage(DatawireEvent)} and then
  * either
  * <ul>
  * <li>pass it as {@code delegate} to the
@@ -40,7 +40,7 @@ import org.apache.qpid.proton.message.Message;
  * @author bozzo
  *
  */
-public class Decoder extends BaseHandler {
+public class Decoder extends BaseDatawireHandler {
     private static final Accepted ACCEPTED = Accepted.getInstance();
     private static final Rejected REJECTED = new Rejected();
 
