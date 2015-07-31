@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.qpid.proton.engine.Handler;
 import org.apache.qpid.proton.reactor.Reactor;
 
 public class Linker {

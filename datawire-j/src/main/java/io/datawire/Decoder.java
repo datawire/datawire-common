@@ -18,8 +18,8 @@ import org.apache.qpid.proton.message.Message;
 /**
  * Handler for decoding deliveries into messages.
  * <p>
- * <b>Usage</b>: Implement a {@link Handler} preferably by extending the
- * {@link BaseHandler}, implement the {@link Handler#onMessage(DatawireEvent)} and then
+ * <b>Usage</b>: Implement a {@link DatawireHandler} preferably by extending the
+ * {@link BaseHandler}, implement the {@link DatawireHandler#onMessage(DatawireEvent)} and then
  * either
  * <ul>
  * <li>pass it as {@code delegate} to the
@@ -30,7 +30,7 @@ import org.apache.qpid.proton.message.Message;
  * {@link #Decoder()}</li>
  * </ul>
  *
- * The Decoder fires the {@link Handler#onMessage(DatawireEvent)} synchronously and
+ * The Decoder fires the {@link DatawireHandler#onMessage(DatawireEvent)} synchronously and
  * depending on success or failure (exception being thrown) either accepts (
  * {@link Delivery#disposition(org.apache.qpid.proton.amqp.transport.DeliveryState)}
  * ) or rejects the delivery and settles it ({@link Delivery#settle()})
@@ -68,7 +68,7 @@ public class Decoder extends BaseHandler {
     }
 
     /**
-     * An instance of decoder that will invoke {@link Handler#onMessage(DatawireEvent)}
+     * An instance of decoder that will invoke {@link DatawireHandler#onMessage(DatawireEvent)}
      * on the supplied delegate
      * <p>
      * XXX: is it ever a good idea to use this approach? Deprecate?

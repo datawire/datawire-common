@@ -1,15 +1,15 @@
 package io.datawire.impl;
 
 import io.datawire.DatawireEvent;
-import io.datawire.Handler;
+import io.datawire.DatawireHandler;
 
 public class DatawireEventTypeImpl {
 
     public static void dispatch(DatawireEvent.Type type,
             org.apache.qpid.proton.engine.Event e, org.apache.qpid.proton.engine.Handler h) {
-        Handler handler;
-        if (h instanceof Handler) {
-            handler = (Handler) h;
+        DatawireHandler handler;
+        if (h instanceof DatawireHandler) {
+            handler = (DatawireHandler) h;
         } else {
             h.onUnhandled(e);
             return;

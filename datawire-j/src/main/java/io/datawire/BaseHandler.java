@@ -5,14 +5,14 @@
 package io.datawire;
 
 /**
- * Default implementation of all {@link Handler} methods. Use this class as the
+ * Default implementation of all {@link DatawireHandler} methods. Use this class as the
  * base for your handlers.
  * 
  * @author bozzo
  *
  */
 public class BaseHandler extends org.apache.qpid.proton.engine.BaseHandler
-        implements Handler {
+        implements DatawireHandler {
 
     @Override
     public void onMessage(DatawireEvent e) {
