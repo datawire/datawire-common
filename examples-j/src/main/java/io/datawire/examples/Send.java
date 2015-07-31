@@ -62,8 +62,8 @@ public class Send extends BaseHandler implements ExampleRunnable {
             reactor.run();
             return 0;
        } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
+            reactor.stop();
             return -1;
         }
     }
