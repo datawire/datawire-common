@@ -5,7 +5,7 @@ import logging
 from proton import DELEGATED, Endpoint, EventType, Message
 from .address import Address
 
-from .impl import dual_impl, Event
+from .impl import dual_impl, DatawireEvent
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def redirect(link, original):
     else:
         return None
 
-DRAINED = EventType("drained", Event.Type.DRAINED)
+DRAINED = EventType("drained", DatawireEvent.Type.DRAINED)
 
 class Link:
 

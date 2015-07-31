@@ -9,17 +9,18 @@ import javax.inject.Inject;
 import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.reactor.Reactor;
 
+import io.datawire.Address;
+import io.datawire.BaseHandler;
+import io.datawire.DatawireEvent;
+import io.datawire.Processor;
+import io.datawire.Tether;
+
 import com.github.rvesse.airline.Arguments;
 import com.github.rvesse.airline.Command;
 import com.github.rvesse.airline.HelpOption;
 import com.github.rvesse.airline.Option;
 import com.github.rvesse.airline.examples.ExampleExecutor;
 import com.github.rvesse.airline.examples.ExampleRunnable;
-
-import io.datawire.Address;
-import io.datawire.BaseHandler;
-import io.datawire.Processor;
-import io.datawire.Tether;
 
 @Command(name="printer", description="print messages received from address")
 public class Printer extends BaseHandler implements ExampleRunnable {
@@ -57,7 +58,7 @@ public class Printer extends BaseHandler implements ExampleRunnable {
     }
     
     @Override
-    public void onMessage(io.datawire.Event event) { // XXX: imho this is ugly and confusing DatawireEvent would be nicer
+    public void onMessage(DatawireEvent event) { // XXX: imho this is ugly and confusing DatawireEvent would be nicer
         System.out.println("Received message "+ event.getMessage());
     }
 

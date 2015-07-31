@@ -3,9 +3,9 @@
 
 from proton import EventType, PN_LOCAL_ACTIVE
 
-from .impl import dual_impl, Event
+from .impl import dual_impl, DatawireEvent
 
-SAMPLE = EventType("sample", Event.Type.SAMPLE)
+SAMPLE = EventType("sample", DatawireEvent.Type.SAMPLE)
 
 @dual_impl
 class Sampler:

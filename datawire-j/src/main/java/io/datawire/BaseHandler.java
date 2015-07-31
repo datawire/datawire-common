@@ -15,12 +15,12 @@ public class BaseHandler extends org.apache.qpid.proton.engine.BaseHandler
         implements Handler {
 
     @Override
-    public void onMessage(io.datawire.Event e) {
+    public void onMessage(DatawireEvent e) {
         onUnhandled(e);
     }
 
     @Override
-    public void onSample(io.datawire.Event e) {
+    public void onSample(DatawireEvent e) {
         onUnhandled(e);
     }
 

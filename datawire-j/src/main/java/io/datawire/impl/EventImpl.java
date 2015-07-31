@@ -14,9 +14,9 @@ import org.apache.qpid.proton.reactor.Reactor;
 import org.apache.qpid.proton.reactor.Selectable;
 import org.apache.qpid.proton.reactor.Task;
 
-import io.datawire.Event;
+import io.datawire.DatawireEvent;
 
-public class EventImpl implements Event {
+public class EventImpl implements DatawireEvent {
     public static class MessageAccessor {
         public Message get(Record record) {
             return record.get(this, Message.class);

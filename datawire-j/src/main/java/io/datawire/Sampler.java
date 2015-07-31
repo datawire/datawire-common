@@ -50,7 +50,7 @@ public class Sampler extends BaseHandler {
     private void sample() {
         Link link = event.getLink();
         if (link != null && link.getLocalState() == EndpointState.ACTIVE) {
-            event.redispatch(io.datawire.Event.Type.SAMPLE, delegate);
+            event.redispatch(DatawireEvent.Type.SAMPLE, delegate);
             event.getReactor().schedule(getInterval(), sampler);
         }
     }

@@ -10,7 +10,7 @@ from io.datawire import Sampler as io_datawire_Sampler
 from io.datawire import Sender as io_datawire_Sender
 from io.datawire import Receiver as io_datawire_Receiver
 from io.datawire import Tether as io_datawire_Tether
-from io.datawire import Event
+from io.datawire import DatawireEvent as io_datawire_DatawireEvent
 from io.datawire.impl import EventImpl as io_datawire_impl_EventImpl
 
 from proton import WrappedHandler, _chandler
@@ -27,7 +27,13 @@ class NamedProperty(object):
         if instance is None:
             return self
         if self._name is None:
-            self._name = self.myname(clazz or instance.__class__)
+          try:
+            cls = clazz or instance.__class__
+            self._name = self.myname(cls)
+          except:
+            import traceback
+            traceback.print_exc()
+            raise
         return self.get(instance)
 
     def myname(self, clazz):
@@ -127,13 +133,14 @@ class Sampler(WrappedHandler):
     frequency = WrappedHandlerProperty()
 
 
-class _Linker:
+class _Reactive:
   def start(self, reactor):
     self._impl.start(reactor._impl)
 
   def stop(self, reactor):
     self._impl.stop(reactor._impl)
     
+class _Linker(_Reactive):
   linked = WrappedHandlerProperty()
 
   
@@ -170,7 +177,7 @@ class Receiver(WrappedHandler, _Linker):
       return io_datawire_Receiver(*args)
     WrappedHandler.__init__(self, datawire_receiver)
 
-class Tether(WrappedHandler, _Linker):
+class Tether(WrappedHandler, _Reactive):
     def __init__(self, directory, address, target, host=None, port=None, policy=None, agent_type=None):
       def datawire_tether():
         args = [directory, address, target, host, port, policy, agent_type]

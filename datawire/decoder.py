@@ -4,9 +4,9 @@
 import sys, traceback
 from proton import EventType, Message, Delivery
 
-from .impl import dual_impl, Event
+from .impl import dual_impl, DatawireEvent
 
-MESSAGE = EventType("message", Event.Type.MESSAGE)
+MESSAGE = EventType("message", DatawireEvent.Type.MESSAGE)
 
 @dual_impl
 class Decoder:
