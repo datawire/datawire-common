@@ -34,9 +34,8 @@ public class DatawireEventTypeImpl {
             break;
         case NOT_A_DATAWIRE_TYPE:
             throw new IllegalArgumentException("Cannot dispatch an invalid type value");
-        default:
-            break;
-       
+
+        // default: Do not add default, so that compiler warns for unhandled events!
         }
     }
 
