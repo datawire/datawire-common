@@ -9,7 +9,6 @@ try:
     if hasattr(impls, clazz.__name__):
       if clazz.__name__ not in dualImpls:
         dualImpls.add(clazz.__name__)
-        print "Using java", clazz.__name__
       return getattr(impls, clazz.__name__)
     else:
       return clazz

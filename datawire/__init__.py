@@ -19,3 +19,8 @@ from .processor import Processor
 from .sampler import Sampler
 from .configuration import Configuration
 from .counts import Counts
+
+from .impl import dualImpls
+if dualImpls:
+  print "Using java ", ", ".join(sorted(dualImpls))
+del dualImpls
