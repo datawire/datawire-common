@@ -86,7 +86,7 @@ public class Decoder extends BaseHandler {
             return;
         }
         try {
-            e.attachments().set(EventImpl.MESSAGE, Message.class, message);
+            EventImpl.MESSAGE_ACCESSOR.set(e.attachments(), message);
             e.redispatch(DatawireEvent.Type.MESSAGE, delegate);
             dlv.disposition(ACCEPTED);
         } catch (Throwable ex) {

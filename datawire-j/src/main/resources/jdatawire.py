@@ -85,7 +85,7 @@ def wrap_proton_message(impl):
     wrapper._post_decode()
     return wrapper
 
-proton_Event.message = ExtendedProperty(io_datawire_impl_EventImpl.MESSAGE, wrap_proton_message)
+proton_Event.message = ExtendedProperty(io_datawire_impl_EventImpl.MESSAGE_ACCESSOR, wrap_proton_message)
 
 
 def unwrap_handler(delegate):

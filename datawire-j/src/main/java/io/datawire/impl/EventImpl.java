@@ -9,6 +9,7 @@ import org.apache.qpid.proton.engine.Link;
 import org.apache.qpid.proton.engine.Record;
 import org.apache.qpid.proton.engine.Session;
 import org.apache.qpid.proton.engine.Transport;
+import org.apache.qpid.proton.engine.impl.RecordImpl;
 import org.apache.qpid.proton.message.Message;
 import org.apache.qpid.proton.reactor.Reactor;
 import org.apache.qpid.proton.reactor.Selectable;
@@ -17,13 +18,11 @@ import org.apache.qpid.proton.reactor.Task;
 import io.datawire.DatawireEvent;
 
 public class EventImpl implements DatawireEvent {
-    public static class MessageAccessor {
-        public Message get(Record record) {
-            return record.get(this, Message.class);
-        }
-    }
-    
-    public static final MessageAccessor MESSAGE = new MessageAccessor();
+
+    public static final Record.Accessor<Message> MESSAGE_ACCESSOR = new Record.Accessor<Message>() {
+        @Override public Message get(Record r) { return r.get(this, Message.class); }
+        @Override public void set(Record r, Message value) { r.set(this, Message.class, value); }
+    };
     
     private org.apache.qpid.proton.engine.Event impl;
 
@@ -113,8 +112,8 @@ public class EventImpl implements DatawireEvent {
 
     @Override
     public Message getMessage() {
-        Message m = MESSAGE.get(impl.attachments());
-        return m;                
+        Message m = MESSAGE_ACCESSOR.get(impl.attachments());
+        return m;
     }
 
     @Override
