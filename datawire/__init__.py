@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__author__    = "datawire.io <hello@datawire.io>"
-__copyright__ = "Copyright (C) 2015 k736, inc."
-__version__   = "0.4"
+from _metadata import *
 
 # So logging doesn't emit "No handlers could be found for logger" message.
 import logging as _logging
