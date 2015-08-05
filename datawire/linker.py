@@ -243,7 +243,7 @@ class Tether:
             self.agent = None
         self.sender = Sender(self.directory, self)
 
-    def on_link_local_open(self, event):
+    def on_link_remote_open(self, event):
         msg = Message()
         msg.properties = {u"opcode": "route"}
         msg.body = (self.address, (self.host, self.port, self.redirect_target), None)

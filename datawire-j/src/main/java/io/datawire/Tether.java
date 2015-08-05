@@ -184,7 +184,7 @@ public class Tether extends BaseDatawireHandler {
     }
 
     @Override
-    public void onLinkLocalOpen(Event event) {
+    public void onLinkRemoteOpen(Event event) {
         Message msg = Message.Factory.create(); // XXX: why not cached message?
         Map<String, String> properties = new HashMap<String, String>();
         properties.put("opcode", "route");
