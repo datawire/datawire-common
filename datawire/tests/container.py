@@ -8,81 +8,39 @@ import unittest
 from datawire.container import ancestors
 
 class AncestorTest(unittest.TestCase):
+    longMessage = True # force list diff output
 
+    expected = {
+                "" : [""],
+                "/" : ["/", ""],
+                "/a" : ["/a", "/", ""],
+                "/a/" : ["/a/", "/a", "/", ""],
+                "/a/b" : ["/a/b", "/a/", "/a", "/", ""],
+                "/a/b/" : ["/a/b/", "/a/b", "/a/", "/a", "/", ""],
+                }
+
+    def checkAncestor(self, path, expected):
+        self.assertListEqual(list(ancestors(path)), self.expected[expected], "\n while checking the ancestors of path %s" % repr(path))
+
+    def checkExpectedVariants(self, prefix = "", postfix = ""):
+        for expected in self.expected:
+            path = prefix + expected + postfix
+            self.checkAncestor(path, expected)
 
     def testNone(self):
-        self.assertListEqual(
-            list(ancestors(None)),
-             [None,
-              ])
+        self.assertListEqual(list(ancestors(None)), [None,])
 
-    def testEmpty(self):
-        self.assertListEqual(
-            list(ancestors("")),
-             ["",
-              ])
+    def testPath(self):
+        self.checkExpectedVariants()
 
-    def testSlash(self):
-        self.assertListEqual(
-            list(ancestors("/")),
-             ["/",
-              "",
-              ])
+    def testPathParam(self):
+        self.checkExpectedVariants(postfix = "?param=/value")
 
-    def testPathTwo(self):
-        self.assertListEqual(
-            list(ancestors("/a/b")),
-             ["/a/b",
-              "/a/",
-              "/a",
-              "/",
-              "",
-              ])
+    def testHostPath(self):
+        self.checkExpectedVariants(prefix = "//host:12234")
 
-    def testPathTwoSlash(self):
-        self.assertListEqual(
-            list(ancestors("/a/b/")),
-             ["/a/b/",
-              "/a/b",
-              "/a/",
-              "/a",
-              "/",
-              "",
-              ])
-
-    def testEmptyParam(self):
-        self.assertListEqual(
-            list(ancestors("?a=1")),
-             ["",
-              ])
-
-    def testSlashParam(self):
-        self.assertListEqual(
-            list(ancestors("/?a=1")),
-             ["/",
-              "",
-              ])
-
-    def testPathTwoParam(self):
-        self.assertListEqual(
-            list(ancestors("/a/b?a=1")),
-             ["/a/b",
-              "/a/",
-              "/a",
-              "/",
-              "",
-              ])
-
-    def testPathTwoSlashParam(self):
-        self.assertListEqual(
-            list(ancestors("/a/b/?a=1")),
-             ["/a/b/",
-              "/a/b",
-              "/a/",
-              "/a",
-              "/",
-              "",
-              ])
+    def testHostPathParam(self):
+        self.checkExpectedVariants(prefix = "//host:12234", postfix="?param=/value")
 
 
 if __name__ == "__main__":
