@@ -222,7 +222,7 @@ class Receiver(Link):
         return rcv
 
 @dual_impl
-class Tether(Sender):
+class Tether:
 
     def __init__(self, directory, address, target, host=None, port=None, policy=None, agent_type=None):
         if directory is None:
@@ -230,7 +230,6 @@ class Tether(Sender):
             log.debug("Tether picking default directory %r from in_address %r", directory, address)
         else:
             directory = unicode(directory)
-        Sender.__init__(self, directory)
         self.directory = directory
         self.address = unicode(address)
         self.redirect_target = target
@@ -242,6 +241,7 @@ class Tether(Sender):
             self.agent = u"//%s/agents/%s-%s" % (Address(self.directory).host, self.host, self.port)
         else:
             self.agent = None
+        self.sender = Sender(self.directory, self)
 
     def on_link_local_open(self, event):
         msg = Message()
@@ -249,10 +249,16 @@ class Tether(Sender):
         msg.body = (self.address, (self.host, self.port, self.redirect_target), None)
         if self.policy:
             msg.body += (self.policy,)
-        msg.send(event.link)
+        self.sender.send(msg)
         if self.agent:
             msg.body = (self.agent, (self.host, self.port, None), None)
-            msg.send(event.link)
+            self.sender.send(msg)
+
+    def start(self, reactor):
+        self.sender.start(reactor)
+
+    def stop(self, reactor):
+        self.sender.stop(reactor)
 
 def _key(target, handlers, kwargs):
     items = kwargs.items()
