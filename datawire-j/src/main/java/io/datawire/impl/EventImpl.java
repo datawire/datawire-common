@@ -19,11 +19,6 @@ import io.datawire.DatawireEvent;
 
 public class EventImpl implements DatawireEvent {
 
-    public static final Record.Accessor<Message> MESSAGE_ACCESSOR = new Record.Accessor<Message>() {
-        @Override public Message get(Record r) { return r.get(this, Message.class); }
-        @Override public void set(Record r, Message value) { r.set(this, Message.class, value); }
-    };
-    
     private org.apache.qpid.proton.engine.Event impl;
 
     public EventImpl(org.apache.qpid.proton.engine.Event e) {

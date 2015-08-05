@@ -4,8 +4,6 @@
  */
 package io.datawire;
 
-import io.datawire.impl.EventImpl;
-
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.Rejected;
 import org.apache.qpid.proton.amqp.transport.SenderSettleMode;
@@ -86,7 +84,7 @@ public class Decoder extends BaseDatawireHandler {
             return;
         }
         try {
-            EventImpl.MESSAGE_ACCESSOR.set(e.attachments(), message);
+            DatawireEvent.MESSAGE_ACCESSOR.set(e.attachments(), message);
             e.redispatch(DatawireEvent.Type.MESSAGE, delegate);
             dlv.disposition(ACCEPTED);
         } catch (Throwable ex) {
