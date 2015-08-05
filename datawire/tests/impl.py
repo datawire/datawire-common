@@ -3,7 +3,7 @@
 import datawire
 from unittest import TestCase
 from warnings import warn
-from datawire.impl import dualImpls
+from datawire.impl import dual_impl
 
 class ImplTest(TestCase):
 
@@ -27,10 +27,10 @@ class ImplTest(TestCase):
   def testDualImplCoverage(self):
     self.checkRunningOnJython()
     datawireImpls = set(n for n in dir(datawire) if n[:1].isupper())
-    pythonImpls = datawireImpls - dualImpls
+    pythonImpls = datawireImpls - dual_impl.dualImpls
     def clazzof(impls):
       return (getattr(datawire, name) for name in impls)
-    for clazz in clazzof(dualImpls):
+    for clazz in clazzof(dual_impl.dualImpls):
       self.assertIsJavaImpl(clazz)
     for clazz in clazzof(pythonImpls):
       self.assertIsPythonImpl(clazz)

@@ -20,7 +20,7 @@ from .sampler import Sampler
 from .configuration import Configuration
 from .counts import Counts
 
-from .impl import dualImpls
-if dualImpls:
-  print "Using java ", ", ".join(sorted(dualImpls))
-del dualImpls
+from .impl import dual_impl
+if dual_impl.dualImpls:
+  print "Using java ", ", ".join(sorted(dual_impl.dualImpls))
+del dual_impl
