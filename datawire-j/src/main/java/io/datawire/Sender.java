@@ -4,7 +4,6 @@
  */
 package io.datawire;
 
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -20,6 +19,9 @@ import org.apache.qpid.proton.message.Message;
 import org.apache.qpid.proton.reactor.Reactor;
 
 /**
+ * Handler for managing a {@link org.apache.qpid.proton.engine.Sender}
+ * <p>
+ * If you need to manage many senders you can use a {@link Linker}
  * @author bozzo
  *
  */
@@ -30,6 +32,13 @@ public class Sender extends Link {
     private Message message =  Message.Factory.create();
     private boolean closed = false;
 
+    /**
+     * Configuration for a {@link Sender}.
+     * <p>
+     * A sender must have a valid {@link Link.Config#target}
+     * @author bozzo
+     *
+     */
     static class Config extends Link.Config {
         // no fields
     }
@@ -38,11 +47,18 @@ public class Sender extends Link {
         // no fields
     }
 
-
+    /**
+     * A builder for the {@link Sender}.
+     * @author bozzo
+     *
+     */
     static class SenderBuilder extends Builder<Sender, Config, SenderBuilder> {
         private Config config = new Config();
         @Override protected Config config() { return config; }
         @Override protected SenderBuilder self() { return this; }
+        /**
+         * Create the {@link Sender} as configured. The builder instance is not usable after this call.
+         */
         @Override 
         public Sender create() {
             Config config = this.config;
@@ -51,6 +67,9 @@ public class Sender extends Link {
         }
     }
 
+    /**
+     * @return a new {@link SenderBuilder}
+     */
     public static Builder<?,?,?> Builder() {
         return new SenderBuilder();
     }
@@ -62,11 +81,17 @@ public class Sender extends Link {
         return config;
     }
 
-    protected Sender(Config config) {
+    private Sender(Config config) {
         super(validate(config));
         this.config = config;
     }
 
+    /**
+     * Reference constructor
+     * @param target Sender target address, mandatory
+     * @param source Sender source address, optional
+     * @param handlers Child handlers for the link
+     */
     public Sender(String target, String source, Handler... handlers) {
         super(handlers);
         config = new Config();
@@ -92,6 +117,9 @@ public class Sender extends Link {
         return link ;
     }
 
+    /**
+     * Target network address
+     */
     @Override
     protected String getNetwork() {
         return new Address(config.target).getNetwork();
@@ -111,7 +139,7 @@ public class Sender extends Link {
             throw new IllegalArgumentException("Expected a sender");
         }
         while (!buffer.isEmpty() && sender.getCredit() > 0) {
-            Delivery dlv = sender.delivery(deliveryTag());
+            Delivery dlv = sender.delivery(tag.deliveryTag());
             ByteBuffer bytes = buffer.poll();
             bytes.flip();
             sender.send(bytes.array(), bytes.position(), bytes.limit());
@@ -122,42 +150,47 @@ public class Sender extends Link {
         }
     }
 
-    private int tag = 1;
-    protected byte[] deliveryTag() {
-        return String.valueOf(tag++).getBytes();
-    }
+    private SimpleTag tag = new SimpleTag(1);
 
-    public void send(Object o) {
-        if (get_link() == null) {
+    /**
+     * Send the specified message
+     * @param msg The message to send
+     */
+    public void send(Message msg) {
+        if (getLink() == null) {
             throw new IllegalStateException("link is not started");
         }
-        if (o instanceof Message) {
-            Message msg = (Message) o;
-            buffer.add(encode(msg));
-        } else if ( o instanceof Section ) {
-            message.setBody((Section) o);
-            send(message);
+        buffer.add(DataUtils.encode(msg));
+    }
+
+    /**
+     * Send a message with the specified body
+     * @param body The body of the message
+     */
+    public void send(Section body) {
+        message.setBody(body);
+        send(message);
+    }
+
+    /**
+     * Send a message with the specified object as the body
+     * @param value The value to send as the message body
+     */
+    public void send(Object value) {
+        if (value instanceof Message) {
+            send((Message)value);
+        } else if (value instanceof Section) {
+            send((Section)value);
         } else {
-            message.setBody(new AmqpValue(o));
+            message.setBody(new AmqpValue(value));
             send(message);
         }
     }
 
+    /**
+     * Close the link after sending all pending messages
+     */
     public void close() {
         closed = true;
-    }
-
-    private ByteBuffer encode(Message msg) {
-        int size = 1000;
-        while(true) {
-            try {
-                byte[] bytes = new byte[size];
-                int length = msg.encode(bytes, 0, size);
-                return ByteBuffer.wrap(bytes, length, size-length);
-            } catch (BufferOverflowException ex) {
-                size *= 2;
-                continue; 
-            }
-        }
     }
 }

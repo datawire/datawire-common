@@ -4,13 +4,11 @@
  */
 package io.datawire;
 
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.messaging.Target;
@@ -25,16 +23,53 @@ import org.apache.qpid.proton.engine.Sender;
 import org.apache.qpid.proton.engine.Session;
 import org.apache.qpid.proton.reactor.Reactor;
 
+/**
+ * A handler that tries to keep the link open: <ul><li>allows slow start<li>performs
+ * reconnect<li>follows redirects.</ul> The link will be created on a new connection
+ * by default.
+ * <p>
+ * The link will generate a {@link DatawireEvent.Type#DRAINED} event each time
+ * the link credit falls to zero.
+ * 
+ * @author bozzo
+ *
+ */
 abstract class Link extends BaseDatawireHandler {
     private static final Logger log = Logger.getLogger(Link.class.getName());
+    /**
+     * The value returned by the datawire directory
+     */
     public static final Symbol UNAVAILABLE = Symbol.getSymbol("datawire:link:unavailable");
+    /**
+     * <code>network-host</code> field of the redirect error condition
+     */
     private static final Symbol NETWORK_HOST = Symbol.getSymbol("network-host");
+    /**
+     * <code>port</code> field of the redirect error condition
+     */
     private static final Symbol NETWORK_PORT = Symbol.getSymbol("port");
+    /**
+     * <code>address</code> field of the redirect error condition
+     */
     private static final Symbol NETWORK_ADDRESS = Symbol.getSymbol("address");
 
+    /**
+     * Link configuration
+     * @author bozzo
+     *
+     */
     public static class Config {
+        /**
+         * source address
+         */
         public String source;
+        /**
+         * target address
+         */
         public String target;
+        /**
+         * child handlers
+         */
         public ArrayList<Handler> handlers = new ArrayList<Handler>();
 
         @Override
@@ -78,25 +113,52 @@ abstract class Link extends BaseDatawireHandler {
         }
     }
 
+    /**
+     * Reusable part of the Linker Builder
+     * @author bozzo
+     *
+     * @param <S> the concrete subclass of Link
+     * @param <C> the concrete subclass of Configuration
+     * @param <B> the concrete subclass of Builder
+     */
     protected abstract static class Builder<S extends Link, C extends Config, B extends Builder<S,C,B>>  extends ExtensibleBuilder<S,C,B>{
+        /**
+         * @param target Set the {@link Config#target}
+         * @return the builder
+         */
         public B withTarget(String target) {
             config().target = target;
             return self();
         }
+        /**
+         * @param source Set the {@link Config#source}
+         * @return the builder
+         */
         public B withSource(String source) {
             config().source = source;
             return self();
         }
+        /**
+         * @param handlers Set the {@link Config#handlers}
+         * @return the builder
+         */
         public B withHandlers(Handler... handlers) {
             config().handlers.addAll(Arrays.asList(handlers));
             return self();
         }
     }
 
+    /**
+     * Return a new instance of the Builder. Subclasses can override this method and return their concrete builders.
+     * 
+     * @return a builder for a subclass of a Link
+     * 
+     * @see {@link io.datawire.Sender#Builder()}, {@link io.datawire.Receiver#Builder()}
+     */
     public static Builder<?,?,?> Builder() { return null; }
 
     /**
-     * create a link either a Sender or Receiver
+     * create a link either a {@link Sender} or {@link Receiver} on the given reactor
      * @author bozzo
      *
      */
@@ -108,20 +170,30 @@ abstract class Link extends BaseDatawireHandler {
     private Object trace; // TODO
     private boolean relink;
 
-    protected org.apache.qpid.proton.engine.Link get_link() {
+    /**
+     * @return The underlying {@link org.apache.qpid.proton.engine.Link}
+     */
+    protected org.apache.qpid.proton.engine.Link getLink() {
         return _link;
     }
 
     /**
-     * 
      * @return subclass specific {@link LinkCreator}
      */
     protected abstract LinkCreator getLinkCreator();
 
+    /**
+     * Constructor for Builder
+     * @param config
+     */
     protected Link(Config config) {
         for (Handler handler : config.handlers)
             add(handler);
     }
+    /**
+     * Reference constructor
+     * @param handlers
+     */
     protected Link(org.apache.qpid.proton.engine.Handler... handlers) {
         if (handlers != null) {
             for (Handler handler : handlers)
@@ -129,16 +201,12 @@ abstract class Link extends BaseDatawireHandler {
         }
     }
 
+    /**
+     * create and maintain this link
+     * @param reactor the reactor on which to create the link
+     */
     public void start(Reactor reactor) {
         start(reactor, null, true);
-    }
-
-    protected void start(Reactor reactor, LinkCreator link) {
-        start(reactor, link, true);
-    }
-
-    protected void start(Reactor reactor, boolean open) {
-        start(reactor, null, open);
     }
 
     private void start(Reactor reactor, LinkCreator link, boolean open) {
@@ -152,11 +220,21 @@ abstract class Link extends BaseDatawireHandler {
         setHandler(_link.getSession().getConnection(), this); // XXX: do we need this? see _session() below
     }
 
+    /**
+     * 
+     * @param reactor
+     */
     public void stop(Reactor reactor) {
-        if (_link != null)
+        if (_link != null) {
             _link.close();
+            // XXX: _link = null; ??
+        }
     }
 
+    /**
+     * is the link established and active
+     * @return
+     */
     public boolean getLinked() {
         return  _link != null &&
                 _link.getLocalState() == EndpointState.ACTIVE &&
@@ -207,7 +285,7 @@ abstract class Link extends BaseDatawireHandler {
         LinkCreator rlink = redirect(link);
         if (rlink != null) {
             log.fine(String.format("Redirecting to %s", rlink));
-            start(event.getReactor(), rlink);
+            start(event.getReactor(), rlink, true);
         } else if (link.getRemoteCondition() != null) {
             ErrorCondition remoteCondition = link.getRemoteCondition();
             if (remoteCondition.getCondition() == null) {
@@ -226,9 +304,9 @@ abstract class Link extends BaseDatawireHandler {
         ErrorCondition remoteCondition = link.getRemoteCondition();
         if (remoteCondition != null && remoteCondition.getCondition() == LinkError.REDIRECT) {
             Map info = remoteCondition.getInfo();
-            String host = getInfo(info, NETWORK_HOST);
-            String port = getInfo(info, NETWORK_PORT);
-            final Address address = Address.parse(getInfo(info, NETWORK_ADDRESS));
+            String host = DataUtils.getInfo(info, NETWORK_HOST);
+            String port = DataUtils.getInfo(info, NETWORK_PORT);
+            final Address address = Address.parse(DataUtils.getInfo(info, NETWORK_ADDRESS));
             final String network = String.format("%1s:%2s", host, port);
             final String pretty;
             if (address != null && address.getNetwork() != null) {
@@ -260,19 +338,6 @@ abstract class Link extends BaseDatawireHandler {
             return null;
         }
     }
-    private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
-    private String getInfo(Map info, Symbol key) {
-        if (info == null || key == null)
-            return null;
-        Object value = info.get(key);
-        if (value instanceof String) {
-            return (String) value;
-        } else if (value instanceof Binary) {
-            Binary binary = (Binary)value;
-            return new String(binary.getArray(), UTF8_CHARSET);
-        }
-        return null;
-    }
 
     @Override
     public void onConnectionBound(Event event) {
@@ -291,7 +356,7 @@ abstract class Link extends BaseDatawireHandler {
             }
             log.info(String.format("reconnecting... to %1s%2s", getNetwork(), relink));
             Reactor reactor = event.getReactor();
-            start(reactor, false);
+            start(reactor, null, false);
             reactor.schedule(1, new BaseDatawireHandler() {
                 @Override
                 public void onTimerTask(Event event) {
@@ -322,6 +387,11 @@ abstract class Link extends BaseDatawireHandler {
         event.getConnection().free();
     }
 
+    /**
+     * helper method to create a new session on a new connection
+     * @param reactor The reactor to create the connection on
+     * @return The session on the connection pointing at {@link #getNetwork()}
+     */
     protected Session _session(Reactor reactor) {
         Connection conn = reactor.connection(this);
         conn.setHostname(getNetwork());

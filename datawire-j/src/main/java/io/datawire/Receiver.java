@@ -4,14 +4,30 @@
  */
 package io.datawire;
 
+import io.datawire.Sender.SenderBuilder;
+
 import java.util.Arrays;
 
 import org.apache.qpid.proton.engine.Session;
 import org.apache.qpid.proton.reactor.Reactor;
 
+/**
+ * Handler for managing a {@link org.apache.qpid.proton.engine.Receiver}
+ * @author bozzo
+ */
 public class Receiver extends Link {
 
+    /**
+     * Configuration for a {@link Receiver}.
+     * <p>
+     * A receiver must have a valid {@link Link.Config#source}
+     * @author bozzo
+     *
+     */
     public static class Config extends Link.Config {
+        /**
+         * initial value for {@link org.apache.qpid.proton.engine.Receiver#setDrain(boolean)
+         */
         public boolean drain = false;
 
         @Override
@@ -37,18 +53,39 @@ public class Receiver extends Link {
         }
     }
 
+    /**
+     * Reusable part of builder for the {@link Receiver}.
+     * @author bozzo
+     *
+     * @param <S>
+     * @param <C>
+     * @param <B>
+     */
     protected abstract static class Builder<S extends Receiver, C extends Config, B extends Builder<S, C, B>> extends Link.Builder<S, C, B> {
+        /**
+         * @param drain set the {@link Config#drain}
+         * @return The builder
+         */
         public B withDrain(boolean drain) {
             config().drain = drain;
             return self();
         }
     }
 
+    /**
+     * Builder for {@link Receiver}
+     * @author bozzo
+     *
+     */
     private static class ReceiverBuilder extends Builder<Receiver, Config, ReceiverBuilder> {
         private Config config = new Config();
         @Override protected Config config() { return config; }
         @Override protected ReceiverBuilder self() { return this; }
-        @Override public Receiver create() {
+        /**
+         * Create the {@link Receiver} as configured. The Builder is not usable after this call.
+         */
+        @Override
+        public Receiver create() {
             Config config = this.config;
             this.config = null;
             return new Receiver(config);
@@ -57,6 +94,9 @@ public class Receiver extends Link {
 
     private final Config config;
 
+    /**
+     * @return a new {@link ReceiverBuilder}
+     */
     public static Builder<?,?,?> Builder() {
         return new ReceiverBuilder();
     }
@@ -72,6 +112,13 @@ public class Receiver extends Link {
         this.config = config;
     }
 
+    /** 
+     * Reference constructor
+     * @param source Receiver source address, mandatory
+     * @param target Receiver target address, optional
+     * @param drain Drain flag
+     * @param handlers Child handlers for the link
+     */
     public Receiver(String source, String target, boolean drain, org.apache.qpid.proton.engine.Handler...handlers) {
         super(handlers);
         config = new Config();
@@ -100,6 +147,9 @@ public class Receiver extends Link {
         return link;
     }
 
+    /**
+     * Source network address
+     */
     @Override
     protected String getNetwork() {
         return new Address(config.source).getNetwork();
