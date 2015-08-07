@@ -198,6 +198,7 @@ class Sender(Link):
 
     def close(self):
         self.__closed = True
+        # XXX: missing self.__pump() ?
 
 @dual_impl
 class Receiver(Link):

@@ -192,5 +192,6 @@ public class Sender extends Link {
      */
     public void close() {
         closed = true;
+        // XXX: missing __pump() ?
     }
 }
