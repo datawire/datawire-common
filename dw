@@ -16,25 +16,30 @@
 
 import os, sys
 from argparse import ArgumentParser
-from ConfigParser import SafeConfigParser as ConfigParser
-from StringIO import StringIO
 from collections import OrderedDict
 
 from proton.reactor import Reactor
 from proton.handlers import CFlowController
 from proton import Message
-from datawire import Stream, Sender, Receiver, __version__
+from datawire import Configuration, Stream, Sender, Receiver, __version__
 
 CONFIG = os.path.expanduser("~/.datawire/config")
 
 defaults = """
-[global]
-directory = //localhost/directory
+[DEFAULT]
+logging: WARNING
+
+[Datawire]
+directory_host: localhost
 """
 
-config = ConfigParser()
-config.readfp(StringIO(defaults))
-config.read(CONFIG)
+loader = Configuration(defaults)
+try:
+    config = loader.parse()
+except Exception as exc:
+    sys.stderr.write("Failed to load existing configuration file(s): %s" % exc)
+    loader.exit_with_config_error("Failed to load configuration")
+    config = None  # Not reached
 
 
 class Command:
@@ -209,10 +214,12 @@ class RouteAddDel(Command):
         self.out.close()
 
 def main():
+    config_directory = "//%s/directory" % config.get("Datawire", "directory_host")
+
     dw = ArgumentParser(prog='dw',
                         description='Datawire command-line interface',
                         epilog='Visit http://www.datawire.io/docs for details on how to use Datawire.')
-    dw.add_argument('-d', '--directory', default=config.get('global', 'directory'),
+    dw.add_argument('-d', '--directory', default=config_directory,
                     help='directory address (e.g., //hostname/directory)')
     dw.add_argument("-V", "--version", action="version", version="%(prog)s " + __version__)
     cmds = dw.add_subparsers()
