@@ -16,16 +16,10 @@ class Common:
 
     @property
     def version(self):
-        import os
-        path = os.path.join(os.path.dirname(__file__), "datawire/__init__.py")
-        with open(path) as f:
-            for line in f:
-                if "__version__" in line:
-                    g = {}
-                    l = {}
-                    exec line in g, l
-                    return l["__version__"]
-        return None
+        metadata = {}
+        with open("datawire/_metadata.py") as fp:
+            exec(fp.read(), metadata)
+        return metadata["__version__"]  # or fail loudly
 
     def setup(self, env):
         env.system("git archive --format=tar --prefix=datawire/ HEAD | (cd %s && tar -xf -)" % env.work)
