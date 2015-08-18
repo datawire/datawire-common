@@ -9,3 +9,4 @@ tags
 barker/users.pickle
 barker/webui/proxy/node_modules
 dist
+datawire_common.egg-info
