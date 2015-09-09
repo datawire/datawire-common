@@ -106,6 +106,15 @@ public class Linker {
     public boolean isStarted() {
         return started;
     }
+
+    /**
+     * test helper
+     * @return number of senders
+     */
+    int sendersSize() {
+        return senders.size();
+    }
+
     /**
      * close all senders
      */
