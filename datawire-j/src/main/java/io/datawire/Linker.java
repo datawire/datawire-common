@@ -106,4 +106,12 @@ public class Linker {
     public boolean isStarted() {
         return started;
     }
+    /**
+     * close all senders
+     */
+    public void close() {
+        for (Sender snd : senders.values()) {
+            snd.close();
+        }
+    }
 }
