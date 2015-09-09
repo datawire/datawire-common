@@ -304,9 +304,9 @@ abstract class Link extends BaseDatawireHandler {
         ErrorCondition remoteCondition = link.getRemoteCondition();
         if (remoteCondition != null && remoteCondition.getCondition() == LinkError.REDIRECT) {
             Map info = remoteCondition.getInfo();
-            String host = DataUtils.getInfo(info, NETWORK_HOST);
-            String port = DataUtils.getInfo(info, NETWORK_PORT);
-            final Address address = Address.parse(DataUtils.getInfo(info, NETWORK_ADDRESS));
+            String host = DatawireUtils.getInfo(info, NETWORK_HOST);
+            String port = DatawireUtils.getInfo(info, NETWORK_PORT);
+            final Address address = Address.parse(DatawireUtils.getInfo(info, NETWORK_ADDRESS));
             final String network = String.format("%1s:%2s", host, port);
             final String pretty;
             if (address != null && address.getNetwork() != null) {

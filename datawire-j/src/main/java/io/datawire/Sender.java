@@ -11,7 +11,6 @@ import java.util.Queue;
 
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Section;
-import org.apache.qpid.proton.engine.Delivery;
 import org.apache.qpid.proton.engine.Handler;
 import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.engine.Session;
@@ -139,11 +138,8 @@ public class Sender extends Link {
             throw new IllegalArgumentException("Expected a sender");
         }
         while (!buffer.isEmpty() && sender.getCredit() > 0) {
-            Delivery dlv = sender.delivery(tag.deliveryTag());
             ByteBuffer bytes = buffer.poll();
-            bytes.flip();
-            sender.send(bytes.array(), bytes.position(), bytes.limit());
-            dlv.settle();
+            DatawireUtils.send(sender, tag, bytes);
         }
         if (closed && buffer.isEmpty()) {
             sender.close();
@@ -160,7 +156,7 @@ public class Sender extends Link {
         if (getLink() == null) {
             throw new IllegalStateException("link is not started");
         }
-        buffer.add(DataUtils.encode(msg));
+        buffer.add(DatawireUtils.encode(msg));
     }
 
     /**
