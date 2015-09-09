@@ -39,7 +39,15 @@ public interface DatawireEvent extends org.apache.qpid.proton.engine.Event {
          * A guard value returned by {@link Event#getDatawireType()} when this method is invoked on a non-datawire {@link org.apache.qpid.proton.engine.Event} instance.
          * This value is not valid for {@link Event#redispatch(EventType, Handler)}, see {@link EventType#isValid()}
          */
-        NOT_A_DATAWIRE_TYPE;
+        NOT_A_DATAWIRE_TYPE {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            public boolean isValid() {
+                return false;
+            }
+        };
 
         /**
          * {@inheritDoc}
@@ -47,7 +55,6 @@ public interface DatawireEvent extends org.apache.qpid.proton.engine.Event {
         @Override
         public void dispatch(org.apache.qpid.proton.engine.Event e, Handler h) {
             io.datawire.impl.DatawireEventTypeImpl.dispatch(this, e, h);
-            
         }
 
         /**
@@ -55,7 +62,7 @@ public interface DatawireEvent extends org.apache.qpid.proton.engine.Event {
          */
         @Override
         public boolean isValid() {
-            return this != NOT_A_DATAWIRE_TYPE;
+            return true;
         }
     }
 
