@@ -24,7 +24,7 @@ public class Sink extends Processor {
         }
         return ret;
     }
-    
+
     public ArrayList<Map<?,?>> getMessagesDicts() {
         ArrayList<Map<?,?>> ret = new ArrayList<Map<?,?>>(messages.size());
         for (Section body : messages) {

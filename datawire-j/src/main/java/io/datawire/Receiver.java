@@ -140,7 +140,7 @@ public class Receiver extends Link {
             setLinkTarget(rcv, config.target);
             return rcv;
         }
-        
+ 
     };
     @Override
     protected LinkCreator getLinkCreator() {

@@ -14,7 +14,7 @@ public class Timeout extends BaseDatawireHandler {
         timer = reactor.schedule(timeout, this);
         cancelled  = false;
     }
-    
+
     public void cancel() {
         if (timer == null)
             throw new IllegalArgumentException("Cannot cancel when timeout is not set");
@@ -22,6 +22,6 @@ public class Timeout extends BaseDatawireHandler {
         timer = null;
         cancelled = true;
     }
-    
+
     public boolean isCancelled() { return cancelled; }
 }

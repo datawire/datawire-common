@@ -63,12 +63,12 @@ public class SinkTest {
     public void testSender4k() {
         testSender(4*1024);
     }
-    
+
     private void testSampler(final int count, float frequency) {
         server.setMaxConnections(1);
         final ArrayList<String> expected = new ArrayList<String>(count);
         Timeout gen = new Timeout() {
-            SimpleTag tag = new SimpleTag(0);
+            Tag tag = new SimpleTag(0);
             int sent = 0;
             @Override
             public void onSample(DatawireEvent e) {
@@ -95,17 +95,17 @@ public class SinkTest {
         assertTrue("Sampling timed out", gen.isCancelled());
         assertEquals("Expected messages", expected, sink.getMessages());
     }
-    
+
     @Test
     public void testSampler1M10F() {
         testSampler(1, 10);
     }
-    
+
     @Test
     public void testSampler100M1000F() {
         testSampler(100, 1000);
     }
-    
+
     @SuppressWarnings("serial")
     private void testLinker(int addressCount, int messageCount) {
         server.setMaxConnections(addressCount);
@@ -121,7 +121,7 @@ public class SinkTest {
         }
         linker.close();
         reactor.run();
-        
+
         HashMap<Integer, ArrayList<Map<?, ?>>> by_addr = new HashMap<>();
         for (int i : range(addressCount)) {
             by_addr.put(i, new ArrayList<Map<?,?>>());

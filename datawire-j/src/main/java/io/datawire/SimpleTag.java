@@ -1,13 +1,14 @@
 package io.datawire;
 
-public class SimpleTag {
+public class SimpleTag implements Tag {
     public int tag;
 
     public SimpleTag(int tag) {
         this.tag = tag;
     }
 
-    protected byte[] deliveryTag() {
+    @Override
+    public byte[] deliveryTag() {
         return String.valueOf(tag++).getBytes();
     }
 }

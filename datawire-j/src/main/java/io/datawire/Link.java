@@ -18,7 +18,9 @@ import org.apache.qpid.proton.amqp.transport.LinkError;
 import org.apache.qpid.proton.engine.Connection;
 import org.apache.qpid.proton.engine.EndpointState;
 import org.apache.qpid.proton.engine.Event;
+import org.apache.qpid.proton.engine.Extendable;
 import org.apache.qpid.proton.engine.Handler;
+import org.apache.qpid.proton.engine.Record;
 import org.apache.qpid.proton.engine.Sender;
 import org.apache.qpid.proton.engine.Session;
 import org.apache.qpid.proton.reactor.Reactor;
@@ -36,6 +38,28 @@ import org.apache.qpid.proton.reactor.Reactor;
  */
 abstract class Link extends BaseDatawireHandler {
     private static final Logger log = Logger.getLogger(Link.class.getName());
+    public static final Accessor<Boolean> RELINK_FLAG = new Accessor<Boolean>() {
+        
+        @Override
+        public void set(Record r, Boolean value) {
+            r.set(this, Boolean.class, value);
+        }
+        
+        @Override
+        public Boolean get(Record r) {
+            return r.get(this, Boolean.class);
+        }
+        
+        @Override
+        public void set(Extendable e, Boolean value) {
+            e.attachments().set(this, Boolean.class, value);
+        }
+        
+        @Override
+        public Boolean get(Extendable e) {
+            return e.attachments().get(this, Boolean.class);
+        }
+    };
     /**
      * The value returned by the datawire directory
      */
@@ -168,7 +192,6 @@ abstract class Link extends BaseDatawireHandler {
 
     private org.apache.qpid.proton.engine.Link _link;
     private Object trace; // TODO
-    private boolean relink;
 
     /**
      * @return The underlying {@link org.apache.qpid.proton.engine.Link}
@@ -272,7 +295,10 @@ abstract class Link extends BaseDatawireHandler {
     }
 
     public boolean needRelink() {
-        // TODO: Stream sets _relink on links, check that.
+        if (_link != null) {
+            Boolean relink = RELINK_FLAG.get(_link);
+            return relink != null && relink;
+        }
         return false;
     }
 

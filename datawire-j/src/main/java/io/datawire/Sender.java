@@ -146,7 +146,7 @@ public class Sender extends Link {
         }
     }
 
-    private SimpleTag tag = new SimpleTag(1);
+    private Tag tag = new SimpleTag(1);
 
     /**
      * Send the specified message

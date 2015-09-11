@@ -6,7 +6,9 @@ import org.apache.qpid.proton.engine.EventType;
 import org.apache.qpid.proton.engine.Handler;
 import org.apache.qpid.proton.engine.HandlerException;
 import org.apache.qpid.proton.engine.Link;
+import org.apache.qpid.proton.engine.Receiver;
 import org.apache.qpid.proton.engine.Record;
+import org.apache.qpid.proton.engine.Sender;
 import org.apache.qpid.proton.engine.Session;
 import org.apache.qpid.proton.engine.Transport;
 import org.apache.qpid.proton.engine.impl.RecordImpl;
@@ -71,6 +73,16 @@ public class EventImpl implements DatawireEvent {
     }
 
     @Override
+    public Sender getSender() {
+        return impl.getSender();
+    }
+
+    @Override
+    public Receiver getReceiver() {
+        return impl.getReceiver();
+    }
+
+    @Override
     public Delivery getDelivery() {
         return impl.getDelivery();
     }
@@ -115,4 +127,5 @@ public class EventImpl implements DatawireEvent {
     public void delegate() throws HandlerException {
         impl.delegate();
     }
+
 }

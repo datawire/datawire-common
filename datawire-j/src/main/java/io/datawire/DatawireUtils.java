@@ -9,11 +9,36 @@ import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.engine.Delivery;
+import org.apache.qpid.proton.engine.Extendable;
+import org.apache.qpid.proton.engine.Record;
 import org.apache.qpid.proton.engine.Sender;
 import org.apache.qpid.proton.engine.Link;
 import org.apache.qpid.proton.message.Message;
 
 public class DatawireUtils {
+    
+    public static final Accessor<Tag> SENDER_TAG = new Accessor<Tag>() {
+
+        @Override
+        public Tag get(Record r) {
+            return r.get(this, Tag.class);
+        }
+
+        @Override
+        public void set(Record r, Tag value) {
+            r.set(this, Tag.class, value);
+        }
+
+        @Override
+        public Tag get(Extendable e) {
+            return e.attachments().get(this, Tag.class);
+        }
+
+        @Override
+        public void set(Extendable e, Tag value) {
+            e.attachments().set(this, Tag.class, value);
+        }
+    };
 
     static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
@@ -34,7 +59,7 @@ public class DatawireUtils {
         return null;
     }
 
-    static ByteBuffer encode(Message msg) {
+    public static ByteBuffer encode(Message msg) {
         int size = 1000;
         while(true) {
             try {
@@ -51,17 +76,31 @@ public class DatawireUtils {
     }
 
     public static void send(final org.apache.qpid.proton.engine.Sender sender,
-            SimpleTag tag, ByteBuffer bytes) {
+            Tag tag, ByteBuffer bytes) {
         Delivery dlv = sender.delivery(tag.deliveryTag());
         sender.send(bytes.array(), bytes.position(), bytes.limit());
         dlv.settle();
     }
 
-    public static void send(Sender sender, SimpleTag tag, Message message) {
+    public static void send(final org.apache.qpid.proton.engine.Sender sender,
+            ByteBuffer bytes) {
+        send(sender, senderTag(sender), bytes);
+    }
+
+    public static Tag senderTag(Sender sender) {
+        Tag tag = SENDER_TAG.get(sender);
+        if (tag == null) {
+            tag = new SimpleTag(0);
+            SENDER_TAG.set(sender, tag);
+        }
+        return tag;
+    }
+
+    public static void send(Sender sender, Tag tag, Message message) {
         send(sender, tag, encode(message));
     }
     
-    public static void send(Link link, SimpleTag tag, Message message) {
+    public static void send(Link link, Tag tag, Message message) {
         send((Sender)link, tag, message);
     }
 

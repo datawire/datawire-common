@@ -12,7 +12,7 @@ public class Source extends BaseDatawireHandler {
     private int limit = Integer.MAX_VALUE;
     private int window = 1024;
     private Message message = Message.Factory.create();
-    private SimpleTag tag = new SimpleTag(1);
+    private Tag tag = new SimpleTag(1);
 
     public Source(Template template) {
         this.template = template;

@@ -8,7 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class SourceTest {
-    
+
     public static class Counter extends BaseDatawireHandler {
         private final Template template;
         private final int count;
@@ -30,7 +30,7 @@ public class SourceTest {
             if (received == count) {
                 receiver.stop(e.getReactor());
             }
-                
+
         }
         public void setReceiver(Receiver rcv) {
             this.receiver = rcv;
@@ -71,12 +71,12 @@ public class SourceTest {
         assertTrue("open event", counter.openEvent);
     }
 
-    
+
     @Test
     public void testReceiver1() {
         testReceiver(1);
     }
-    
+
     @Test
     public void testReceiver150() {
         testReceiver(150);
