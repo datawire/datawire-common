@@ -8,6 +8,7 @@ import org.apache.qpid.proton.engine.Delivery;
 import org.apache.qpid.proton.engine.EventType;
 import org.apache.qpid.proton.engine.Handler;
 import org.apache.qpid.proton.engine.Record;
+import org.apache.qpid.proton.engine.RecordAccessor;
 import org.apache.qpid.proton.message.Message;
 
 /**
@@ -53,20 +54,12 @@ public interface DatawireEvent extends org.apache.qpid.proton.engine.Event {
          * {@inheritDoc}
          */
         @Override
-        public void dispatch(org.apache.qpid.proton.engine.Event e, Handler h) {
-            io.datawire.impl.DatawireEventTypeImpl.dispatch(this, e, h);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
         public boolean isValid() {
             return true;
         }
     }
 
-    public static final Record.Accessor<Message> MESSAGE_ACCESSOR = new Record.Accessor<Message>() {
+    public static final RecordAccessor<Message> MESSAGE_ACCESSOR = new RecordAccessor<Message>() {
             @Override public Message get(Record r) { return r.get(this, Message.class); }
             @Override public void set(Record r, Message value) { r.set(this, Message.class, value); }
         };

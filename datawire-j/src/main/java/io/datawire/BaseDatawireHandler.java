@@ -4,15 +4,51 @@
  */
 package io.datawire;
 
+import io.datawire.impl.EventImpl;
+
+import org.apache.qpid.proton.engine.EventType;
+import org.apache.qpid.proton.engine.EventExtensibilityTest.ExtraEvent;
+import org.apache.qpid.proton.engine.EventExtensibilityTest.ExtraEventImpl;
+
 /**
  * Default implementation of all {@link DatawireHandler} methods. Use this class as the
  * base for your handlers.
- * 
+ *
  * @author bozzo
  *
  */
 public class BaseDatawireHandler extends org.apache.qpid.proton.engine.BaseHandler
         implements DatawireHandler {
+
+    @Override
+    public void handle(org.apache.qpid.proton.engine.Event e) {
+        EventType type = e.getEventType();
+        if (type instanceof DatawireEvent.Type) {
+            final DatawireEvent event;
+            if (e instanceof DatawireEvent) {
+                event = (DatawireEvent) e;
+            } else {
+                event = new EventImpl(e);
+            }
+            switch((DatawireEvent.Type) type) {
+            case MESSAGE:
+                onMessage(event);
+                break;
+            case DRAINED:
+                onDrained(event);
+                break;
+            case SAMPLE:
+                onSample(event);
+                break;
+            case NOT_A_DATAWIRE_TYPE:
+                throw new IllegalArgumentException("Cannot dispatch an invalid type value");
+
+            // default: Do not add default, so that compiler warns for unhandled events!
+            }
+        } else {
+            super.handle(e);
+        }
+    }
 
     @Override
     public void onMessage(DatawireEvent e) {

@@ -367,7 +367,7 @@ abstract class Link extends BaseDatawireHandler {
 
     @Override
     public void onConnectionBound(Event event) {
-        event.getTransport().setIdleTimeout(60000); /// XXX: units???
+        event.getTransport().setIdleTimeout(60000);
         // TODO: transport tracer
     }
 
