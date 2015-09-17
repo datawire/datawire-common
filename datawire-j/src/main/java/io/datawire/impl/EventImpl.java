@@ -119,7 +119,7 @@ public class EventImpl implements DatawireEvent {
 
     @Override
     public Message getMessage() {
-        Message m = MESSAGE_ACCESSOR.get(impl.attachments());
+        Message m = MESSAGE_ACCESSOR.get(impl);
         return m;
     }
 

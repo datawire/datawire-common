@@ -14,6 +14,7 @@ import org.apache.qpid.proton.amqp.transport.Target;
 import org.apache.qpid.proton.engine.Delivery;
 import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.engine.Extendable;
+import org.apache.qpid.proton.engine.ExtendableAccessor;
 import org.apache.qpid.proton.engine.Record;
 import org.apache.qpid.proton.engine.Sender;
 import org.apache.qpid.proton.engine.Link;
@@ -25,28 +26,8 @@ import org.apache.qpid.proton.reactor.Handshaker;
 
 public class Stream extends BaseDatawireHandler {
     private static final Logger log = Logger.getLogger(Stream.class.getName());
-    public static final Accessor<Reader> SENDER_READER = new Accessor<Reader>() {
+    public static final ExtendableAccessor<Sender, Reader> SENDER_READER = new ExtendableAccessor<>(Reader.class);
 
-        @Override
-        public Reader get(Record r) {
-            return r.get(this, Reader.class);
-        }
-
-        @Override
-        public void set(Record r, Reader value) {
-            r.set(this, Reader.class, value);
-        }
-
-        @Override
-        public void set(Extendable e, Reader value) {
-            e.attachments().set(this, Reader.class, value);
-        }
-
-        @Override
-        public Reader get(Extendable e) {
-            return e.attachments().get(this, Reader.class);
-        }
-    };
     private Store store;
     private final ArrayList<Receiver> incoming;
     private final ArrayList<Sender> outgoing;
@@ -121,7 +102,7 @@ public class Stream extends BaseDatawireHandler {
     public void onLinkFinal(Event e) {
         Sender sender = e.getSender();
         if (sender != null) {
-            Reader reader = SENDER_READER.get(sender.attachments());
+            Reader reader = SENDER_READER.get(sender);
             reader.close();
             SENDER_READER.set(sender, null);
             outgoing.remove(sender);

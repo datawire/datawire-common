@@ -10,6 +10,7 @@ import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.engine.Delivery;
 import org.apache.qpid.proton.engine.Extendable;
+import org.apache.qpid.proton.engine.ExtendableAccessor;
 import org.apache.qpid.proton.engine.Record;
 import org.apache.qpid.proton.engine.Sender;
 import org.apache.qpid.proton.engine.Link;
@@ -17,28 +18,7 @@ import org.apache.qpid.proton.message.Message;
 
 public class DatawireUtils {
     
-    public static final Accessor<Tag> SENDER_TAG = new Accessor<Tag>() {
-
-        @Override
-        public Tag get(Record r) {
-            return r.get(this, Tag.class);
-        }
-
-        @Override
-        public void set(Record r, Tag value) {
-            r.set(this, Tag.class, value);
-        }
-
-        @Override
-        public Tag get(Extendable e) {
-            return e.attachments().get(this, Tag.class);
-        }
-
-        @Override
-        public void set(Extendable e, Tag value) {
-            e.attachments().set(this, Tag.class, value);
-        }
-    };
+    public static final ExtendableAccessor<Sender, Tag> SENDER_TAG = new ExtendableAccessor<Sender, Tag>(Tag.class);
 
     static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
 

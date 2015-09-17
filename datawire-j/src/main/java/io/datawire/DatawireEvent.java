@@ -5,7 +5,10 @@
 package io.datawire;
 
 import org.apache.qpid.proton.engine.Delivery;
+import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.engine.EventType;
+import org.apache.qpid.proton.engine.Extendable;
+import org.apache.qpid.proton.engine.ExtendableAccessor;
 import org.apache.qpid.proton.engine.Handler;
 import org.apache.qpid.proton.engine.Record;
 import org.apache.qpid.proton.engine.RecordAccessor;
@@ -59,10 +62,7 @@ public interface DatawireEvent extends org.apache.qpid.proton.engine.Event {
         }
     }
 
-    public static final RecordAccessor<Message> MESSAGE_ACCESSOR = new RecordAccessor<Message>() {
-            @Override public Message get(Record r) { return r.get(this, Message.class); }
-            @Override public void set(Record r, Message value) { r.set(this, Message.class, value); }
-        };
+    public static final ExtendableAccessor<Event, Message> MESSAGE_ACCESSOR = new ExtendableAccessor<Event, Message>(Message.class);
 
     /**
      * @return {@link Type} of datawire event or {@link Type#NOT_A_DATAWIRE_TYPE} when invoked on non-datawire event.

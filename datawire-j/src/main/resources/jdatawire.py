@@ -46,10 +46,10 @@ class ExtendedProperty(NamedProperty):
         self.converter = converter
 
     def get(self, instance):
-        record = vars(instance).get("_record", None)
-        if record is None:
-            raise AttributeError(self._name + " has no _record")
-        value = self.accessor.get(record)
+        impl = vars(instance).get("_impl", None)
+        if impl is None:
+            raise AttributeError(self._name + " has no _impl")
+        value = self.accessor.get(impl.impl)
         if value is None:
             raise AttributeError(self._name + " is not in record")
         converted = self.converter(value)
