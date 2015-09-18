@@ -82,10 +82,10 @@ public class Stream extends BaseDatawireHandler {
     private void setup(Event e) {
         Sender sender = e.getSender();
         if (sender != null && SENDER_READER.get(sender) == null) {
-            String rsa = sender.getRemoteSource().getAddress();
-            String lsa = sender.getSource().getAddress();
-            String rta = sender.getRemoteTarget().getAddress();
-            String lta = sender.getTarget().getAddress();
+            String rsa = sender.getRemoteSource() != null ? sender.getRemoteSource().getAddress() : null;
+            String lsa = sender.getSource() != null ? sender.getSource().getAddress() : null;
+            String rta = sender.getRemoteTarget() != null ? sender.getRemoteTarget().getAddress() : null;
+            String lta = sender.getTarget() != null ? sender.getTarget().getAddress() : null;
             Reader reader = store.reader(
                     rsa != null ? rsa : lsa != null ? lsa : rta != null ? rta : lta );
             SENDER_READER.set(sender, reader);
