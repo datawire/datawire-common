@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.apache.qpid.proton.message.Message;
 
@@ -11,8 +12,10 @@ import io.datawire.BaseDatawireHandler;
 import io.datawire.Entry;
 import io.datawire.Reader;
 import io.datawire.StoreImpl;
+import io.datawire.Stream;
 
 public class TransientStore extends BaseDatawireHandler implements StoreImpl {
+    private static final Logger log = Logger.getLogger(TransientStore.class.getName());
     private ArrayList<EntryImpl> entries = new ArrayList<>();
     private int serial = 0;
     private ArrayList<ReaderImpl> readers = new ArrayList<>();
@@ -20,6 +23,13 @@ public class TransientStore extends BaseDatawireHandler implements StoreImpl {
     private long max_idle = 0;
     private long last_idle = 0;
     private int lastgc = 0;
+
+    public TransientStore() {}
+    public TransientStore(String name){
+        if (name != null) {
+            log.warning("This store is transient, TODO persistence to " + name);
+        }
+    }
 
     @Override
     public void put(Message msg, String address) {
@@ -87,7 +97,7 @@ public class TransientStore extends BaseDatawireHandler implements StoreImpl {
         return reclaimed;
     }
 
-    private List<EntryImpl> compact(List<EntryImpl> head) {
+    protected List<EntryImpl> compact(List<EntryImpl> head) {
         return Collections.emptyList();
     }
 
