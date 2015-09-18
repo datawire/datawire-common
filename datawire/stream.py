@@ -15,7 +15,7 @@ except:
 from proton import Message, Endpoint
 from proton.reactor import Reactor
 from proton.handlers import CFlowController, CHandshaker
-
+from .impl import dual_impl
 log = logging.getLogger(__name__)
 
 class Entry:
@@ -26,6 +26,7 @@ class Entry:
         self.deleted = deleted
         self.timestamp = time.time()
 
+@dual_impl
 class Store:
 
     def __init__(self, name=None):
@@ -172,7 +173,7 @@ class Reader:
     def close(self):
         self.store.readers.remove(self)
 
-
+@dual_impl
 class MultiStore:
 
     def __init__(self):
@@ -221,6 +222,7 @@ class MultiStore:
             self.stores[address] = store
         return store.reader(address)
 
+@dual_impl
 class Stream:
 
     def __init__(self, store = None):

@@ -180,9 +180,27 @@ class Tether(WrappedHandler, _Reactive):
 class Linker:
   pass
 
-
+class Stream(WrappedHandler):
+  def __init__(self, store=None):
+    def datawire_stream():
+      args = []
+      if store is not None:
+        args.append(store)
+      return io_datawire.Stream(*args)
+    WrappedHandler.__init__(self, datawire_stream)
 
 DatawireEvent = io_datawire.DatawireEvent
+
+class Store(io_datawire.impl.TransientStore):
+  def __init__(self, name=None):
+    super(Store,self).__init__(name)
+
+  def put(self, msg, persistent=True, address=None):
+    if isinstance(msg, basestring):
+      import java.nio.ByteBuffer
+      msg = java.nio.ByteBuffer.wrap(msg, len(msg), 0)
+      msg.flip()
+    self.super__put(msg, address)
 
 class DualImpl:
     impls = dict(
@@ -194,6 +212,9 @@ class DualImpl:
       Sender=Sender,
       Receiver=Receiver,
       Tether=Tether,
+      Stream=Stream,
+      Store=Store,
+      MultiStore=io_datawire.impl.MultiStoreImpl,
     )
 
     dualImpls = set()
