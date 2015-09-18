@@ -157,6 +157,7 @@ class RouteStore(Store):
             del self.routes[address]
             persistent = False
         if put:
+            self.message.decode(msg)
             self.put(msg, persistent)
 
     def recover_update(self, address, routes):
@@ -165,15 +166,17 @@ class RouteStore(Store):
     def compact(self, tail):
         return self.routes.values()
 
-class Directory(Stream):
+class Directory:
 
     def __init__(self, redirector, filename):
-        Stream.__init__(self, RouteStore(filename))
+        self.store = RouteStore(filename)
+        self.stream = Stream(self.store)
         self.redirector = redirector
         self.message = Message()
         self.redirector.on_updated = self.store.recover_update
         self.recover()
         self.redirector.on_updated = self.store.update
+        self.handlers = [self.stream]
 
     def recover(self):
         r = self.store.reader()
@@ -216,7 +219,6 @@ class Directory(Stream):
                 self.redirector.remove(**kwargs)
 
     def on_link_final(self, event):
-        Stream.on_link_final(self, event)
         if event.receiver:
             self.redirector.remove(owner=event.receiver)
 
