@@ -203,6 +203,17 @@ class Store(io_datawire.impl.TransientStore):
       msg.flip()
     self.super__put(msg, address)
 
+class MultiStore(io_datawire.impl.MultiStoreImpl):
+  def __init__(self, name=None):
+    super(MultiStore,self).__init__(name)
+
+  def put(self, msg, persistent=True, address=None):
+    if isinstance(msg, basestring):
+      import java.nio.ByteBuffer
+      msg = java.nio.ByteBuffer.wrap(msg, len(msg), 0)
+      msg.flip()
+    self.super__put(msg, address)
+
 class DualImpl:
     impls = dict(
       Address=io_datawire.Address,
@@ -215,8 +226,9 @@ class DualImpl:
       Tether=Tether,
       Stream=Stream,
       Store=Store,
-      MultiStore=io_datawire.impl.MultiStoreImpl,
+      MultiStore=MultiStore,
       Linker=Linker,
+      Entry=io_datawire.impl.EntryImpl,
     )
 
     dualImpls = set()

@@ -18,6 +18,7 @@ from proton.handlers import CFlowController, CHandshaker
 from .impl import dual_impl
 log = logging.getLogger(__name__)
 
+@dual_impl
 class Entry:
 
     def __init__(self, msg, persistent=True, deleted = False):
