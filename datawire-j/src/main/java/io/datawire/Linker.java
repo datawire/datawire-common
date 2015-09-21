@@ -111,7 +111,7 @@ public class Linker {
      * test helper
      * @return number of senders
      */
-    int sendersSize() {
+    public int sendersSize() {
         return senders.size();
     }
 

@@ -137,7 +137,17 @@ class _Linker(_Reactive):
   linked = WrappedHandlerProperty()
 
 
-class Sender(WrappedHandler, _Linker):
+class WrappedSender(WrappedHandler, _Linker):
+  def __init__(self, impl_or_constructor):
+    WrappedHandler.__init__(self, impl_or_constructor)
+
+  def send(self, o):
+    self._impl.send(o)
+
+  def close(self):
+    self._impl.close()
+
+class Sender(WrappedSender):
   def __init__(self, target, *handlers, **kwargs):
     def datawire_sender():
       args = []
@@ -148,13 +158,7 @@ class Sender(WrappedHandler, _Linker):
         pass
       if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.items()))
       return io_datawire.Sender(*args)
-    WrappedHandler.__init__(self, datawire_sender)
-
-  def send(self, o):
-    self._impl.send(o)
-
-  def close(self):
-    self._impl.close()
+    WrappedSender.__init__(self, datawire_sender)
 
 class Receiver(WrappedHandler, _Linker):
   def __init__(self, source, *handlers, **kwargs):
@@ -177,9 +181,31 @@ class Tether(WrappedHandler, _Reactive):
         return io_datawire.Tether(*args)
       WrappedHandler.__init__(self, datawire_tether)
 
+class FakeSendersCollection():
+  def __init__(self, linker):
+    self._linker = linker
+
+  def __len__(self):
+    return self._linker._impl.sendersSize()
+
+class FakeSendersProperty(object):
+  def __get__(self, instance, clazz=None):
+    if instance is None:
+      return self
+    return FakeSendersCollection(instance)
+
 class Linker(_Reactive):
   def __init__(self):
     self._impl = io_datawire.Linker()
+
+  def sender(self, target, *handlers, **kwargs):
+    if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.items()))
+    return WrappedSender.wrap(self._impl.sender(target, *map(unwrap_handler, handlers)))
+
+  senders = FakeSendersProperty()
+  
+  def close(self):
+    self._impl.close()
 
 class Stream(WrappedHandler):
   def __init__(self, store=None):
