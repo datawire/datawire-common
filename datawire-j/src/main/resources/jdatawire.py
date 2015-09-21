@@ -177,8 +177,9 @@ class Tether(WrappedHandler, _Reactive):
         return io_datawire.Tether(*args)
       WrappedHandler.__init__(self, datawire_tether)
 
-class Linker:
-  pass
+class Linker(_Reactive):
+  def __init__(self):
+    self._impl = io_datawire.Linker()
 
 class Stream(WrappedHandler):
   def __init__(self, store=None):
@@ -215,6 +216,7 @@ class DualImpl:
       Stream=Stream,
       Store=Store,
       MultiStore=io_datawire.impl.MultiStoreImpl,
+      Linker=Linker,
     )
 
     dualImpls = set()
