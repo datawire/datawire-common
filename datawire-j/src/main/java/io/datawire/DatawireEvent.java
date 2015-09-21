@@ -4,6 +4,8 @@
  */
 package io.datawire;
 
+import java.nio.ByteBuffer;
+
 import org.apache.qpid.proton.engine.Delivery;
 import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.engine.EventType;
@@ -28,7 +30,11 @@ public interface DatawireEvent extends org.apache.qpid.proton.engine.Event {
      */
     public enum Type implements EventType {
         /**
-         * An event holding a {@link Message} that was decoded from a {@link Delivery}. See {@link Decoder}.
+         * An event holding a {@link ByteBuffer} with encoded message that was received in the {@link Delivery}. See {@link Decoder}, {@link DatawireEvent#ENCODED_MESSAGE_ACCESSOR}.
+         */
+        ENCODED_MESSAGE,
+        /**
+         * An event holding a {@link Message} that was decoded from a {@link Delivery}. See {@link Decoder}, {@link DatawireEvent#MESSAGE_ACCESSOR}.
          */
         MESSAGE,
         /**
@@ -62,7 +68,8 @@ public interface DatawireEvent extends org.apache.qpid.proton.engine.Event {
         }
     }
 
-    public static final ExtendableAccessor<Event, Message> MESSAGE_ACCESSOR = new ExtendableAccessor<Event, Message>(Message.class);
+    public static final ExtendableAccessor<Event, Message> MESSAGE_ACCESSOR = new ExtendableAccessor<>(Message.class);
+    public static final ExtendableAccessor<Event, ByteBuffer> ENCODED_MESSAGE_ACCESSOR = new ExtendableAccessor<>(ByteBuffer.class);
 
     /**
      * @return {@link Type} of datawire event or {@link Type#NOT_A_DATAWIRE_TYPE} when invoked on non-datawire event.

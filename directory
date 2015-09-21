@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 from collections import OrderedDict
 from proton import Condition, symbol, Message
 from proton.reactor import Reactor
-from datawire import Configuration, ancestors, Address, Container, Entry, Store, Stream, __version__
+from datawire import Configuration, ancestors, Address, Container, Entry, Store, Stream, Decoder, __version__
 
 logging.basicConfig(datefmt="%Y-%m-%d %H:%M:%S",
                     format="%(asctime)s directory %(name)s %(levelname)s %(message)s")
@@ -191,24 +191,20 @@ class Directory:
                     self.redirector.add(addr, target, owner)
         r.close()
 
-    def on_delivery(self, event):
-        if self.message.recv(event.link):
-            self.on_message(event)
-            event.delivery.settle()
-
     def on_message(self, event):
-        if self.message.properties and "opcode" in self.message.properties:
-            opcode = self.message.properties["opcode"]
+        msg = event.message
+        if msg.properties and "opcode" in msg.properties:
+            opcode = msg.properties["opcode"]
             if opcode == "route":
-                address, target, owner = self.message.body[:3]
+                address, target, owner = msg.body[:3]
                 if owner is None: owner = event.link
-                if len(self.message.body) > 3:
-                    policy = self.message.body[3]
+                if len(msg.body) > 3:
+                    policy = msg.body[3]
                 else:
                     policy = None
                 self.redirector.add(address, target, owner, policy)
             elif opcode == "unroute":
-                address, target, owner = self.message.body
+                address, target, owner = msg.body
                 kwargs = {}
                 if address is not None:
                     kwargs["address"] = address
@@ -236,7 +232,7 @@ class Program:
         self.address = args.address or "//%s%s" % (self.host, portstr(self.port))
         self.redirector = Redirector()
         self.container = Container(self.redirector)
-        self.container["%s/directory" % self.address] = Directory(self.redirector, args.store)
+        self.container["%s/directory" % self.address] = Decoder(Directory(self.redirector, args.store))
         self.handlers = [self.container]
 
     def on_reactor_init(self, event):

@@ -298,13 +298,13 @@ class Stream:
         self.pump()
 
     ctr = 0
-    def on_delivery(self, event):
+    def on_encoded_message(self, event):
         rcv = event.receiver
         dlv = event.delivery
         if rcv and not dlv.partial:
             try:
                 self.ctr += 1
-                msg = rcv.recv(dlv.pending)
+                msg = dlv.encoded
             except:
                 raise
             address = rcv.target.address

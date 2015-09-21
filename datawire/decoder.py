@@ -6,6 +6,7 @@ from proton import EventType, Message, Delivery
 
 from .impl import dual_impl, DatawireEvent
 
+ENCODED_MESSAGE = EventType("encoded_message", DatawireEvent.Type.ENCODED_MESSAGE)
 MESSAGE = EventType("message", DatawireEvent.Type.MESSAGE)
 
 @dual_impl
@@ -22,7 +23,9 @@ class Decoder:
         if self.__message.recv(event.link):
             event.message = self.__message
             dlv = event.delivery
+            assert dlv.encoded
             try:
+                event.dispatch(self.__delegate, ENCODED_MESSAGE)
                 event.dispatch(self.__delegate, MESSAGE)
                 dlv.update(Delivery.ACCEPTED)
             except:
