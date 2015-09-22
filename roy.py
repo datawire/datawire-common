@@ -194,6 +194,8 @@ class Env:
         system(cmd)
 
 def build(package):
+    package.iteration = getattr(package, "iteration", 1)
+
     parser = ArgumentParser(prog="roy")
     parser.add_argument("-o", "--output", default="dist", help="output directory")
     parser.add_argument("-i", "--images", action="store_true", help="produce images only")
@@ -201,7 +203,18 @@ def build(package):
     parser.add_argument("-s", "--shell", action="store_true", help="run a shell in the build image")
     parser.add_argument("-p", "--package", action="store_true", help="run a shell in the package image")
     parser.add_argument("-u", "--update", action="store_true", help="update images")
+    parser.add_argument("--show-version", action="store_true", help="show package version and exit")
+    parser.add_argument("--show-iteration", action="store_true", help="show package iteration and exit")
     args = parser.parse_args()
+
+    if args.show_version:
+        print package.version
+        exit()
+
+    if args.show_iteration:
+        print package.iteration
+        exit()
+
     output = args.output
     if not os.path.exists(output):
         os.makedirs(output)
@@ -253,7 +266,7 @@ cp /dist/%(image)s/*.%(ext)s /work/repo/
 %s
 POSTINSTALL
 """ % package.postinstall
-        opts += " --iteration %s" % getattr(package, "iteration", 1)
+        opts += " --iteration %s" % package.iteration
         fpmsh += "\nfpm -f -s dir -t %(ext)s -n %(name)s -v %(version)s -a %(arch)s %(deps)s %(opts)s -C/work/install .\n" % {
             "ext": distro.ext,
             "name": package.name,
