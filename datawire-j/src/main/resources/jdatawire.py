@@ -258,16 +258,22 @@ class DualImpl:
     )
 
     dualImpls = set()
+    have = frozenset(impls)
+    ignore = frozenset(filter(None, map(str.strip, os.environ.get("JDATAWIRE_DISABLE", "").split(","))))
 
-    ignore = frozenset(filter(None, os.environ.get("JDATAWIRE_DISABLE", "").split(",")))
-
-    def __call__(self, clazz):
+    def __call__(self, clazz=None, depends=[]):
+      def decorate(clazz):
         name = clazz.__name__
-        if name in self.impls and not self.ignore.intersection((name, "*")):
+        reqs = set((name,)).union(depends)
+        if not reqs.difference(self.have) and not self.ignore.intersection(reqs.union(set("*"))):
           self.dualImpls.add(name)
           return self.impls[name]
         else:
           return clazz
+      if clazz is None:
+        return decorate
+      else:
+        return decorate(clazz)
 
 dual_impl = DualImpl()
 del DualImpl
