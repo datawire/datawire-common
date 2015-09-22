@@ -12,12 +12,13 @@ MESSAGE = EventType("message", DatawireEvent.Type.MESSAGE)
 @dual_impl
 class Decoder:
 
-    def __init__(self, delegate=None):
+    def __init__(self, delegate=None, *handlers):
         if delegate is None:
             self.__delegate = self
         else:
             self.__delegate = delegate
         self.__message = Message()
+        self.handlers = handlers
 
     def on_delivery(self, event):
         if self.__message.recv(event.link):
@@ -35,3 +36,4 @@ class Decoder:
                 # TODO no rethrow?
             finally:
                 dlv.settle()
+

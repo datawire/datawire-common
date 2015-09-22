@@ -232,7 +232,7 @@ class Program:
         self.address = args.address or "//%s%s" % (self.host, portstr(self.port))
         self.redirector = Redirector()
         self.container = Container(self.redirector)
-        self.container["%s/directory" % self.address] = Decoder(Directory(self.redirector, args.store))
+        self.container["%s/directory" % self.address] = Decoder(None, Directory(self.redirector, args.store))
         self.handlers = [self.container]
 
     def on_reactor_init(self, event):
