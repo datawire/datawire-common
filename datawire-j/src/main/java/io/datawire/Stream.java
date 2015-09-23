@@ -148,18 +148,11 @@ public class Stream extends BaseDatawireHandler {
     }
 
     @Override
-    public void onDelivery(Event e) {
+    public void onEncodedMessage(DatawireEvent e) {
         Receiver receiver = e.getReceiver();
-        Delivery delivery = e.getDelivery();
-        if (receiver != null && !delivery.isPartial()) {
-            byte[] bytes = new byte[delivery.pending()];
-            int received = receiver.recv(bytes, 0, bytes.length);
-            ByteBuffer buffer = ByteBuffer.wrap(bytes, received, bytes.length - received);
-            buffer.flip();
-            String address = receiver.getTarget().getAddress();
-            store.put(buffer, address);
-            delivery.settle();
-        }
+        ByteBuffer buffer = e.getEncodedMessage();
+        String address = receiver.getTarget().getAddress();
+        store.put(buffer, address);
     }
     
     private boolean matches(String host, String port, String address, Link link) {

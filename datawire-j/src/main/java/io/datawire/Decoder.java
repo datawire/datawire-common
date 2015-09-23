@@ -4,10 +4,13 @@
  */
 package io.datawire;
 
+import java.nio.ByteBuffer;
+
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.Rejected;
 import org.apache.qpid.proton.amqp.transport.SenderSettleMode;
 import org.apache.qpid.proton.engine.Delivery;
+import org.apache.qpid.proton.engine.Handler;
 import org.apache.qpid.proton.engine.Link;
 import org.apache.qpid.proton.engine.Receiver;
 import org.apache.qpid.proton.engine.Sender;
@@ -24,7 +27,7 @@ import org.apache.qpid.proton.message.Message;
  * {@link Decoder#Decoder(org.apache.qpid.proton.engine.Handler)} constructor,
  * or</li>
  * <li>add your handler with
- * {@link Decoder#add(org.apache.qpid.proton.engine.Handler)} to an instance of
+ * {@link Decoder#add(Handler)} to an instance of
  * {@link #Decoder()}</li>
  * </ul>
  *
@@ -42,7 +45,7 @@ public class Decoder extends BaseDatawireHandler {
     private static final Accepted ACCEPTED = Accepted.getInstance();
     private static final Rejected REJECTED = new Rejected();
 
-    private final org.apache.qpid.proton.engine.Handler delegate;
+    private final Handler delegate;
 
     // FIXME: one instance of Message is dangerous, user of the API can easily
     // use the same Decoder instance with two reactors! It would be better if
@@ -59,7 +62,7 @@ public class Decoder extends BaseDatawireHandler {
      * {@link #Decoder(org.apache.qpid.proton.engine.Handler)}
      * <p>
      * Use this constructor when deriving or adding your handler via
-     * {@link Decoder#add(org.apache.qpid.proton.engine.Handler)}
+     * {@link Decoder#add(Handler)}
      */
     public Decoder() {
         this(null);
@@ -73,8 +76,11 @@ public class Decoder extends BaseDatawireHandler {
      * 
      * @param delegate the handler to invoke with decoded messages. Can be {@literal null}.
      */
-    public Decoder(org.apache.qpid.proton.engine.Handler delegate) {
+    public Decoder(Handler delegate, Handler... children) {
         this.delegate = delegate != null ? delegate : this;
+        for (Handler child : children) {
+            add(child);
+        }
     }
 
     @Override
@@ -85,6 +91,7 @@ public class Decoder extends BaseDatawireHandler {
         }
         try {
             DatawireEvent.MESSAGE_ACCESSOR.set(e, message);
+            e.redispatch(DatawireEvent.Type.ENCODED_MESSAGE, delegate);
             e.redispatch(DatawireEvent.Type.MESSAGE, delegate);
             dlv.disposition(ACCEPTED);
         } catch (Throwable ex) {
@@ -114,12 +121,15 @@ public class Decoder extends BaseDatawireHandler {
             buffer = new byte[dlv.pending()];
         }
         Receiver recv = (Receiver) link;
-        int encoded = recv.recv(buffer, 0, dlv.pending());
+        int received = recv.recv(buffer, 0, dlv.pending());
         recv.advance();
         if (recv.getRemoteSenderSettleMode() == SenderSettleMode.SETTLED) {
             dlv.settle();
         }
-        message2.decode(buffer, 0, encoded);
+        message2.decode(buffer, 0, received);
+        ByteBuffer encoded = ByteBuffer.wrap(buffer, received, buffer.length - received);
+        encoded.flip();
+        DatawireEvent.ENCODED_MESSAGE_ACCESSOR.set(dlv, encoded);
         return true;
     }
 }

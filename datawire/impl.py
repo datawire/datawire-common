@@ -12,6 +12,7 @@ except:
   dual_impl.dualImpls = set()
   class DatawireEvent:
     class Type:
+      ENCODED_MESSAGE = None
       MESSAGE = None
       SAMPLE = None
       DRAINED = None

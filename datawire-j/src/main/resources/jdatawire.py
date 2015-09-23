@@ -1,6 +1,6 @@
 
 import os
-
+import itertools
 # Probable interaction with python io package...
 # in some cases the io.datawire package later gets removed,
 # so grab a reference to the module
@@ -11,6 +11,7 @@ from proton import WrappedHandler, _chandler
 from org.apache.qpid.proton.engine import BaseHandler
 
 import proton
+from proton.wrapper import Wrapper
 
 class NamedProperty(object):
     _fullname = None
@@ -92,10 +93,11 @@ def unwrap_handler(delegate):
 
 class Decoder(WrappedHandler):
 
-    def __init__(self, delegate=None):
+    def __init__(self, delegate=None, *handlers):
         def datawire_decoder():
             args = []
             args.append(unwrap_handler(delegate))
+            args.append(map(unwrap_handler, handlers))
             return io_datawire.Decoder(*args)
         WrappedHandler.__init__(self, datawire_decoder)
 
@@ -212,33 +214,64 @@ class Stream(WrappedHandler):
     def datawire_stream():
       args = []
       if store is not None:
-        args.append(store)
+        args.append(peel(store))
       return io_datawire.Stream(*args)
     WrappedHandler.__init__(self, datawire_stream)
 
 DatawireEvent = io_datawire.DatawireEvent
 
-class Store(io_datawire.impl.TransientStore):
+def peel(wrapped):
+  if wrapped is None:
+    return None
+  return getattr(wrapped, "_impl", wrapped)
+
+class jStore(io_datawire.impl.TransientStore):
+  def __init__(self, wrapper, name=None):
+    self._wrapper = wrapper
+    super(jStore,self).__init__(name)
+
+  def compact(self, tail):
+    return map(peel, self._wrapper.compact(map(Entry, tail)))
+
+  def gc(self):
+    return self._wrapper.gc()
+
+class Store:
   def __init__(self, name=None):
-    super(Store,self).__init__(name)
+    self._impl = jStore(self, name)
 
   def put(self, msg, persistent=True, address=None):
+    self._impl.put(message_or_buffer(msg), address)
+
+  def gc(self):
+    return self._impl.super__gc()
+
+  def reader(self, address=None):
+    return self._impl.reader(address)
+
+  def compact(self, tail):
+    return itertools.imap(Entry, self._impl.super__compact(map(peel, tail)))
+
+def message_or_buffer(msg):
     if isinstance(msg, basestring):
       import java.nio.ByteBuffer
       msg = java.nio.ByteBuffer.wrap(msg, len(msg), 0)
       msg.flip()
-    self.super__put(msg, address)
+    return msg
 
 class MultiStore(io_datawire.impl.MultiStoreImpl):
   def __init__(self, name=None):
     super(MultiStore,self).__init__(name)
 
   def put(self, msg, persistent=True, address=None):
-    if isinstance(msg, basestring):
-      import java.nio.ByteBuffer
-      msg = java.nio.ByteBuffer.wrap(msg, len(msg), 0)
-      msg.flip()
-    self.super__put(msg, address)
+    self.super__put(message_or_buffer(msg), address)
+
+class Entry:
+  def __init__(self, msg, persistent=True, deleted = False):
+    if isinstance(msg, io_datawire.impl.EntryImpl):
+      self._impl = msg
+    else:
+      self._impl = io_datawire.impl.EntryImpl(message_or_buffer(msg), persistent, deleted)
 
 class DualImpl:
     impls = dict(
@@ -254,7 +287,7 @@ class DualImpl:
       Store=Store,
       MultiStore=MultiStore,
       Linker=Linker,
-      Entry=io_datawire.impl.EntryImpl,
+      Entry=Entry,
     )
 
     dualImpls = set()

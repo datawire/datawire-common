@@ -7,8 +7,6 @@ package io.datawire;
 import io.datawire.impl.EventImpl;
 
 import org.apache.qpid.proton.engine.EventType;
-import org.apache.qpid.proton.engine.EventExtensibilityTest.ExtraEvent;
-import org.apache.qpid.proton.engine.EventExtensibilityTest.ExtraEventImpl;
 
 /**
  * Default implementation of all {@link DatawireHandler} methods. Use this class as the
@@ -31,6 +29,9 @@ public class BaseDatawireHandler extends org.apache.qpid.proton.engine.BaseHandl
                 event = new EventImpl(e);
             }
             switch((DatawireEvent.Type) type) {
+            case ENCODED_MESSAGE:
+                onEncodedMessage(event);
+                break;
             case MESSAGE:
                 onMessage(event);
                 break;
@@ -48,6 +49,11 @@ public class BaseDatawireHandler extends org.apache.qpid.proton.engine.BaseHandl
         } else {
             super.handle(e);
         }
+    }
+
+    @Override
+    public void onEncodedMessage(DatawireEvent e) {
+        onUnhandled(e);
     }
 
     @Override

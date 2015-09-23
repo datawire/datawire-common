@@ -3,7 +3,7 @@
 import logging
 from argparse import ArgumentParser
 from proton.reactor import Reactor
-from datawire import Address, Tether, Sender, Stream
+from datawire import Address, Tether, Sender, Stream, Decoder
 
 class Fanout:
 
@@ -18,7 +18,7 @@ class Fanout:
         # representing a linear sequence of messages, the stream will
         # collect messages from any incoming links into the store, and
         # broadcast them to all outgoing links
-        self.stream = Stream()
+        self.stream = Decoder(None, Stream())
         # by supplying the stream as the Sender's event handler, we
         # can locally establish outgoing links to push any messages in
         # the store to our target addresses

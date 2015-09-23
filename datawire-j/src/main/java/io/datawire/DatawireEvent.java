@@ -9,11 +9,8 @@ import java.nio.ByteBuffer;
 import org.apache.qpid.proton.engine.Delivery;
 import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.engine.EventType;
-import org.apache.qpid.proton.engine.Extendable;
 import org.apache.qpid.proton.engine.ExtendableAccessor;
 import org.apache.qpid.proton.engine.Handler;
-import org.apache.qpid.proton.engine.Record;
-import org.apache.qpid.proton.engine.RecordAccessor;
 import org.apache.qpid.proton.message.Message;
 
 /**
@@ -69,7 +66,7 @@ public interface DatawireEvent extends org.apache.qpid.proton.engine.Event {
     }
 
     public static final ExtendableAccessor<Event, Message> MESSAGE_ACCESSOR = new ExtendableAccessor<>(Message.class);
-    public static final ExtendableAccessor<Event, ByteBuffer> ENCODED_MESSAGE_ACCESSOR = new ExtendableAccessor<>(ByteBuffer.class);
+    public static final ExtendableAccessor<Delivery, ByteBuffer> ENCODED_MESSAGE_ACCESSOR = new ExtendableAccessor<>(ByteBuffer.class);
 
     /**
      * @return {@link Type} of datawire event or {@link Type#NOT_A_DATAWIRE_TYPE} when invoked on non-datawire event.
@@ -79,7 +76,16 @@ public interface DatawireEvent extends org.apache.qpid.proton.engine.Event {
     Type getDatawireType();
 
     /**
-     * @return {@link Message} for {@link Type#MESSAGE} events
+     * Get decoded message
+     * <em>Note:</em> The Message object is reused between events
+     * @return {@link Message} for {@link Type#MESSAGE} events.
      */
     Message getMessage();
+
+    /**
+     * Get encoded message
+     * <em>Note:</em> The buffer object is reused between events
+     * @return {@link ByteBuffer} for {@link Type#ENCODED_MESSAGE} events
+     */
+    ByteBuffer getEncodedMessage();
 }

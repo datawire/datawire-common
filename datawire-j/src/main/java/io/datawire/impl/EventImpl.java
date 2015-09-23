@@ -1,5 +1,7 @@
 package io.datawire.impl;
 
+import java.nio.ByteBuffer;
+
 import org.apache.qpid.proton.engine.Connection;
 import org.apache.qpid.proton.engine.Delivery;
 import org.apache.qpid.proton.engine.EventType;
@@ -121,6 +123,16 @@ public class EventImpl implements DatawireEvent {
     public Message getMessage() {
         Message m = MESSAGE_ACCESSOR.get(impl);
         return m;
+    }
+    
+    @Override
+    public ByteBuffer getEncodedMessage() {
+        Delivery delivery = getDelivery();
+        if (delivery == null) {
+            return null;
+        }
+        ByteBuffer b = ENCODED_MESSAGE_ACCESSOR.get(delivery);
+        return b;
     }
 
     @Override

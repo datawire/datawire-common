@@ -7,17 +7,17 @@ import io.datawire.Entry;
 
 import org.apache.qpid.proton.message.Message;
 
-class EntryImpl implements Entry {
-    final ByteBuffer encodedMessage;
-    final boolean persistent;
-    final boolean deleted;
-    final long timestamp = System.currentTimeMillis();
-    EntryImpl(Message message, boolean persistent, boolean deleted) {
+public class EntryImpl implements Entry {
+    private final ByteBuffer encodedMessage;
+    private final boolean persistent;
+    private final boolean deleted;
+    private final long timestamp = System.currentTimeMillis();
+    public EntryImpl(Message message, boolean persistent, boolean deleted) {
         this.encodedMessage = DatawireUtils.encode(message);
         this.persistent = persistent;
         this.deleted = deleted;
     }
-    EntryImpl(ByteBuffer encodedMessage, boolean persistent, boolean deleted) {
+    public EntryImpl(ByteBuffer encodedMessage, boolean persistent, boolean deleted) {
         this.encodedMessage = encodedMessage;
         this.persistent = persistent;
         this.deleted = deleted;
