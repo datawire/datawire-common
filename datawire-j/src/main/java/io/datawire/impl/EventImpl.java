@@ -50,6 +50,11 @@ public class EventImpl implements DatawireEvent {
     }
 
     @Override
+    public Handler getRootHandler() {
+        return impl.getRootHandler();
+    }
+
+    @Override
     public void dispatch(Handler handler) throws HandlerException {
         impl.dispatch(handler);
     }
