@@ -16,6 +16,7 @@ from proton import Message, Endpoint
 from proton.reactor import Reactor
 from proton.handlers import CFlowController, CHandshaker
 from .impl import dual_impl
+from .decoder import Decoder
 log = logging.getLogger(__name__)
 
 @dual_impl(depends=["Store"])
@@ -228,7 +229,7 @@ class Stream:
 
     def __init__(self, store = None):
         self.store = store or Store()
-        self.handlers = [CFlowController(), CHandshaker()]
+        self.handlers = [CFlowController(), CHandshaker(), Decoder()]
         self.incoming = []
         self.outgoing = []
         self.message = Message()

@@ -18,7 +18,7 @@ class Fanout:
         # representing a linear sequence of messages, the stream will
         # collect messages from any incoming links into the store, and
         # broadcast them to all outgoing links
-        self.stream = Decoder(None, Stream())
+        self.stream = Stream()
         # by supplying the stream as the Sender's event handler, we
         # can locally establish outgoing links to push any messages in
         # the store to our target addresses

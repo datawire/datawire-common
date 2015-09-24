@@ -166,11 +166,23 @@ class RouteStore(Store):
     def compact(self, tail):
         return self.routes.values()
 
+class NoPut:
+  """A proxy that ignores all put() calls
+  """
+  def __init__(self, store):
+    self.__store = store
+
+  def put(self, *args, **kwargs):
+    pass
+
+  def __getattr__(self, name):
+    return getattr(self.__store, name)
+
 class Directory:
 
     def __init__(self, redirector, filename):
         self.store = RouteStore(filename)
-        self.stream = Stream(self.store)
+        self.stream = Stream(NoPut(self.store))
         self.redirector = redirector
         self.message = Message()
         self.redirector.on_updated = self.store.recover_update
@@ -232,7 +244,7 @@ class Program:
         self.address = args.address or "//%s%s" % (self.host, portstr(self.port))
         self.redirector = Redirector()
         self.container = Container(self.redirector)
-        self.container["%s/directory" % self.address] = Decoder(None, Directory(self.redirector, args.store))
+        self.container["%s/directory" % self.address] = Directory(self.redirector, args.store)
         self.handlers = [self.container]
 
     def on_reactor_init(self, event):

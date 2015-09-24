@@ -8,10 +8,13 @@ import java.nio.ByteBuffer;
 
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.Rejected;
+import org.apache.qpid.proton.amqp.transport.DeliveryState;
 import org.apache.qpid.proton.amqp.transport.SenderSettleMode;
 import org.apache.qpid.proton.engine.Delivery;
+import org.apache.qpid.proton.engine.ExtendableAccessor;
 import org.apache.qpid.proton.engine.Handler;
 import org.apache.qpid.proton.engine.Link;
+import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.engine.Receiver;
 import org.apache.qpid.proton.engine.Sender;
 import org.apache.qpid.proton.message.Message;
@@ -19,33 +22,25 @@ import org.apache.qpid.proton.message.Message;
 /**
  * Handler for decoding deliveries into messages.
  * <p>
- * <b>Usage</b>: Implement a {@link DatawireHandler} preferably by extending the
- * {@link BaseDatawireHandler}, implement the {@link DatawireHandler#onMessage(DatawireEvent)} and then
- * either
- * <ul>
- * <li>pass it as {@code delegate} to the
- * {@link Decoder#Decoder(org.apache.qpid.proton.engine.Handler)} constructor,
- * or</li>
- * <li>add your handler with
- * {@link Decoder#add(Handler)} to an instance of
- * {@link #Decoder()}</li>
- * </ul>
- *
- * The Decoder fires the {@link DatawireHandler#onMessage(DatawireEvent)} synchronously and
- * depending on success or failure (exception being thrown) either accepts (
- * {@link Delivery#disposition(org.apache.qpid.proton.amqp.transport.DeliveryState)}
- * ) or rejects the delivery and settles it ({@link Delivery#settle()})
+ * The Decoder fires the {@link DatawireHandler#onEncodedMessage(DatawireEvent)}
+ * and {@link DatawireHandler#onMessage(DatawireEvent)} synchronously on the
+ * {@link Event#getRootHandler()} and depending on success or failure (exception
+ * being thrown) either accepts ({@link Delivery#disposition(DeliveryState)})
+ * or rejects the delivery and settles it ({@link Delivery#settle()})
  * <p>
- * TODO: for simple scenarios use the ServiceBase class
+ * <b>Usage</b>: Implement a {@link DatawireHandler} preferably by extending the
+ * {@link BaseDatawireHandler}, implement the
+ * {@link DatawireHandler#onMessage(DatawireEvent)} and add a Decoder as a child
+ * handler or the other way around.
+ * <p>
  * 
  * @author bozzo
  *
  */
 public class Decoder extends BaseDatawireHandler {
+    private static final ExtendableAccessor<Event, Boolean> IS_DONE = new ExtendableAccessor<>(Boolean.class);
     private static final Accepted ACCEPTED = Accepted.getInstance();
     private static final Rejected REJECTED = new Rejected();
-
-    private final Handler delegate;
 
     // FIXME: one instance of Message is dangerous, user of the API can easily
     // use the same Decoder instance with two reactors! It would be better if
@@ -58,41 +53,42 @@ public class Decoder extends BaseDatawireHandler {
     private byte[] buffer = new byte[10000];
 
     /**
-     * An instance of decoder that will use itself as the delegate, see
-     * {@link #Decoder(org.apache.qpid.proton.engine.Handler)}
-     * <p>
-     * Use this constructor when deriving or adding your handler via
-     * {@link Decoder#add(Handler)}
-     */
-    public Decoder() {
-        this(null);
-    }
-
-    /**
-     * An instance of decoder that will invoke {@link DatawireHandler#onMessage(DatawireEvent)}
-     * on the supplied delegate
-     * <p>
-     * XXX: is it ever a good idea to use this approach? Deprecate?
+     * An instance of decoder that will invoke {@link DatawireHandler#onEncodedMessage(DatawireEvent)}
+     * {@link DatawireHandler#onMessage(DatawireEvent)} on the
+     * {@link Event#getRootHandler()}
      * 
-     * @param delegate the handler to invoke with decoded messages. Can be {@literal null}.
+     * @param children
+     *            the optional child handlers to install.
      */
-    public Decoder(Handler delegate, Handler... children) {
-        this.delegate = delegate != null ? delegate : this;
+    /**
+     * @param children
+     */
+    public Decoder(Handler... children) {
         for (Handler child : children) {
             add(child);
         }
     }
 
+    public static boolean isDone(Event e) {
+        return Boolean.TRUE.equals(IS_DONE.get(e));
+    }
+
     @Override
-    public void onDelivery(org.apache.qpid.proton.engine.Event e) {
+    public void onDelivery(Event e) {
         Delivery dlv = e.getDelivery();
+        if (isDone(e)) {
+            return; 
+        }
         if (!recv(message, dlv)) { // TODO: move to Message
             return;
         }
         try {
+            IS_DONE.set(e, Boolean.TRUE);
+            Handler root = e.getRootHandler();
             DatawireEvent.MESSAGE_ACCESSOR.set(e, message);
-            e.redispatch(DatawireEvent.Type.ENCODED_MESSAGE, delegate);
-            e.redispatch(DatawireEvent.Type.MESSAGE, delegate);
+            e.redispatch(DatawireEvent.Type.ENCODED_MESSAGE, root);
+            e.redispatch(DatawireEvent.Type.MESSAGE, root);
+            e.delegate();
             dlv.disposition(ACCEPTED);
         } catch (Throwable ex) {
             dlv.disposition(REJECTED); // TODO: setErrorCondition?
@@ -100,13 +96,6 @@ public class Decoder extends BaseDatawireHandler {
         } finally {
             dlv.settle();
         }
-    }
-
-    @Override
-    public void onMessage(DatawireEvent e) {
-        // XXX: is this really really necessary?
-        // When this instance is used as the delegate it should not forward this
-        // event to the onUnhandled.
     }
 
     private boolean recv(Message message2, Delivery dlv) {
@@ -127,7 +116,8 @@ public class Decoder extends BaseDatawireHandler {
             dlv.settle();
         }
         message2.decode(buffer, 0, received);
-        ByteBuffer encoded = ByteBuffer.wrap(buffer, received, buffer.length - received);
+        ByteBuffer encoded = ByteBuffer.wrap(buffer, received, buffer.length
+                - received);
         encoded.flip();
         DatawireEvent.ENCODED_MESSAGE_ACCESSOR.set(dlv, encoded);
         return true;

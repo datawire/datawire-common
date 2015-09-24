@@ -90,10 +90,10 @@ mvn test \
       <scope>test</scope>
     </dependency>
     <dependency>
-    	<groupId>org.apache.qpid</groupId>
-    	<artifactId>proton-tests</artifactId>
-    	<version>0.10-SNAPSHOT</version>
-    	<type>test-jar</type>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>proton-tests</artifactId>
+        <version>0.11.0-SNAPSHOT</version>
+        <type>test-jar</type>
     </dependency>
   </dependencies>
 </project>

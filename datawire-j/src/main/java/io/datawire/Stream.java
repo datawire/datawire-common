@@ -41,6 +41,7 @@ public class Stream extends BaseDatawireHandler {
         this.store = store;
         add(new FlowController());
         add(new Handshaker());
+        add(new Decoder());
         incoming = new ArrayList<>();
         outgoing = new ArrayList<>();
         message = Message.Factory.create();
@@ -173,8 +174,8 @@ public class Stream extends BaseDatawireHandler {
             return (hostname.equals(String.format("%s:%s", host, port))
                     && address.equals(terminusAddress));
         }
-}
-    
+    }
+
     public void relink(boolean sender, boolean receiver, String host, String port, String address) {
         if (sender) {
             for (Sender l : outgoing) {

@@ -95,9 +95,11 @@ class Decoder(WrappedHandler):
 
     def __init__(self, delegate=None, *handlers):
         def datawire_decoder():
-            args = []
-            args.append(unwrap_handler(delegate))
-            args.append(map(unwrap_handler, handlers))
+            children = []
+            args = [children]
+            if delegate is not None:
+              children.append(unwrap_handler(delegate))
+            children.extend(map(unwrap_handler, handlers))
             return io_datawire.Decoder(*args)
         WrappedHandler.__init__(self, datawire_decoder)
 
