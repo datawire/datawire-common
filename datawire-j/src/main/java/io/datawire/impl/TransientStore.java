@@ -84,6 +84,9 @@ public class TransientStore implements StoreImpl {
             List<EntryImpl> head = entries.subList(0, delta);
             List<EntryImpl> tail = compact(head);
             reclaimed = delta - tail.size();
+            if (reclaimed < 1) {
+                return 0; // XXX: if compact returns all entries we cannot gc
+            }
             last_idle  = now - entries.get(reclaimed - 1).getTimestamp();
             max_idle = Math.max(last_idle, max_idle);
             head.clear();

@@ -131,6 +131,8 @@ class Store:
             delta = serial - self.serial
             tail = self.compact(self.entries[:delta])
             reclaimed = delta - len(tail)
+            if reclaimed < 1:
+              return 0   # XXX: if compact returns all entries....
             self.last_idle = now - self.entries[reclaimed - 1].timestamp
             self.max_idle = max(self.last_idle, self.max_idle)
             self.entries[:delta] = tail
