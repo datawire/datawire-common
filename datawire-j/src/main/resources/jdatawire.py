@@ -1,11 +1,17 @@
 
 import os
 import itertools
-# Probable interaction with python io package...
-# in some cases the io.datawire package later gets removed,
-# so grab a reference to the module
-
-import io.datawire as io_datawire
+import io
+try:
+  import io.datawire as io_datawire
+except:
+  # Probable interaction with python io package...
+  # in some cases the io.datawire package later gets removed,
+  # so grab a reference to the module
+  import io.datawire.AddressTest
+  import io.datawire.impl.EventImpl
+  import sys
+  io_datawire = sys.modules["io.datawire"]
 
 from proton import WrappedHandler, _chandler
 from org.apache.qpid.proton.engine import BaseHandler
