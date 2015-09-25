@@ -8,13 +8,11 @@ import java.util.logging.Logger;
 
 import org.apache.qpid.proton.message.Message;
 
-import io.datawire.BaseDatawireHandler;
 import io.datawire.Entry;
 import io.datawire.Reader;
 import io.datawire.StoreImpl;
-import io.datawire.Stream;
 
-public class TransientStore extends BaseDatawireHandler implements StoreImpl {
+public class TransientStore implements StoreImpl {
     private static final Logger log = Logger.getLogger(TransientStore.class.getName());
     private ArrayList<EntryImpl> entries = new ArrayList<>();
     private int serial = 0;

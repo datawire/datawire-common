@@ -5,14 +5,13 @@ import java.util.HashMap;
 
 import org.apache.qpid.proton.message.Message;
 
-import io.datawire.BaseDatawireHandler;
 import io.datawire.MultiStore;
 import io.datawire.Reader;
 import io.datawire.Store;
 import io.datawire.StoreImpl;
 
-public class MultiStoreImpl extends BaseDatawireHandler implements MultiStore {
-    
+public class MultiStoreImpl implements MultiStore {
+
     private HashMap<String, StoreImpl> stores = new HashMap<>();
     private int size = 0;
     private long last_idle = 0;
