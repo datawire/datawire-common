@@ -222,7 +222,7 @@ class Stream(WrappedHandler):
     def datawire_stream():
       args = []
       if store is not None:
-        args.append(peel(store))
+        args.append(Store._peel(store))
       return io_datawire.Stream(*args)
     WrappedHandler.__init__(self, datawire_stream)
 
@@ -238,21 +238,38 @@ class jStore(io_datawire.impl.TransientStore):
     self._wrapper = wrapper
     super(jStore,self).__init__(name)
 
+  def put(self, msg, address):
+    self._wrapper.put(msg, address=address)
+
   def compact(self, tail):
     return map(peel, self._wrapper.compact(map(Entry, tail)))
 
   def gc(self):
     return self._wrapper.gc()
+  
+  def flush(self):
+    return self._wrapper.flush()
 
 class Store:
+  @classmethod
+  def _peel(cls, store):
+    if store is None:
+      return None
+    if isinstance(store, Store):
+      return store._impl
+    raise TypeError("Not a store")
+
   def __init__(self, name=None):
     self._impl = jStore(self, name)
 
   def put(self, msg, persistent=True, address=None):
-    self._impl.put(message_or_buffer(msg), address)
+    self._impl.super__put(message_or_buffer(msg), address)
 
   def gc(self):
     return self._impl.super__gc()
+
+  def flush(self):
+    return self._impl.super__flush()
 
   def reader(self, address=None):
     return self._impl.reader(address)
