@@ -21,7 +21,7 @@ __title__ = "datawire-common"
 __summary__ = "Infrastructure for dataflow-driven, resilient microservices"
 __uri__ = "http://www.datawire.io/"
 
-__version__ = "0.4"
+__version__ = "0.5"
 
 __author__ = "datawire.io"
 __email__ = "hello@datawire.io"
