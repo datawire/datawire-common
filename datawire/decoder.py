@@ -12,22 +12,20 @@ MESSAGE = EventType("message", DatawireEvent.Type.MESSAGE)
 @dual_impl
 class Decoder:
 
-    def __init__(self, delegate=None, *handlers):
-        if delegate is None:
-            self.__delegate = self
-        else:
-            self.__delegate = delegate
+    def __init__(self, *handlers):
         self.__message = Message()
         self.handlers = handlers
 
     def on_delivery(self, event):
+        if hasattr(event, "message"):
+            return
         if self.__message.recv(event.link):
             event.message = self.__message
             dlv = event.delivery
             assert dlv.encoded
             try:
-                event.dispatch(self.__delegate, ENCODED_MESSAGE)
-                event.dispatch(self.__delegate, MESSAGE)
+                event.dispatch(event.root, ENCODED_MESSAGE)
+                event.dispatch(event.root, MESSAGE)
                 dlv.update(Delivery.ACCEPTED)
             except:
                 dlv.update(Delivery.REJECTED)
