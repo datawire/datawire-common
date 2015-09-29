@@ -8,7 +8,7 @@ except:
   # Probable interaction with python io package...
   # in some cases the io.datawire package later gets removed,
   # so grab a reference to the module
-  import io.datawire.AddressTest
+  import io.datawire.Address
   import io.datawire.impl.EventImpl
   import sys
   io_datawire = sys.modules["io.datawire"]
