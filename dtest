@@ -23,6 +23,7 @@ from fnmatch import fnmatchcase as match
 from getopt import GetoptError
 from logging import getLogger, StreamHandler, Formatter, Filter, \
     WARN, DEBUG, ERROR
+from unittest import SkipTest
 
 levels = {
   "DEBUG": DEBUG,
@@ -357,7 +358,7 @@ class Runner:
         self.exception_phase_name = phase_name
         self.exception = sys.exc_info()
         exception_type = self.exception[0]
-        self.skip = getattr(exception_type, "skipped", False)
+        self.skip = getattr(exception_type, "skipped", False) or exception_type is SkipTest
 
   def status(self):
     if self.passed():

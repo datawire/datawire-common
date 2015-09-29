@@ -5,10 +5,17 @@ __all__ = ["dual_impl", "DatawireEvent"]
 try:
   from jdatawire import dual_impl, DatawireEvent
 except:
-  import traceback
-  traceback.print_exc(None, None)
-  def dual_impl(clazz):
-    return clazz
+  import platform
+  if platform.python_implementation() == 'Jython':
+    import traceback
+    traceback.print_exc(None, None)
+  def dual_impl(clazz=None, **kwargs):
+    def wrap(klazz):
+      return klazz
+    if clazz is None:
+      return wrap
+    else:
+      return wrap(clazz)
   dual_impl.dualImpls = set()
   class DatawireEvent:
     class Type:
