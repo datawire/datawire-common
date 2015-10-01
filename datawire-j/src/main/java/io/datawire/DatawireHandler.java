@@ -12,8 +12,6 @@ package io.datawire;
  * To facilitate this it is recommended for handler classes to extend the
  * {@link BaseDatawireHandler} which just forwards all events to the onUnhandled method.
  * 
- * @author bozzo
- *
  */
 public interface DatawireHandler extends org.apache.qpid.proton.engine.Handler {
 

@@ -6,8 +6,6 @@ package io.datawire;
 
 /**
  * AMQP address
- * 
- * @author bozzo
  *
  */
 public final class Address {

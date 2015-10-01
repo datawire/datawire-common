@@ -30,8 +30,6 @@ import org.apache.qpid.proton.reactor.Handshaker;
  * </pre>
  * <p>
  * 
- * @author bozzo
- *
  */
 public class Processor extends BaseDatawireHandler {
 

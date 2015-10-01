@@ -12,8 +12,6 @@ import org.apache.qpid.proton.engine.EventType;
  * Default implementation of all {@link DatawireHandler} methods. Use this class as the
  * base for your handlers.
  *
- * @author bozzo
- *
  */
 public class BaseDatawireHandler extends org.apache.qpid.proton.engine.BaseHandler
         implements DatawireHandler {

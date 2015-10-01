@@ -13,8 +13,6 @@ import org.apache.qpid.proton.engine.Link;
 
 /**
  * Fixed interval recurring timer event for monitoring of {@link EndpointState#ACTIVE} {@link Link}.
- * 
- * @author bozzo
  *
  */
 public class Sampler extends BaseDatawireHandler {

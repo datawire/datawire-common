@@ -21,7 +21,6 @@ import org.apache.qpid.proton.reactor.Reactor;
  * Handler for managing a {@link org.apache.qpid.proton.engine.Sender}
  * <p>
  * If you need to manage many senders you can use a {@link Linker}
- * @author bozzo
  *
  */
 public class Sender extends Link {
@@ -35,7 +34,6 @@ public class Sender extends Link {
      * Configuration for a {@link Sender}.
      * <p>
      * A sender must have a valid {@link Link.Config#target}
-     * @author bozzo
      *
      */
     static class Config extends Link.Config {
@@ -48,7 +46,6 @@ public class Sender extends Link {
 
     /**
      * A builder for the {@link Sender}.
-     * @author bozzo
      *
      */
     static class SenderBuilder extends Builder<Sender, Config, SenderBuilder> {

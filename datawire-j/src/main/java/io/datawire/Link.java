@@ -32,8 +32,6 @@ import org.apache.qpid.proton.reactor.Reactor;
  * The link will generate a {@link DatawireEvent.Type#DRAINED} event each time
  * the link credit falls to zero.
  * 
- * @author bozzo
- *
  */
 abstract class Link extends BaseDatawireHandler {
     private static final Logger log = Logger.getLogger(Link.class.getName());
@@ -57,7 +55,6 @@ abstract class Link extends BaseDatawireHandler {
 
     /**
      * Link configuration
-     * @author bozzo
      *
      */
     public static class Config {
@@ -117,7 +114,6 @@ abstract class Link extends BaseDatawireHandler {
 
     /**
      * Reusable part of the Linker Builder
-     * @author bozzo
      *
      * @param <S> the concrete subclass of Link
      * @param <C> the concrete subclass of Configuration
@@ -161,7 +157,6 @@ abstract class Link extends BaseDatawireHandler {
 
     /**
      * create a link either a {@link Sender} or {@link Receiver} on the given reactor
-     * @author bozzo
      *
      */
     protected interface LinkCreator {

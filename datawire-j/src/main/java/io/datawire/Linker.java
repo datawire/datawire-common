@@ -10,7 +10,6 @@ import org.apache.qpid.proton.reactor.Reactor;
 
 /**
  * A caching factory of {@link Sender} objects.
- * @author bozzo
  *
  */
 public class Linker {
@@ -57,8 +56,6 @@ public class Linker {
      * A {@link Sender.SenderBuilder} that always returns the same {@link Sender} for the same
      * {@link Sender.Config}
      * 
-     * @author bozzo
-     *
      */
     public class Builder extends Sender.SenderBuilder {
         Builder() {}

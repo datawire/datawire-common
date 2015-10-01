@@ -34,8 +34,6 @@ import org.apache.qpid.proton.message.Message;
  * handler or the other way around.
  * <p>
  * 
- * @author bozzo
- *
  */
 public class Decoder extends BaseDatawireHandler {
     private static final ExtendableAccessor<Event, Boolean> IS_DONE = new ExtendableAccessor<>(Boolean.class);

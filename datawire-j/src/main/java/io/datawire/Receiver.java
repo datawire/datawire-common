@@ -21,8 +21,7 @@ public class Receiver extends Link {
      * Configuration for a {@link Receiver}.
      * <p>
      * A receiver must have a valid {@link Link.Config#source}
-     * @author bozzo
-     *
+     * 
      */
     public static class Config extends Link.Config {
         /**
@@ -55,7 +54,6 @@ public class Receiver extends Link {
 
     /**
      * Reusable part of builder for the {@link Receiver}.
-     * @author bozzo
      *
      * @param <S>
      * @param <C>
@@ -74,7 +72,6 @@ public class Receiver extends Link {
 
     /**
      * Builder for {@link Receiver}
-     * @author bozzo
      *
      */
     private static class ReceiverBuilder extends Builder<Receiver, Config, ReceiverBuilder> {

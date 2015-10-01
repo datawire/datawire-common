@@ -6,13 +6,11 @@ package io.datawire;
 
 /**
  * Statistic counts for messages exchanged via datawire
- * @author bozzo
  *
  */
 public class Counts {
     /**
      * Counters of incoming and outgoint messages
-     * @author bozzo
      *
      */
     public static class Counters {
