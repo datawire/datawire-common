@@ -12,8 +12,8 @@ import org.apache.qpid.proton.engine.Session;
 import org.apache.qpid.proton.reactor.Reactor;
 
 /**
- * Handler for managing a {@link org.apache.qpid.proton.engine.Receiver}
- * @author bozzo
+ * Handler for managing a {@link org.apache.qpid.proton.engine.Receiver} on an
+ * outgoing connection
  */
 public class Receiver extends Link {
 
@@ -25,7 +25,9 @@ public class Receiver extends Link {
      */
     public static class Config extends Link.Config {
         /**
-         * initial value for {@link org.apache.qpid.proton.engine.Receiver#setDrain(boolean)
+         * initial value for
+         * {@link org.apache.qpid.proton.engine.Receiver#setDrain(boolean)
+
          */
         public boolean drain = false;
 
@@ -59,9 +61,11 @@ public class Receiver extends Link {
      * @param <C>
      * @param <B>
      */
-    protected abstract static class Builder<S extends Receiver, C extends Config, B extends Builder<S, C, B>> extends Link.Builder<S, C, B> {
+    protected abstract static class Builder<S extends Receiver, C extends Config, B extends Builder<S, C, B>>
+            extends Link.Builder<S, C, B> {
         /**
-         * @param drain set the {@link Config#drain}
+         * @param drain
+         *            set the {@link Config#drain}
          * @return The builder
          */
         public B withDrain(boolean drain) {
@@ -74,12 +78,23 @@ public class Receiver extends Link {
      * Builder for {@link Receiver}
      *
      */
-    private static class ReceiverBuilder extends Builder<Receiver, Config, ReceiverBuilder> {
+    private static class ReceiverBuilder extends
+            Builder<Receiver, Config, ReceiverBuilder> {
         private Config config = new Config();
-        @Override protected Config config() { return config; }
-        @Override protected ReceiverBuilder self() { return this; }
+
+        @Override
+        protected Config config() {
+            return config;
+        }
+
+        @Override
+        protected ReceiverBuilder self() {
+            return this;
+        }
+
         /**
-         * Create the {@link Receiver} as configured. The Builder is not usable after this call.
+         * Create the {@link Receiver} as configured. The Builder is not usable
+         * after this call.
          */
         @Override
         public Receiver create() {
@@ -94,7 +109,7 @@ public class Receiver extends Link {
     /**
      * @return a new {@link ReceiverBuilder}
      */
-    public static Builder<?,?,?> Builder() {
+    public static Builder<?, ?, ?> Builder() {
         return new ReceiverBuilder();
     }
 
@@ -109,14 +124,20 @@ public class Receiver extends Link {
         this.config = config;
     }
 
-    /** 
+    /**
      * Reference constructor
-     * @param source Receiver source address, mandatory
-     * @param target Receiver target address, optional
-     * @param drain Drain flag
-     * @param handlers Child handlers for the link
+     * 
+     * @param source
+     *            Receiver source address, mandatory
+     * @param target
+     *            Receiver target address, optional
+     * @param drain
+     *            Drain flag
+     * @param handlers
+     *            Child handlers for the link
      */
-    public Receiver(String source, String target, boolean drain, org.apache.qpid.proton.engine.Handler...handlers) {
+    public Receiver(String source, String target, boolean drain,
+            org.apache.qpid.proton.engine.Handler... handlers) {
         super(handlers);
         config = new Config();
         config.source = source;
@@ -131,14 +152,16 @@ public class Receiver extends Link {
         @Override
         public org.apache.qpid.proton.engine.Link create(Reactor reactor) {
             Session ssn = _session(reactor);
-            org.apache.qpid.proton.engine.Receiver rcv = ssn.receiver(String.format("%1s->%2s", config.source, config.target));
+            org.apache.qpid.proton.engine.Receiver rcv = ssn.receiver(String
+                    .format("%1s->%2s", config.source, config.target));
             rcv.setDrain(config.drain);
             setLinkSource(rcv, config.source);
             setLinkTarget(rcv, config.target);
             return rcv;
         }
- 
+
     };
+
     @Override
     protected LinkCreator getLinkCreator() {
         return link;

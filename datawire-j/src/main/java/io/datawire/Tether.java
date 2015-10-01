@@ -15,6 +15,9 @@ import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.message.Message;
 import org.apache.qpid.proton.reactor.Reactor;
 
+/**
+ * Publish service physical address to directory
+ */
 public class Tether extends BaseDatawireHandler {
 
     public static class Config {
@@ -96,18 +99,35 @@ public class Tether extends BaseDatawireHandler {
     }
 
     public abstract static class Builder<S extends Tether, C extends Config, B extends Builder<S, C, B>> extends ExtensibleBuilder<S, C, B> {
+        /**
+         * @param directory directory address
+         * @return self
+         */
         public B withDirectory(String directory) {
             config().directory = directory;
             return self();
         }
+        /**
+         * @param address logical address
+         * @return self
+         */
         public B withAddress(String address) {
             config().address = address;
             return self();
         }
+        /**
+         * @param redirect_target physical address
+         * @return self
+         */
         public B withRedirectTarget(String redirect_target) {
             config().redirect_target = redirect_target;
             return self();
         }
+        /**
+         * 
+         * @param host 
+         * @return
+         */
         public B withHost(String host) {
             config().host = host;
             return self();

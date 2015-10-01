@@ -14,7 +14,7 @@ import org.apache.qpid.proton.reactor.Handshaker;
  * 
  * <pre>
  * {@code
- * class MyHandler extends BaseHandler {
+ * class MyHandler extends BaseDatawireHandler {
  *   {@literal @}Override
  *   public void onMessage(Event e) {
  *     // process message

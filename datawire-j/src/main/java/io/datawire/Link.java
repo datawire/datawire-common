@@ -25,9 +25,11 @@ import org.apache.qpid.proton.engine.Session;
 import org.apache.qpid.proton.reactor.Reactor;
 
 /**
- * A handler that tries to keep the link open: <ul><li>allows slow start<li>performs
- * reconnect<li>follows redirects.</ul> The link will be created on a new connection
- * by default.
+ * A handler that tries to keep the link open: <ul>
+ * <li>allows slow start
+ * <li>performs reconnect
+ * <li>follows redirects.</ul> 
+ * The link will be created on a new connection by default.
  * <p>
  * The link will generate a {@link DatawireEvent.Type#DRAINED} event each time
  * the link credit falls to zero.

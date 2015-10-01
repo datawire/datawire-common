@@ -23,7 +23,29 @@ import org.apache.qpid.proton.engine.Handler;
 import org.apache.qpid.proton.message.Message;
 import org.apache.qpid.proton.reactor.FlowController;
 import org.apache.qpid.proton.reactor.Handshaker;
+import org.apache.qpid.proton.reactor.Reactor;
 
+/**
+ * A stream is an event handler that holds a customizable {@link Store}
+ * representing a linear sequence of messages, the stream will
+ * collect messages from any incoming links into the store, and
+ * broadcast anything in the store to all outgoing links
+ * 
+ * <ul>
+ * <li>
+ * by supplying the stream as the {@link Receivers}'s event handler, we
+ * can locally establish incoming links to pull messages into
+ * the stream
+ * <li>
+ * likewise, by supplying the stream as the {@link Sender}'s event
+ * handler, we can locally establish outgoing links to push
+ * messages out of the stream
+ * <li>
+ * by supplying the stream as the event handler for incoming
+ * connections ({@link Reactor#acceptor(String, int, Handler)}), we can collect any messages that are sent to us
+ * into the stream's message store
+ * </ul>
+ */
 public class Stream extends BaseDatawireHandler {
     private static final Logger log = Logger.getLogger(Stream.class.getName());
     public static final ExtendableAccessor<Sender, Reader> SENDER_READER = new ExtendableAccessor<>(Reader.class);
@@ -176,6 +198,14 @@ public class Stream extends BaseDatawireHandler {
         }
     }
 
+    /**
+     * force reconnect of all stream participants that do not match the specified criteria???
+     * @param sender
+     * @param receiver
+     * @param host
+     * @param port
+     * @param address
+     */
     public void relink(boolean sender, boolean receiver, String host, String port, String address) {
         if (sender) {
             for (Sender l : outgoing) {

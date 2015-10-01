@@ -16,8 +16,12 @@ import org.apache.qpid.proton.engine.Sender;
 import org.apache.qpid.proton.engine.Link;
 import org.apache.qpid.proton.message.Message;
 
+/**
+ * Helper methods for working with proton engine
+ *
+ */
 public class DatawireUtils {
-    
+
     public static final ExtendableAccessor<Sender, Tag> SENDER_TAG = new ExtendableAccessor<Sender, Tag>(Tag.class);
 
     static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
