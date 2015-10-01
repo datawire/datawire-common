@@ -249,7 +249,7 @@ abstract class Link extends BaseDatawireHandler {
         if (link != _link)
             return;
         if (link.getDrain() && link.getCredit() == 0)
-            event.redispatch(DatawireEvent.Type.DRAINED, this);
+            event.redispatch(DatawireEvent.Type.DRAINED, event.getRootHandler());
     }
 
     @Override
