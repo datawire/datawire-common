@@ -15,8 +15,8 @@ import org.apache.qpid.proton.reactor.Reactor;
 public class Linker {
 
     private Map<Sender.Config, Sender> senders = new HashMap<Sender.Config, Sender>();
-    public boolean started = false;
-    public Reactor reactor;
+    private boolean started = false;
+    private Reactor reactor;
 
     /**
      * Start all the already created {@link #sender()}s
