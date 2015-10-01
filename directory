@@ -203,7 +203,7 @@ class Directory:
             opcode = msg.properties["opcode"]
             if opcode == "route":
                 address, target, owner = msg.body[:3]
-                if owner is None: owner = event.link
+                if owner is None: owner = event.link # XXX: ???? why not event.link.target.address or source?
                 if len(msg.body) > 3:
                     policy = msg.body[3]
                 else:
