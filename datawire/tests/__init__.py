@@ -5,3 +5,4 @@ from . import address
 from . import linker
 from . import agent
 from . import impl
+from . import store

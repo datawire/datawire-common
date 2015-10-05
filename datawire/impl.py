@@ -2,13 +2,10 @@
 # Unauthorized copying or redistribution of this file is strictly prohibited.
 
 __all__ = ["dual_impl", "DatawireEvent"]
-try:
+import platform
+if platform.python_implementation() == 'Jython':
   from jdatawire import dual_impl, DatawireEvent
-except:
-  import platform
-  if platform.python_implementation() == 'Jython':
-    import traceback
-    traceback.print_exc(None, None)
+else:
   def dual_impl(clazz=None, **kwargs):
     def wrap(klazz):
       return klazz

@@ -29,9 +29,8 @@ class Decoder:
                 dlv.update(Delivery.ACCEPTED)
             except:
                 dlv.update(Delivery.REJECTED)
-                traceback.print_exc()
-                print sys.exc_info()
-                # TODO no rethrow?
+                # XXX: no cause?
+                # XXX: no rethrow?
             finally:
                 dlv.settle()
 

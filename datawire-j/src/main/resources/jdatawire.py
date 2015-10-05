@@ -27,13 +27,8 @@ class NamedProperty(object):
         if instance is None:
             return self
         if self._name is None:
-          try:
-            cls = clazz or instance.__class__
-            self._name = self.myname(cls)
-          except:
-            import traceback
-            traceback.print_exc()
-            raise
+          cls = clazz or instance.__class__
+          self._name = self.myname(cls)
         return self.get(instance)
 
     def myname(self, clazz):

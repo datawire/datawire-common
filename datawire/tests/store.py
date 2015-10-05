@@ -23,8 +23,7 @@ class StoreTest(TestCase):
     self.assertTrue(r.more(), "Store should not be empty")
     e = r.next()
     self.assertFalse(r.more(), "Store should be empty")
-    print e
-
+    self.assertEqual("hello", str(e.message))
   def testGc(self):
     map(self.store.put, "A B C D E F".split())
     r = self.store.reader()
