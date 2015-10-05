@@ -177,55 +177,106 @@ public class Stream extends BaseDatawireHandler {
         String address = receiver.getTarget().getAddress();
         store.put(buffer, address);
     }
-    
-    private boolean matches(String host, String port, String address, Link link) {
+
+    /**
+     * a filter for {@link Stream#relink(Matcher)} method
+     */
+    public static interface Matcher {
+        /**
+         * each incoming receiver is checked whether is needs to be relinked
+         * @param r an incoming stream participant
+         * @return true if the link needs to be relinked
+         */
+        public boolean incomingMatches(Receiver r);
+        /**
+         * Each outgoing sender is checked whether it needs to be relinked
+         * @param s an outgoing stream participant
+         * @return true if the link needs to be relinked
+         */
+        public boolean outgoingMatches(Sender s);
+    }
+
+    /**
+     * Matches all incoming and outgoing links
+     */
+    public static final Matcher MATCH_ALL = new Matcher() {
+        @Override public boolean incomingMatches(Receiver r) { return true; }
+        @Override public boolean outgoingMatches(Sender s) { return true; }
+    };
+
+    /**
+     * Matches all incoming links
+     */
+    public static final Matcher MATCH_ALL_INCOMING = new Matcher() {
+        @Override public boolean incomingMatches(Receiver r) { return true; }
+        @Override public boolean outgoingMatches(Sender s) { return false; }
+    };
+
+    /**
+     * Matches all outgoing links
+     */
+    public static final Matcher MATCH_ALL_OUTGOING = new Matcher() {
+        @Override public boolean incomingMatches(Receiver r) { return false; }
+        @Override public boolean outgoingMatches(Sender s) { return true; }
+    };
+
+
+    /**
+     * Reconnect all matching incoming and outgoing stream participants.
+     * @param matcher Filter for stream participants
+     */
+    public void relink(Matcher matcher) {
+        for (Sender l : outgoing) {
+            if (matcher.outgoingMatches(l)) {
+                io.datawire.Link.RELINK_FLAG.set(l, true);
+                l.close();
+            }
+        }
+        for (Receiver l : incoming) {
+            if (matcher.incomingMatches(l)) {
+                io.datawire.Link.RELINK_FLAG.set(l, true);
+                l.close();
+            }
+        }
+    }
+
+    /**
+     * Legacy method for manifold
+     */
+    @Deprecated
+    public void relink(final boolean sender, final boolean receiver, String host, String port, final String address) {
         if (host == null) {
-            return false;
+            if (sender && receiver) {
+                relink(MATCH_ALL);
+            } else if (sender) {
+                relink(MATCH_ALL_OUTGOING);
+            } else if (receiver) {
+                relink(MATCH_ALL_INCOMING);
+            }
         } else {
             if (port == null)
                 throw new IllegalArgumentException("Port must be specified if host is specified");
             if (address == null)
                 throw new IllegalArgumentException("Address must be specified if host is specified");
-            String terminusAddress;
-            if (link instanceof Sender) {
-                terminusAddress = link.getTarget().getAddress();
-            } else {
-                terminusAddress = link.getSource().getAddress();
-            }
-            String hostname = link.getSession().getConnection().getHostname();
-            return (hostname.equals(String.format("%s:%s", host, port))
-                    && address.equals(terminusAddress));
+            final String hostport = String.format("%s:%s", host, port);
+            relink(new Matcher() {
+                private boolean primary(String hostname, String terminusAddress) {
+                    return !(hostname.equals(hostport) && address.equals(terminusAddress));
+                }
+
+                private String hostname(Link l) { return l.getSession().getConnection().getHostname(); }
+
+                @Override
+                public boolean outgoingMatches(Sender s) {
+                    return sender && !primary(hostname(s), s.getTarget().getAddress());
+                }
+
+                @Override
+                public boolean incomingMatches(Receiver r) {
+                    return receiver && !primary(hostname(r), r.getSource().getAddress());
+                }
+            });
         }
     }
 
-    /**
-     * force reconnect of all stream participants that do not match the specified criteria???
-     * @param sender
-     * @param receiver
-     * @param host
-     * @param port
-     * @param address
-     */
-    public void relink(boolean sender, boolean receiver, String host, String port, String address) {
-        if (sender) {
-            for (Sender l : outgoing) {
-                if (matches(host, port, address, l)) {
-                    log.fine("omitting spurious relink");
-                } else {
-                    io.datawire.Link.RELINK_FLAG.set(l, true);
-                    l.close();
-                }
-            }
-        }
-        if (receiver) {
-            for (Receiver l : incoming) {
-                if (matches(host, port, address, l)) {
-                    log.fine("Omitting spurious relink");
-                } else {
-                    io.datawire.Link.RELINK_FLAG.set(l, true);
-                    l.close();
-                }
-            }
-        }
-    }
 }
