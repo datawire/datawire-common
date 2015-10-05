@@ -191,6 +191,14 @@ class Tether(WrappedHandler, _Reactive):
         return io_datawire.Tether(*args)
       WrappedHandler.__init__(self, datawire_tether)
 
+    @property
+    def directory(self):
+      return self._impl.directory
+
+    @property
+    def agent(self):
+      return self._impl.agent
+
 class FakeSendersCollection():
   def __init__(self, linker):
     self._linker = linker
@@ -246,16 +254,36 @@ class jStore(io_datawire.impl.TransientStore):
 
   def gc(self):
     return self._wrapper.gc()
-  
+
   def flush(self):
     return self._wrapper.flush()
 
-class Store:
+class jMultiStore(io_datawire.impl.MultiStoreImpl):
+  def __init__(self, wrapper, name=None):
+    self._wrapper = wrapper
+    super(jMultiStore,self).__init__(name)
+
+  def put(self, msg, address):
+    self._wrapper.put(msg, address=address)
+
+  def compact(self, tail):
+    return map(peel, self._wrapper.compact(map(Entry, tail)))
+
+  def gc(self):
+    return self._wrapper.gc()
+
+  def flush(self):
+    return self._wrapper.flush()
+  
+  def resolve(self, address):
+    return Store._peel(self._wrapper.resolve(address))
+
+class Store(object):
   @classmethod
   def _peel(cls, store):
     if store is None:
       return None
-    if isinstance(store, Store):
+    if isinstance(store, cls):
       return store._impl
     raise TypeError("Not a store")
 
@@ -272,7 +300,7 @@ class Store:
     return self._impl.super__flush()
 
   def reader(self, address=None):
-    return self._impl.reader(address)
+    return Reader(self._impl.reader(address))
 
   def compact(self, tail):
     return itertools.imap(Entry, self._impl.super__compact(map(peel, tail)))
@@ -284,20 +312,44 @@ def message_or_buffer(msg):
       msg.flip()
     return msg
 
-class MultiStore(io_datawire.impl.MultiStoreImpl):
+class MultiStore(Store):
   def __init__(self, name=None):
-    super(MultiStore,self).__init__(name)
+    self._impl = jMultiStore(self, name)
+    
+  def resolve(self, address):
+    return Store()
 
-  def put(self, msg, persistent=True, address=None):
-    self.super__put(message_or_buffer(msg), address)
+class Reader:
+  def __init__(self, impl):
+    self._impl = impl
+
+  def more(self):
+    return self._impl.more()
+
+  def next(self):
+    return Entry.wrap(self._impl.next())
+  
+  def close(self):
+    self._impl.close()
 
 class Entry:
+  @classmethod
+  def wrap(cls, impl):
+    if impl is None:
+      return None
+    return cls(impl)
+
   def __init__(self, msg, persistent=True, deleted = False):
     if isinstance(msg, io_datawire.impl.EntryImpl):
       self._impl = msg
     else:
       self._impl = io_datawire.impl.EntryImpl(message_or_buffer(msg), persistent, deleted)
 
+  @property
+  def message(self):
+    bytes = self._impl.encodedMessage
+    return bytes.array()[bytes.position() : bytes.position() + bytes.limit()].tostring()
+  
 class DualImpl:
     impls = dict(
       Address=io_datawire.Address,

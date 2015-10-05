@@ -47,7 +47,7 @@ public class MultiStoreImpl implements MultiStore {
         return store;
     }
 
-    private StoreImpl resolve(String address) {
+    public StoreImpl resolve(String address) {
         return new TransientStore();
     }
 

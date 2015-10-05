@@ -195,12 +195,16 @@ public class Tether extends BaseDatawireHandler {
         return Sender.Builder().withTarget(config.directory).withHandlers(this).create();
     }
 
-    private String getAgent() {
+    public String getAgent() {
         if (config.agent_type != null) {
             return String.format("//%1s/agents/%2s-%3s", new Address(config.directory).getHost(), config.host, config.port);
         } else {
             return null;
         }
+    }
+    
+    public String getDirectory() {
+        return config.directory;
     }
 
     @Override
