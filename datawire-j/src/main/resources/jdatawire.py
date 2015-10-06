@@ -373,6 +373,7 @@ class DualImpl:
       MultiStore=MultiStore,
       Linker=Linker,
       Entry=Entry,
+      ancestors=io_datawire.Container.ancestors
     )
 
     dualImpls = set()

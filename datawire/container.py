@@ -15,6 +15,9 @@
 from proton.handlers import CHandshaker
 from .linker import Sender, Receiver
 
+from .impl import dual_impl
+
+@dual_impl
 def ancestors(address):
     if address is None:
         yield address 
