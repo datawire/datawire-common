@@ -12,14 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from proton.handlers import CFlowController, CHandshaker
-from .decoder import Decoder
-from .impl import dual_impl
+__all__ = [
+    "__title__", "__summary__", "__uri__", "__version__", "__author__",
+    "__email__", "__license__", "__copyright__"
+]
 
-@dual_impl
-class Processor:
+__title__ = "datawire-common"
+__summary__ = "Infrastructure for dataflow-driven, resilient microservices"
+__uri__ = "http://www.datawire.io/"
 
-    def __init__(self, delegate=None, window=1024):
-        self.handlers = [CFlowController(window), CHandshaker(), Decoder()]
-        if delegate is not None:
-          self.handlers.append(delegate)
+__version__ = "0.5"
+
+__author__ = "datawire.io"
+__email__ = "hello@datawire.io"
+
+__license__ = "Apache License, Version 2.0"
+__copyright__ = "2015 %s" % __author__

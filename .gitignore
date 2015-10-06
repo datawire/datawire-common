@@ -17,3 +17,4 @@ dist
 .pydevproject
 .settings/
 /datawire.egg-info
+datawire_common.egg-info
