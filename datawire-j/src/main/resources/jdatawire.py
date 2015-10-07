@@ -178,6 +178,17 @@ class WrappedSender(WrappedHandler, _Linker):
   def __init__(self, impl_or_constructor):
     WrappedHandler.__init__(self, impl_or_constructor)
 
+  @staticmethod
+  def _sender_args(target, *handlers, **kwargs):
+    args = []
+    args.append(target);
+    args.append(kwargs.pop("source", None))
+    args.append(map(unwrap_handler, handlers))
+    if handlers:
+      pass
+    if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.items()))
+    return args
+
   def send(self, o):
     self._impl.send(o)
 
@@ -187,29 +198,30 @@ class WrappedSender(WrappedHandler, _Linker):
 class Sender(WrappedSender):
   def __init__(self, target, *handlers, **kwargs):
     def datawire_sender():
-      args = []
-      args.append(target);
-      args.append(kwargs.pop("source", None))
-      args.append(map(unwrap_handler, handlers))
-      if handlers:
-        pass
-      if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.items()))
+      args = self._sender_args(target, *handlers, **kwargs)
       return io_datawire.Sender(*args)
     WrappedSender.__init__(self, datawire_sender)
 
-class Receiver(WrappedHandler, _Linker):
+class WrappedReceiver(WrappedHandler, _Linker):
+  def __init__(self, impl_or_constructor):
+    WrappedHandler.__init__(self, impl_or_constructor)
+
+  @staticmethod
+  def _receiver_args(source, *handlers, **kwargs):
+    args = []
+    args.append(source);
+    args.append(kwargs.pop("target", None))
+    args.append(kwargs.pop("drain", False))
+    args.append(map(unwrap_handler, handlers))
+    if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.items()))
+    return args
+
+class Receiver(WrappedReceiver):
   def __init__(self, source, *handlers, **kwargs):
     def datawire_receiver():
-      args = []
-      args.append(source);
-      args.append(kwargs.pop("target", None))
-      args.append(kwargs.pop("drain", False))
-      args.append(map(unwrap_handler, handlers))
-      if handlers:
-        pass
-      if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.items()))
+      args = self._receiver_args(source, *handlers, **kwargs)
       return io_datawire.Receiver(*args)
-    WrappedHandler.__init__(self, datawire_receiver)
+    WrappedReceiver.__init__(self, datawire_receiver)
 
 class Tether(WrappedHandler, _Reactive):
     def __init__(self, directory, address, target, host=None, port=None, policy=None, agent_type=None):
@@ -244,8 +256,8 @@ class Linker(_Reactive):
     self._impl = io_datawire.Linker()
 
   def sender(self, target, *handlers, **kwargs):
-    if kwargs: raise TypeError("unrecognized keyword arguments: %s" % ", ".join(kwargs.items()))
-    return WrappedSender.wrap(self._impl.sender(target, *map(unwrap_handler, handlers)))
+    args = WrappedSender._sender_args(target, *handlers, **kwargs)
+    return WrappedSender.wrap(self._impl.sender(*args))
 
   senders = FakeSendersProperty()
   

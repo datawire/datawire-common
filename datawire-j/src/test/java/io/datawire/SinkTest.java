@@ -128,7 +128,7 @@ public class SinkTest {
         linker.start(reactor);
         for (int i : range(addressCount)) {
             for (int j: range(messageCount)) {
-                Sender snd = linker.sender(server.address(i));
+                Sender snd = linker.sender(server.address(i), null);
                 assertEquals("sender per address", i + 1, linker.sendersSize());
                 final int fi = i, fj = j;
                 snd.send(dict("i", fi, "j", fj));

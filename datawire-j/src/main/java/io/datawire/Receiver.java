@@ -89,7 +89,7 @@ public class Receiver extends Link {
      * Builder for {@link Receiver}
      *
      */
-    private static class ReceiverBuilder extends
+    static class ReceiverBuilder extends
             Builder<Receiver, Config, ReceiverBuilder> {
         private Config config = new Config();
 

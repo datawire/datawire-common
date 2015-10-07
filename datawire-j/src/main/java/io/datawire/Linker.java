@@ -108,8 +108,8 @@ public class Linker {
      * @param handlers child handlers
      * @return A Sender
      */
-    public Sender sender(String target, Handler...handlers) {
-        return new Builder().withTarget(target).withHandlers(handlers).create();
+    public Sender sender(String target, String source, Handler...handlers) {
+        return new Builder().withTarget(target).withSource(source).withHandlers(handlers).create();
     }
 
     /**
