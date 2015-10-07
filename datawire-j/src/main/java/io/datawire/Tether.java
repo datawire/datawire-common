@@ -213,9 +213,18 @@ public class Tether extends BaseDatawireHandler {
             return null;
         }
     }
-    
+
     public String getDirectory() {
         return config.directory;
+    }
+
+
+    public String getAddress() {
+        return config.address;
+    }
+
+    public String getAgentType() {
+        return config.agent_type;
     }
 
     @Override

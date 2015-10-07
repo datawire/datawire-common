@@ -172,7 +172,8 @@ class _Reactive:
 
 class _Linker(_Reactive):
   linked = WrappedHandlerProperty()
-
+  source = WrappedHandlerProperty()
+  target = WrappedHandlerProperty()
 
 class WrappedSender(WrappedHandler, _Linker):
   def __init__(self, impl_or_constructor):
@@ -237,19 +238,40 @@ class Tether(WrappedHandler, _Reactive):
     @property
     def agent(self):
       return self._impl.agent
+    
+    @property
+    def address(self):
+      return self._impl.address
+    
+    @property
+    def agent_type(self):
+      return self._impl.agentType
 
-class FakeSendersCollection():
-  def __init__(self, linker):
-    self._linker = linker
+class Probe(io_datawire.Agent.Probe):
+  @classmethod
+  def adapt(cls, probe):
+    if probe is None:
+      return None
+    return cls(probe)
 
-  def __len__(self):
-    return self._linker._impl.sendersSize()
+  def __init__(self, probe):
+    self.probe = probe
 
-class FakeSendersProperty(object):
-  def __get__(self, instance, clazz=None):
-    if instance is None:
-      return self
-    return FakeSendersCollection(instance)
+  def sample(self, stats):
+    self.probe.sample(stats)
+
+class Agent(WrappedHandler):
+    def __init__(self, tether, delegate=None):
+      def datawire_agent():
+        args = []
+        args.append(peel(tether))
+        args.append(Probe.adapt(delegate))
+        return io_datawire.Agent(*args)
+      WrappedHandler.__init__(self, datawire_agent)
+      
+    @property
+    def sampler(self):
+      return Sampler.wrap(self._impl.sampler)
 
 class Linker(_Reactive):
   def __init__(self):
@@ -259,7 +281,9 @@ class Linker(_Reactive):
     args = WrappedSender._sender_args(target, *handlers, **kwargs)
     return WrappedSender.wrap(self._impl.sender(*args))
 
-  senders = FakeSendersProperty()
+  @property
+  def senders(self):
+    return xrange(self._impl.sendersSize())
   
   def close(self):
     self._impl.close()
@@ -295,6 +319,15 @@ class Stream(WrappedHandler):
         args.append(Store._peel(store))
       return io_datawire.Stream(*args)
     WrappedHandler.__init__(self, datawire_stream)
+    
+  def put(self, msg):
+    self._impl.put(message_or_buffer(msg))
+
+  @property
+  def store(self):
+    return Store.wrap(self._impl.store)
+
+  queued = WrappedHandlerProperty()
 
 DatawireEvent = io_datawire.DatawireEvent
 
@@ -342,6 +375,14 @@ class jMultiStore(io_datawire.impl.MultiStoreImpl):
 
 class Store(object):
   @classmethod
+  def wrap(cls, impl):
+    if impl is None:
+      return None
+    if isinstance(impl, (jStore, jMultiStore)):
+      return impl._wrapper
+    raise TypeError(cls.__name__ + " cannot wrap a " + impl.__class__.__name__)
+
+  @classmethod
   def _peel(cls, store):
     if store is None:
       return None
@@ -367,6 +408,22 @@ class Store(object):
   def compact(self, tail):
     return itertools.imap(Entry, self._impl.super__compact(map(peel, tail)))
 
+  @property
+  def size(self):
+    return self._impl.size
+
+  @property
+  def entries(self):
+    return xrange(self._impl.size)
+  
+  @property
+  def last_idle(self):
+    return self._impl.lastIdle
+  
+  @property
+  def max_idle(self):
+    return self._impl.maxIdle
+
 def message_or_buffer(msg):
     if isinstance(msg, basestring):
       import java.nio.ByteBuffer
@@ -380,6 +437,10 @@ class MultiStore(Store):
     
   def resolve(self, address):
     return Store()
+  
+  @property
+  def stores(self):
+    return dict((k, Store.wrap(v)) for k, v in self._impl.stores.iteritems())
 
 class Reader:
   def __init__(self, impl):
@@ -429,6 +490,7 @@ class DualImpl:
       Entry=Entry,
       ancestors=io_datawire.Container.ancestors,
       Container=Containter,
+      Agent=Agent,
     )
 
     dualImpls = set()

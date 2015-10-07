@@ -88,7 +88,7 @@ public interface Store {
     /**
      * @return Number of entries in the {@link Store}
      */
-    public int size();
+    public int getSize();
 
     /**
      * @return True when there are no entries in the {@link Store}

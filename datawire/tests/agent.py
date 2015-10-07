@@ -15,19 +15,15 @@
 from unittest import TestCase
 from proton import Message
 from proton.reactor import Reactor
-from datawire import Agent, Receiver
+from datawire import Agent, Receiver, Tether
 
 from common import *
 
 class AgentTest(TestCase):
 
     def setUp(self):
-        class FakeTether:
-            def __init__(self):
-                self.address = None
-                self.agent = None
-                self.agent_type = None
-        self.agent = Agent(FakeTether(), self)
+        fake_tether = Tether(None, "", None)
+        self.agent = Agent(fake_tether, self)
         self.server = Server(self.agent)
         self.reactor = Reactor(self.server)
         self.samples = 0
@@ -59,7 +55,7 @@ class AgentTest(TestCase):
         counter = Counter()
         rcv = Receiver("//localhost:%s" % PORT, Processor(counter))
         rcv.start(self.reactor)
-        counter.set_timeout(self.reactor, 2)
+        counter.set_timeout(self.reactor, 20)
         self.reactor.run()
         assert counter.cancelled, "Sampling timed out"
 

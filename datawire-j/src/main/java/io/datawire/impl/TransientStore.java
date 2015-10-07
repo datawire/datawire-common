@@ -138,7 +138,7 @@ public class TransientStore implements StoreImpl {
     }
 
     @Override
-    public int size() {
+    public int getSize() {
         return entries.size();
     }
 }

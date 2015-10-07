@@ -37,7 +37,8 @@ import org.apache.qpid.proton.message.Message;
  */
 public class DatawireUtils {
 
-    public static final ExtendableAccessor<Sender, Tag> SENDER_TAG = new ExtendableAccessor<Sender, Tag>(Tag.class);
+    public static final ExtendableAccessor<Sender, Tag> SENDER_TAG = new ExtendableAccessor<Sender, Tag>(
+            Tag.class);
 
     static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
@@ -51,38 +52,36 @@ public class DatawireUtils {
         if (value instanceof String) {
             return (String) value;
         } else if (value instanceof Binary) {
-            return new String(((Binary)value).getArray(), UTF8_CHARSET);
+            return new String(((Binary) value).getArray(), UTF8_CHARSET);
         } else if (value instanceof AmqpValue) {
-            return stringify(((AmqpValue)value).getValue());
+            return stringify(((AmqpValue) value).getValue());
         }
         return null;
     }
 
     public static ByteBuffer encode(Message msg) {
         int size = 1000;
-        while(true) {
+        while (true) {
             try {
                 byte[] bytes = new byte[size];
                 int length = msg.encode(bytes, 0, size);
-                ByteBuffer ret = ByteBuffer.wrap(bytes, length, size-length);
+                ByteBuffer ret = ByteBuffer.wrap(bytes, length, size - length);
                 ret.flip();
                 return ret;
             } catch (BufferOverflowException ex) {
                 size *= 2;
-                continue; 
+                continue;
             }
         }
     }
 
-    public static void send(final org.apache.qpid.proton.engine.Sender sender,
-            Tag tag, ByteBuffer bytes) {
+    public static void send(final Sender sender, Tag tag, ByteBuffer bytes) {
         Delivery dlv = sender.delivery(tag.deliveryTag());
         sender.send(bytes.array(), bytes.position(), bytes.limit());
         dlv.settle();
     }
 
-    public static void send(final org.apache.qpid.proton.engine.Sender sender,
-            ByteBuffer bytes) {
+    public static void send(final Sender sender, ByteBuffer bytes) {
         send(sender, senderTag(sender), bytes);
     }
 
@@ -98,9 +97,13 @@ public class DatawireUtils {
     public static void send(Sender sender, Tag tag, Message message) {
         send(sender, tag, encode(message));
     }
-    
+
+    public static void send(Sender sender, Message message) {
+        send(sender, encode(message));
+    }
+
     public static void send(Link link, Tag tag, Message message) {
-        send((Sender)link, tag, message);
+        send((Sender) link, tag, message);
     }
 
 }

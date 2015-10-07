@@ -106,6 +106,14 @@ public class Stream extends BaseDatawireHandler {
     public void close() {
         closed = true;
     }
+    
+    public Store getStore() {
+        return store;
+    }
+    
+    public int getQueued() {
+        return queued;
+    }
 
     @Override
     public void onLinkLocalOpen(Event e) {

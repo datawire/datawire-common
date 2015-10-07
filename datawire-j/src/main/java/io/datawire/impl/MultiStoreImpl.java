@@ -108,13 +108,17 @@ public class MultiStoreImpl implements MultiStore {
     }
 
     @Override
-    public int size() {
+    public int getSize() {
         return size;
     }
 
     @Override
     public boolean isEmpty() {
         return stores.size() == 0;
+    }
+
+    public HashMap<String, StoreImpl> getStores() {
+        return stores;
     }
 
 }
