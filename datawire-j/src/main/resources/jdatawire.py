@@ -55,10 +55,20 @@ class NamedProperty(object):
     def get(self, instance):
         raise AttributeError(self._fullname + " did not implement get()")
 
-class ExtendedProperty(NamedProperty):
-    def __init__(self, accessor, converter):
+class NamedSettableProperty(NamedProperty):
+    def __set__(self, instance, value):
+        if self._name is None:
+            self._name = self.myname(instance.__class__)
+        self.set(instance, value)
+
+    def set(self, instance, value):
+        raise AttributeError(self._fullname + " did not implement set()")
+
+class ExtendedProperty(NamedSettableProperty):
+    def __init__(self, accessor, converter, peeler):
         self.accessor = accessor
         self.converter = converter
+        self.peeler = peeler
 
     def get(self, instance):
         impl = vars(instance).get("_impl", None)
@@ -71,14 +81,15 @@ class ExtendedProperty(NamedProperty):
         instance.__dict__[self._name] = converted
         return converted
 
-class NamedSettableProperty(NamedProperty):
-    def __set__(self, instance, value):
-        if self._name is None:
-            self._name = self.myname(instance.__class__)
-        self.set(instance, value)
-
     def set(self, instance, value):
-        raise AttributeError(self._fullname + " did not implement set()")
+        impl = vars(instance).get("_impl", None)
+        if impl is None:
+            raise AttributeError(self._name + " has no _impl")
+        if value is not None:
+          peeled = self.peeler(value)
+        else:
+          peeled = value
+        self.accessor.set(impl.impl, peeled)
 
 class WrappedHandlerProperty(NamedSettableProperty):
     def get(self, instance):
@@ -88,13 +99,21 @@ class WrappedHandlerProperty(NamedSettableProperty):
         setattr(instance._impl, self._name, value)
 
 def wrap_proton_message(impl):
+    if impl is None:
+      return None
     wrapper = proton.Message()
     wrapper._msg.decode(impl)
     wrapper._post_decode()
     return wrapper
 
+def peel_proton_message(wrapper):
+    if wrapper is None:
+      return None
+    wrapper._pre_encode()
+    wrapper._msg.pre_encode()
+    return wrapper._msg.impl
 
-proton.Event.message = ExtendedProperty(io_datawire.DatawireEvent.MESSAGE_ACCESSOR, wrap_proton_message)
+proton.Event.message = ExtendedProperty(io_datawire.DatawireEvent.MESSAGE_ACCESSOR, wrap_proton_message, peel_proton_message)
 
 def unwrap_handler(delegate):
     if delegate is not None:
