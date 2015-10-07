@@ -29,6 +29,8 @@ public class Container extends BaseDatawireHandler {
             return Collections.singleton(address);
         } else {
             final String path = address.split("\\?", 2)[0];
+            // need to pre-calculate cutlist as AbstractCollection requires
+            // size().
             final ArrayList<Integer> cutlist = new ArrayList<>();
             int off = 0;
             for (String part : path.split("/", -1)) {
@@ -40,12 +42,14 @@ public class Container extends BaseDatawireHandler {
                 cutlist.add(partslash);
                 off = partslash;
             }
+            cutlist.remove(cutlist.size() - 1);
             return new AbstractCollection<String>() {
 
                 @Override
                 public Iterator<String> iterator() {
                     return new Iterator<String>() {
-                        int last = cutlist.size() - 2; // last item does not have a trailing slash...
+                        int last = cutlist.size() - 1;
+
                         @Override
                         public boolean hasNext() {
                             return last >= 0;
@@ -68,7 +72,7 @@ public class Container extends BaseDatawireHandler {
 
                 @Override
                 public int size() {
-                    return cutlist.size() - 1;
+                    return cutlist.size();
                 }
             };
         }

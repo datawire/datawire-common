@@ -54,6 +54,9 @@ public class ContainerTest {
     Map<String, List<String>> expected = new HashMap<String, List<String>>() {
         {
             put(""     , Arrays.asList(""));
+            put("a"    , Arrays.asList("a"));
+            put("a/"   , Arrays.asList("a/", "a"));
+            put("a/b"  , Arrays.asList("a/b", "a/", "a"));
             put("/"    , Arrays.asList("/", ""));
             put("/a"   , Arrays.asList("/a", "/", ""));
             put("/a/"  , Arrays.asList("/a/", "/a", "/", ""));
