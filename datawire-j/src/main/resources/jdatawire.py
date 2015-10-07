@@ -264,6 +264,29 @@ class Linker(_Reactive):
   def close(self):
     self._impl.close()
 
+class Containter(WrappedHandler, _Reactive):
+  def __init__(self, root = None):
+    def datawire_container():
+      args = []
+      args.append(unwrap_handler(root))
+      return io_datawire.Container(*args)
+    WrappedHandler.__init__(self, datawire_container)
+
+  def __setitem__(self, address, handler):
+    self._impl.put(address, unwrap_handler(handler))
+
+  def __getitem__(self, address):
+      return WrappedHandler.wrap(self._impl.get(address))
+
+
+  def sender(self, target, *handlers, **kwargs):
+    args = WrappedSender._sender_args(target, *handlers, **kwargs)
+    return WrappedSender(self._impl.sender(*args))
+
+  def receiver(self, source, *handlers, **kwargs):
+    args = WrappedReceiver._receiver_args(source, *handlers, **kwargs)
+    return WrappedReceiver(self._impl.receiver(*args))
+
 class Stream(WrappedHandler):
   def __init__(self, store=None):
     def datawire_stream():
@@ -405,6 +428,7 @@ class DualImpl:
       Linker=Linker,
       Entry=Entry,
       ancestors=io_datawire.Container.ancestors,
+      Container=Containter,
     )
 
     dualImpls = set()
