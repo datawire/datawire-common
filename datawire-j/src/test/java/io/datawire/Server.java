@@ -39,7 +39,7 @@ public class Server extends BaseTestHandler {
     public void onClosed(Event e) {
         closed += 1;
         if (closed >= maxConnections) {
-            acceptor.close();
+            close();
         }
     }
 
@@ -52,6 +52,19 @@ public class Server extends BaseTestHandler {
         }
     }
 
+    @Override
+    public void onReactorFinal(Event e) {
+        close();
+    }
+
+    private void close() {
+        if (acceptor != null) {
+            Acceptor acceptor = this.acceptor;
+            this.acceptor = null;
+            acceptor.close();
+        }
+    }
+ 
     public Server(Handler delegate) {
         this.delegate = delegate;
     }
