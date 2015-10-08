@@ -78,8 +78,7 @@ public class Agent extends BaseDatawireHandler {
             "incoming_rate", incoming.rate(Counts.app.getIncoming(), tstamp),
             "outgoing_rate", outgoing.rate(Counts.app.getOutgoing(), tstamp),
             "incoming_rate_lib", incoming_lib.rate(Counts.lib.getIncoming(), tstamp),
-            "outgoing_rate_lib", outgoing_lib.rate(Counts.lib.getOutgoing(), tstamp),
-            ""
+            "outgoing_rate_lib", outgoing_lib.rate(Counts.lib.getOutgoing(), tstamp)
         );
         return stats;
     }
