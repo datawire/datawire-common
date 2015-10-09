@@ -23,13 +23,21 @@ public class Timeout extends BaseDatawireHandler {
     private Task timer;
     private boolean cancelled = false;
 
-    public void setTimeout(Reactor reactor, int timeout) {
+    /**
+     * Schedule a timer to fire at the specified point
+     * @param reactor the reactor
+     * @param timeout timeout in milliseconds
+     */
+    public void setTimeout(Reactor reactor, int timeoutMs) {
         if (timer != null)
             throw new IllegalArgumentException("Timeout is already set");
-        timer = reactor.schedule(timeout, this);
+        timer = reactor.schedule(timeoutMs, this);
         cancelled  = false;
     }
 
+    /**
+     * cancel the timeout
+     */
     public void cancel() {
         if (timer == null)
             throw new IllegalArgumentException("Cannot cancel when timeout is not set");

@@ -72,7 +72,7 @@ public class AgentTest {
         Counter counter = new Counter();
         receiver.add(new Processor(counter));
         receiver.start(reactor);
-        counter.setTimeout(reactor, 20);
+        counter.setTimeout(reactor, 20000);
         reactor.run();
         assertTrue("Sampling timed out", counter.isCancelled());
 
