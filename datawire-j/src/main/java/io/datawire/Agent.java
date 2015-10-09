@@ -6,15 +6,31 @@ import java.util.Map;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.engine.Event;
+import org.apache.qpid.proton.engine.Handler;
 import org.apache.qpid.proton.message.Message;
 import org.apache.qpid.proton.reactor.Handshaker;
+import org.apache.qpid.proton.reactor.Reactor;
 
+/**
+ * Collect and publish statistics about a service.
+ * <p>
+ * For basic use the application sets up a {@link Tether} and runs a {@link Container} on a {@link Reactor#acceptor(String, int, Handler)}
+ * and puts the service handler as container root and the <code>Agent</code> 
+ * at address {@link Tether#getAgent()} with {@link Container#put(String, Handler)}
+ *
+ */
 public class Agent extends BaseDatawireHandler {
 
+    /**
+     * Agent exposes its statistics map to the service, see {@link Probe}
+     */
     public static interface Stats extends Map<String, Object> {
-
     }
 
+    /**
+     * The service can add its own statistics to the statistics collected by the {@link Agent}
+     * @see Agent#Agent(Tether, Probe)
+     */
     public static interface Probe {
         public void sample(Stats stats);
     }
@@ -32,6 +48,10 @@ public class Agent extends BaseDatawireHandler {
     private final Sampler sampler;
     private Message message;
 
+    /**
+     * @param tether The tether of the service being monitored
+     * @param delegate Service callback when collecting samples
+     */
     public Agent(Tether tether, Probe delegate) {
         this.tether = tether;
         this.delegate = delegate != null ? delegate : NO_PROBE;
@@ -44,7 +64,11 @@ public class Agent extends BaseDatawireHandler {
         add(new Handshaker());
         add(sampler);
     }
-    
+
+    /**
+     * Service can adjust sampling frequency using {@link Sampler#setFrequency(float)}
+     * @return The sampler used by this agent
+     */
     public Sampler getSampler() {
         return sampler;
     }
@@ -59,7 +83,7 @@ public class Agent extends BaseDatawireHandler {
         }
     }
 
-    Stats sample() {
+    private Stats sample() {
         StatsImpl stats = new StatsImpl();
         long tstamp = System.currentTimeMillis();
         stats.put(
