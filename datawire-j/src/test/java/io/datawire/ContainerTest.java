@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertThat;
@@ -82,11 +83,13 @@ public class ContainerTest {
         checkExpectedVariants("", "?param=/value");
     }
 
+    @Ignore("Need to define what this means")
     @Test
     public void testHostPath() {
         checkExpectedVariants("//host:12234", "");
     }
-    
+
+    @Ignore("Need to define what this means")
     @Test
     public void testHostPathParam() {
         checkExpectedVariants("//host:12234", "?param=/value");
