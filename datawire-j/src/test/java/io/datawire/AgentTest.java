@@ -36,6 +36,9 @@ public class AgentTest {
 
     @After
     public void tearDown() throws Exception {
+        if (reactor.collector() != null) {
+            reactor.stop();
+        }
     }
 
     private Agent.Probe sample = new Agent.Probe() {
@@ -73,7 +76,11 @@ public class AgentTest {
         receiver.add(new Processor(counter));
         receiver.start(reactor);
         counter.setTimeout(reactor, 20000);
-        reactor.run();
+        try {
+            reactor.run();
+        } finally {
+            receiver.stop(reactor);
+        }
         assertTrue("Sampling timed out", counter.isCancelled());
 
     }
