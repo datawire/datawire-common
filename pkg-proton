@@ -16,6 +16,7 @@
 
 from roy import build, deps
 
+
 class Proton:
 
     def __init__(self):
@@ -24,12 +25,13 @@ class Proton:
                            deps.uuid.dev, deps.ssl.dev, deps.swig,
                            deps.python.dev]
         self.deps = [deps.uuid, deps.ssl, deps.python]
-        self.version = "0.9-datawire-1"
+        self.version = "0.11-datawire-1"
 
     def setup(self, env):
-        env.system("wget -nv https://github.com/datawire/qpid-proton/archive/0.9-datawire-1.zip -O %s/proton.zip" % env.work)
+        env.system("wget -nv https://github.com/datawire/qpid-proton/archive/%s.zip -O %s/proton.zip" %
+                   (self.version, env.work))
         env.system("cd %s; unzip -o proton.zip" % env.work)
-        env.system("cd %s; mv qpid-proton-0.9-datawire-1 proton" % env.work)
+        env.system("cd %s; mv qpid-proton-%s proton" % (env.work, self.version))
 
     def build(self, distro):
         result = """
