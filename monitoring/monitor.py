@@ -18,13 +18,13 @@ class HistoryStore(Store):
 
     def __init__(self, size=0):
         Store.__init__(self)
-        self.size = size
+        self._size = size
 
     def compact(self, tail):
-        if len(tail) < self.size:
+        if len(tail) < self._size:
             return tail
         else:
-            return tail[len(tail)-self.size:]
+            return tail[len(tail)-self._size:]
 
 
 class Monitor(object):
@@ -76,7 +76,9 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("-n", "--host", default="127.0.0.1", help="network hostname")
     parser.add_argument("-p", "--port", default="6000", help="network port")
+    parser.add_argument("-l", "--level", default="warning", help="logging level")
     args = parser.parse_args()
+    logging.getLogger().setLevel(getattr(logging, args.level.upper()))
 
     Reactor(Monitor(args)).run()
 

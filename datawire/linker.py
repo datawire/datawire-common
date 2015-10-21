@@ -16,6 +16,8 @@ import logging
 from proton import DELEGATED, Endpoint, EventType, Message
 from .address import Address
 
+from .impl import dual_impl, DatawireEvent
+
 log = logging.getLogger(__name__)
 
 def redirect(link, original):
@@ -52,7 +54,7 @@ def redirect(link, original):
     else:
         return None
 
-DRAINED = EventType("drained")
+DRAINED = EventType("drained", DatawireEvent.Type.DRAINED)
 
 class Link:
 
@@ -84,7 +86,10 @@ class Link:
 
     def on_delivery(self, event):
         for h in self.handlers:
-            event.dispatch(h)
+            try:
+                event.dispatch(h)
+            except:
+                raise
         self.do_drained(event)
         return DELEGATED
 
@@ -158,6 +163,7 @@ class Link:
         conn.hostname = self.network()
         return conn.session()
 
+@dual_impl
 class Sender(Link):
 
     def __init__(self, target, *handlers, **kwargs):
@@ -203,7 +209,9 @@ class Sender(Link):
 
     def close(self):
         self.__closed = True
+        # XXX: missing self.__pump() ?
 
+@dual_impl
 class Receiver(Link):
 
     def __init__(self, source, *handlers, **kwargs):
@@ -225,7 +233,8 @@ class Receiver(Link):
         rcv.target.address = self.target
         return rcv
 
-class Tether(Sender):
+@dual_impl
+class Tether:
 
     def __init__(self, directory, address, target, host=None, port=None, policy=None, agent_type=None):
         if directory is None:
@@ -233,7 +242,6 @@ class Tether(Sender):
             log.debug("Tether picking default directory %r from in_address %r", directory, address)
         else:
             directory = unicode(directory)
-        Sender.__init__(self, directory)
         self.directory = directory
         self.address = unicode(address)
         self.redirect_target = target
@@ -245,23 +253,31 @@ class Tether(Sender):
             self.agent = u"//%s/agents/%s-%s" % (Address(self.directory).host, self.host, self.port)
         else:
             self.agent = None
+        self.sender = Sender(self.directory, self)
 
-    def on_link_local_open(self, event):
+    def on_link_remote_open(self, event):
         msg = Message()
         msg.properties = {u"opcode": "route"}
         msg.body = (self.address, (self.host, self.port, self.redirect_target), None)
         if self.policy:
             msg.body += (self.policy,)
-        msg.send(event.link)
+        self.sender.send(msg)
         if self.agent:
             msg.body = (self.agent, (self.host, self.port, None), None)
-            msg.send(event.link)
+            self.sender.send(msg)
+
+    def start(self, reactor):
+        self.sender.start(reactor)
+
+    def stop(self, reactor):
+        self.sender.stop(reactor)
 
 def _key(target, handlers, kwargs):
     items = kwargs.items()
     items.sort()
     return target, handlers, tuple(items)
 
+@dual_impl
 class Linker:
 
     def __init__(self):

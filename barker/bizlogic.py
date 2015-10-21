@@ -24,9 +24,6 @@ class BizLogic(object):
         event.reactor.schedule(0, self)
         self.linker.start(event.reactor)
 
-    def on_reactor_quiesced(self, event):
-        event.dispatch(self.container)
-
     def on_timer_task(self, event):
         self.users = common.load_data("users.pickle")
         event.reactor.schedule(self.user_reread_period, self)

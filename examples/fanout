@@ -3,7 +3,7 @@
 import logging
 from argparse import ArgumentParser
 from proton.reactor import Reactor
-from datawire import Address, Tether, Sender, Stream
+from datawire import Address, Tether, Sender, Stream, Decoder
 
 class Fanout:
 

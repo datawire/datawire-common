@@ -14,8 +14,11 @@
 
 from proton import EventType, PN_LOCAL_ACTIVE
 
-SAMPLE = EventType("sample")
+from .impl import dual_impl, DatawireEvent
 
+SAMPLE = EventType("sample", DatawireEvent.Type.SAMPLE)
+
+@dual_impl
 class Sampler:
 
     def __init__(self, delegate=None, frequency=1):
@@ -30,9 +33,10 @@ class Sampler:
 
     def _sample(self, event):
         link = event.link
-        if link.state & PN_LOCAL_ACTIVE:
+        if link and link.state & PN_LOCAL_ACTIVE:
             event.dispatch(self.__delegate, SAMPLE)
+            event = event.copy()
             class Sample:
                 def on_timer_task(_self, _):
                     self._sample(event)
-            event.reactor.schedule(1.0/self.frequency, Sample())
+            event.reactor.schedule(1.0/self.frequency, Sample()) # FIXME: schedule is in milliseconds ?

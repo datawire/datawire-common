@@ -13,19 +13,26 @@
 # limitations under the License.
 
 from proton.handlers import CHandshaker
-from linker import Sender, Receiver
+from .linker import Sender, Receiver
 
+from .impl import dual_impl
+
+@dual_impl
 def ancestors(address):
-    yield address
-    if address is None: return
+    if address is None:
+        yield address 
+        return
     address = address.split("?", 1)[0]
-    path = address.split("/")[:-1]
+    path = address.split("/")
     while path:
         addr = "/".join(path)
-        yield "%s/" % addr
         yield addr
-        path.pop()
+        if path[-1]:
+            path[-1] = ""
+        else:
+            path.pop()
 
+@dual_impl
 class Container:
 
     def __init__(self, root=None):
@@ -45,17 +52,21 @@ class Container:
 
     def _link(self, type, local, remote, handlers, **kwargs):
         if not handlers:
+            # XXX: why do we add node handler only when no handlers are specified
             node = self[local]
             if node: handlers = (node,)
         link = type(remote, *handlers, **kwargs)
         self.links.append(link)
+        # XXX: links created after container.start() will not get started
         return link
 
     def sender(self, target, *handlers, **kwargs):
+        # XXX: seems like a huge overlap with Linker.sender() 
         source = kwargs.get("source", None)
         return self._link(Sender, source, target, handlers, **kwargs)
 
     def receiver(self, source, *handlers, **kwargs):
+        # XXX: ditto
         target = kwargs.get("target", None)
         return self._link(Receiver, target, source, handlers, **kwargs)
 
@@ -73,6 +84,7 @@ class Container:
             address = link.remote_source.address
         else:
             address = link.remote_target.address
+        # XXX: isn't this dangerous to set handler unconditionally, doesn't this overwrite the handler for outgoing links?
         link.handler = self[address]
         if link.handler:
             event.dispatch(link.handler)

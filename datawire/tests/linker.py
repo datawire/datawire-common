@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from unittest import TestCase
 from proton import Message
 from proton.reactor import Reactor
 from datawire import Linker, Processor, Receiver, Sampler, Sender, Stream
 
 from .common import *
 
-class SinkTest:
+class SinkTest(TestCase):
 
-    def __init__(self):
+    def setUp(self):
         self.sink = Sink()
         self.server = Server(self.sink)
         self.reactor = Reactor(self.server)
+        
+    def tearDown(self):
+        pass
 
     def testSender(self, count=1):
         self.server.max_connections = 1
@@ -44,7 +48,7 @@ class SinkTest:
     def testSampler(self, count=1, frequency=10):
         self.server.max_connections = 1
         oself = self
-        class Gen:
+        class Gen(Timeout):
             def __init__(self):
                 self.sent = 0
 
@@ -53,10 +57,16 @@ class SinkTest:
                 self.sent += 1
                 if self.sent >= count:
                     event.link.close()
-        snd = Sender("//localhost:%s" % PORT, Sampler(Gen(), frequency))
+                    self.cancel()
+            def on_timer_task(self, event):
+              snd.stop(event.reactor)
+        gen = Gen();
+        snd = Sender("//localhost:%s" % PORT, Sampler(gen, frequency))
         self.reactor.handler.add(snd)
+        gen.set_timeout(self.reactor, 2)
         snd.start(self.reactor)
         self.reactor.run()
+        assert gen.cancelled, "Sampling timed out"
         assert len(self.sink.messages) == count, len(self.sink.messages)
         for i in range(count):
             assert self.sink.messages[i] == "test-%s" % i
@@ -72,19 +82,16 @@ class SinkTest:
             for j in range(message_count):
                 snd = linker.sender("//localhost:%s/%s" % (PORT, i))
                 assert len(linker.senders) == i + 1
-                snd.send("test-%s-%s" % (i, j))
+                snd.send(dict(i=i, j=j))
         linker.close()
         self.reactor.run()
 
-        # XXX: The ordering happens to work out here due to
-        # implementation constraints, however strictly speaking the
-        # messages captured by the sink are only partially ordered.
-        idx = 0
-        for i in range(address_count):
-            for j in range(message_count):
-                assert self.sink.messages[idx] == "test-%s-%s" % (i, j)
-                idx += 1
-        assert len(self.sink.messages) == address_count*message_count
+        by_addr = dict((i,[]) for i in range(address_count))
+        for m in self.sink.messages:
+          by_addr[m["i"]].append(m)
+        for addr, msgs in by_addr.iteritems():
+          self.assertSequenceEqual(msgs, list(sorted(msgs, key=lambda x:(x["i"],x["j"]))))
+        self.assertEqual(len(self.sink.messages), address_count*message_count)
 
     def testLinker2A1M(self):
         self.testLinker(2, 1)
@@ -114,12 +121,15 @@ class SinkTest:
         self.testLinker(16, 16)
 
 
-class SourceTest:
+class SourceTest(TestCase):
 
-    def __init__(self):
+    def setUp(self):
         self.source = Source("test-%s")
         self.server = Server(self.source)
         self.reactor = Reactor(self.server)
+        
+    def tearDown(self):
+      pass
 
     def testReceiver(self, count=1):
         self.server.max_connections = 1

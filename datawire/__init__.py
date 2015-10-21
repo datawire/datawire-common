@@ -22,8 +22,14 @@ from .address import Address
 from .agent import Agent
 from .container import ancestors, Container
 from .linker import Linker, Sender, Receiver, Tether
-from .stream import Entry, Store, Stream
+from .stream import Entry, Store, Stream, MultiStore
 from .decoder import Decoder
 from .processor import Processor
 from .sampler import Sampler
 from .configuration import Configuration
+from .counts import Counts
+
+from .impl import dual_impl
+if dual_impl.dualImpls:
+  print "Using java ", ", ".join(sorted(dual_impl.dualImpls))
+del dual_impl

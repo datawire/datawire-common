@@ -12,12 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os, resource, sys, time
+import os, sys, time
+try:
+    import resource
+except:
+    class resource:
+        RUSAGE_SELF = object()
+        @staticmethod
+        def getrusage(what):
+            return object()
+
 from proton import Message, timestamp
 from proton.handlers import CHandshaker
 from .counts import lib
 from .sampler import Sampler
 from datawire.stats import app, lib
+from .impl import dual_impl
 
 class SlidingRate:
 
@@ -31,6 +41,7 @@ class SlidingRate:
         fcount, ftime = self.samples[0]
         return (count - fcount)/(tstamp - ftime)
 
+@dual_impl
 class Agent:
 
     def __init__(self, tether, delegate=None):

@@ -12,10 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class app:
+from .impl import dual_impl
+
+class Counters:
     incoming = 0
     outgoing = 0
 
-class lib:
-    incoming = 0
-    outgoing = 0
+@dual_impl
+class Counts:
+    app = Counters()
+    lib = Counters()
+
+
+app = Counts.app
+lib = Counts.lib

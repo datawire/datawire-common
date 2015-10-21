@@ -14,13 +14,13 @@ class HistoryStore(Store):
 
     def __init__(self, size=0):
         Store.__init__(self)
-        self.size = size
+        self._size = size
 
     def compact(self, tail):
-        if len(tail) < self.size:
+        if len(tail) < self._size:
             return tail
         else:
-            return tail[len(tail)-self.size:]
+            return tail[len(tail)-self._size:]
 
 class ManiStore(MultiStore):
 

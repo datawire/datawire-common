@@ -20,8 +20,8 @@ python autobark.py 5 --host %(hostname)s
 python autobark.py 5 --host %(hostname)s
 python autobark.py 5 --host %(hostname)s
 python listen.py ark3 --host %(hostname)s
-webui/proxy/proxy.js --thost %(hostname)s -p 5673 -t 5820
-webui/proxy/proxy.js --thost %(hostname)s -p 5674 -t 5800
+%(webui_proxy)s --thost %(hostname)s -p 5673 -t 5820
+%(webui_proxy)s --thost %(hostname)s -p 5674 -t 5800
 """
 
 def launch(command):
@@ -39,9 +39,12 @@ def launch(command):
 def main():
     parser = ArgumentParser()
     parser.add_argument("-n", "--host", default="127.0.0.1", help="network hostname")
+    parser.add_argument("--webui-only", default=False, action="store_true", help="start only webui helpers")
+    parser.add_argument("--webui-proxy", default="webui/proxy/proxy.js", help="location of the proxy")
     args = parser.parse_args()
 
-    params = dict(hostname=args.host)
+    params = dict(hostname=args.host,
+                  webui_proxy=args.webui_proxy)
 
     try:
         open("users.pickle")
@@ -54,7 +57,7 @@ def main():
     pids = []
     try:
         for command in (commands % params).split("\n"):
-            if command and not command.strip().startswith("#"):
+            if command and not command.strip().startswith("#") and (command.strip().startswith(args.webui_proxy) or not args.webui_only):
                 pids.append(launch(command.strip()))
         while True:
             sleep(100000)

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from .impl import dual_impl
+
 def _network(address):
     if address is None: return None
     if address.startswith("//"):
@@ -24,8 +26,9 @@ def _hostport(network):
     if ":" in network:
         return network.split(":", 1)
     else:
-        return network, 5672
+        return network, "5672"
 
+@dual_impl
 class Address:
 
     @staticmethod

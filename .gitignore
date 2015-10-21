@@ -9,4 +9,12 @@ tags
 barker/users.pickle
 barker/webui/proxy/node_modules
 dist
+*.log
+/datawire-j/target
+/tests/target
+.classpath
+.project
+.pydevproject
+.settings/
+/datawire.egg-info
 datawire_common.egg-info

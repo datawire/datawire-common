@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content='text/html;charset=utf-8' http-equiv='Content-Type'>
+    <script src='https://sverweij.github.io/mscgen_js/mscgen-inpage.js' defer>
+    </script>
+  </head>
+  <body>
+    <pre>
+    Engine objects:                         Handler tree associated with the Connection
+                                            
+    Reactor
+     +- Connection  ---- has handler -----> datawire.Receiver
+     |  +- Session                          +- datawire.Processor
+     |     +- Receiver (Link)                  +- proton.Handshaker
+     |        +- Delivery    <---              +- proton.Flowcontroller
+     +- Collector                |             +- datawire.Decoder
+        +- Event(ON_DELIVERY)    |             +- examples.pull
+           +--- context ---------
+    </pre>
+    <pre class='code mscgen mscgen_js' data-language='mscgen'>
+msc {
+reactor [label="Reactor"],
+event [label="Event ON_DELIVERY"],
+receiver [label="datawire Receiver"],
+processor [label="datawire Processor"],
+decoder [label="datawire Decoder"],
+delivery [label="Delivery"],
+pull [label="example.pull"];
+reactor => event [label="getContext"];
+reactor => delivery [label="getHandler"];
+reactor => event [label="dispatch"];
+event => receiver [label="handle(ON_DELIVERY)"];
+receiver => receiver [label="onDelivery"];
+receiver => receiver [label="onUnhandled"];
+receiver >> event [label="handle(ON_DELIVERY)"];
+event => event [label="delegate"];
+event => processor [label="handle(ON_DELIVERY)"];
+processor => processor [label="onDelivery"];
+processor => processor [label="onUnhandled"];
+processor >> event [label="handle(ON_DELIVERY)"];
+event => event [label="delegate"];
+event => decoder [label="handle(ON_DELIVERY)"];
+decoder => decoder [label="onDelivery"];
+decoder note delivery [label="get delivered bytes off delivery"];
+decoder => delivery [label=".encoded = bytes"];
+decoder => event [label="redispatch(ON_ENCODED_MESSAGE, event.root)"];
+event note decoder [label="dispatch/handle/onUnhandled/delegate repeats for whole tree"];
+decoder => event [label="redispatch(ON_MESSAGE, event.root)"];
+event note decoder [label="dispatch/handle/delegate repeats for whole tree until pull, then..."];
+event => pull [label="handle(ON_MESSAGE)"];
+pull => pull [label="onMessage"];
+pull note pull [label="print"];
+pull >> event [label="handle(ON_MESSAGE)"];
+event >> decoder [label="redispatch"];
+decoder >> event [label="handle(ON_DELIVERY)"];
+}
+    </pre>
+  </body>
+</html>

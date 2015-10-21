@@ -12,13 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sqlite3, logging, time
+import logging, time
+try:
+    import sqlite3
+    def dbapi_connect(name):
+        return sqlite3.connect(name)
+    dbapi_Binary = sqlite3.Binary
+except:
+    from com.ziclix.python.sql import zxJDBC
+    def dbapi_connect(name):
+        return zxJDBC.connect("jdbc:sqlite:"+name, "", "", "org.sqlite.JDBC")
+    dbapi_Binary = zxJDBC.Binary
 from proton import Message, Endpoint
 from proton.reactor import Reactor
 from proton.handlers import CFlowController, CHandshaker
-
+from .impl import dual_impl
+from .decoder import Decoder
 log = logging.getLogger(__name__)
 
+@dual_impl(depends=["Store"])
 class Entry:
 
     def __init__(self, msg, persistent=True, deleted = False):
@@ -27,12 +39,13 @@ class Entry:
         self.deleted = deleted
         self.timestamp = time.time()
 
+@dual_impl
 class Store:
 
     def __init__(self, name=None):
         self.name = name
         if self.name:
-            self.db = sqlite3.connect(self.name)
+            self.db = dbapi_connect(self.name)
             if not list(self.db.execute('pragma table_info(streams)')):
                 log.info("%s: creating schema", self.name)
                 self.db.execute('''create table streams (serial integer,
@@ -88,7 +101,7 @@ class Store:
                 if entry.persistent:
                     log.debug("%s: insert %s, %r", self.name, serial, entry.message)
                     self.db.execute("insert into streams (serial, message) values (?, ?)",
-                                    (serial, sqlite3.Binary(entry.message)))
+                                    (serial, dbapi_Binary(entry.message)))
             self.db.commit()
         self.lastflush = self.max()
 
@@ -103,7 +116,7 @@ class Store:
             if entry.persistent:
                 log.debug("%s: update %s, %r", self.name, self.serial + idx, entry.message)
                 self.db.execute("insert or replace into streams (serial, message) values (?, ?)",
-                                (self.serial + idx, sqlite3.Binary(entry.message)))
+                                (self.serial + idx, dbapi_Binary(entry.message)))
             else:
                 log.debug("%s: delete %s", self.name, self.serial + idx)
                 self.db.execute("delete from streams where serial = ?", (self.serial + idx,))
@@ -129,6 +142,8 @@ class Store:
             delta = serial - self.serial
             tail = self.compact(self.entries[:delta])
             reclaimed = delta - len(tail)
+            if reclaimed < 1:
+              return 0   # XXX: if compact returns all entries....
             self.last_idle = now - self.entries[reclaimed - 1].timestamp
             self.max_idle = max(self.last_idle, self.max_idle)
             self.entries[:delta] = tail
@@ -173,7 +188,7 @@ class Reader:
     def close(self):
         self.store.readers.remove(self)
 
-
+@dual_impl
 class MultiStore:
 
     def __init__(self):
@@ -222,11 +237,12 @@ class MultiStore:
             self.stores[address] = store
         return store.reader(address)
 
+@dual_impl
 class Stream:
 
     def __init__(self, store = None):
         self.store = store or Store()
-        self.handlers = [CFlowController(), CHandshaker()]
+        self.handlers = [CFlowController(), CHandshaker(), Decoder()]
         self.incoming = []
         self.outgoing = []
         self.message = Message()
@@ -251,11 +267,16 @@ class Stream:
     def setup(self, event):
         snd = event.sender
         if snd and not hasattr(snd, "reader"):
-            snd.reader = self.store.reader(snd.remote_source.address or snd.source.address or
-                                           snd.remote_target.address or snd.target.address)
+            rsa = snd.remote_source.address
+            lsa = snd.source.address
+            rta = snd.remote_target.address
+            lta = snd.target.address
+            snd.reader = self.store.reader(rsa or lsa or
+                                           rta or lta)
             self.outgoing.append(snd)
         elif event.receiver and event.receiver not in self.incoming:
-            self.incoming.append(event.receiver)
+            rcv = event.receiver
+            self.incoming.append(rcv)
 
     def on_link_final(self, event):
         if event.sender:
@@ -290,13 +311,19 @@ class Stream:
     def on_reactor_quiesced(self, event):
         self.pump()
 
-    def on_delivery(self, event):
+    ctr = 0
+    def on_encoded_message(self, event):
         rcv = event.receiver
         dlv = event.delivery
         if rcv and not dlv.partial:
-            msg = rcv.recv(dlv.pending)
+            try:
+                self.ctr += 1
+                msg = dlv.encoded
+            except:
+                raise
             address = rcv.target.address
             self.store.put(msg, address=address)
+            log.debug("incoming delivery=%s", dlv);
             dlv.settle()
 
     def _matches(self, host, port, address, link):

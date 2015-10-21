@@ -14,16 +14,12 @@
 
 from proton.handlers import CFlowController, CHandshaker
 from .decoder import Decoder
+from .impl import dual_impl
 
+@dual_impl
 class Processor:
 
     def __init__(self, delegate=None, window=1024):
-        if delegate is None:
-            self.__delegate = self
-        else:
-            self.__delegate = delegate
-        self.handlers = [CFlowController(window), CHandshaker(), Decoder(self.__delegate)]
-
-    def on_unhandled(self, name, event):
-        if self.__delegate is not self and event.connection:
-            event.dispatch(self.__delegate)
+        self.handlers = [CFlowController(window), CHandshaker(), Decoder()]
+        if delegate is not None:
+          self.handlers.append(delegate)
